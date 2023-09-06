@@ -1,5 +1,8 @@
-import { builtinModules } from 'module';
-import { type Context, createContext, type Module, SourceTextModule, SyntheticModule } from 'vm';
+import { builtinModules } from 'node:module';
+import {
+	type Context, createContext,
+	type Module, SourceTextModule, SyntheticModule,
+} from 'node:vm';
 
 
 /**
@@ -8,24 +11,17 @@ import { type Context, createContext, type Module, SourceTextModule, SyntheticMo
  */
 async function fetchCode(url: string) {
 	const response = await fetch(url);
-	if (response.ok) {
+	if (response.ok)
 		return response.text();
-	}
-	else {
-		throw new Error(
-      `Error fetching ${ url }: ${ response.statusText }`,
-		);
-	}
+	else
+		throw new Error(`Error fetching ${ url }: ${ response.statusText }`);
 }
 
 
 async function createModuleFromURL(url: URL, context: Context): Promise<Module> {
 	const identifier = url.toString();
 
-	if (
-		url.protocol === 'http:' ||
-    url.protocol === 'https:'
-	) {
+	if (url.protocol === 'http:' || url.protocol === 'https:') {
 		// Download the code (naive implementation!)
 		const source = await fetchCode(identifier);
 
@@ -83,10 +79,7 @@ async function linkWithImportMap({ imports }: {imports: Record<string, string>})
 			// identifier. E.g., "foo" and "https://cdn.skypack.dev/bar" will
 			// resolve to "https://cdn.skypack.dev/foo". Relative specifiers
 			// will also be resolved against the parent, as expected.
-			url = new URL(
-				specifier,
-				referencingModule.identifier,
-			);
+			url = new URL(specifier, referencingModule.identifier);
 		}
 
 		return createModuleFromURL(
@@ -97,31 +90,40 @@ async function linkWithImportMap({ imports }: {imports: Record<string, string>})
 }
 
 /**
- * @param specifier - URL of a source code file.
- * @param sandbox - Optional execution context.
- * @param importMap Optional Path to import_map.json file or object.
  * @returns Result of the evaluated code.
  */
-export default async function dynamicImport(
+export default async function dImport(
+	/** URL of a source code file. */
 	specifier: string,
-	sandbox: Context = {},
-	{ imports = {} }: {imports: Record<string, string>} = { imports: {} },
+	options?: {
+		/** Optional execution context. Defaults to current context. */
+		sandbox?: Context,
+		/** Optional Path to import_map.json file or object. */
+		imports?: Record<string, string>
+	},
 ): Promise<any> {
-	// Take a specifier from the import map or use it directly. The
-	// specifier must be a valid URL.
-	const url = specifier in imports
-		? new URL(imports[specifier]!)
+	options ??= {};
+	options.imports ??= {};
+	options.sandbox ??= globalThis;
+
+	// Take a specifier from the import map or use it directly.
+	// The specifier must be a valid URL.
+	const url = specifier in options.imports
+		? new URL(options.imports[specifier]!)
 		: new URL(specifier);
 
 	// Create an execution context that provides global variables.
-	const context = createContext(globalThis);
+	const context = createContext(options.sandbox ?? globalThis);
+
 	// Create the ES module.
-	//const mod = await createModuleFromURL(url, context);
 	const mod = await createModuleFromURL(url, context);
+
 	// Create a "link" function that uses an optional import map.
-	const link = await linkWithImportMap({ imports });
+	const link = await linkWithImportMap({ imports: options.imports });
+
 	// Resolve additional imports in the module.
 	await mod.link(link);
+
 	// Execute any imperative statements in the module's code.
 	await mod.evaluate();
 

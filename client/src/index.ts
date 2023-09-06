@@ -1,5 +1,2 @@
-import './components/root.js';
-
-import { Weave } from './main.js';
-
-Weave.base = 'http://localhost:42069';
+import './layout.cmp.js';
+import './editor.cmp.js';
