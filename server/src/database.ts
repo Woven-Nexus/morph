@@ -1,5 +1,7 @@
 import Database from 'better-sqlite3';
 
+import { dropColumn } from './features/db-utils/drop-column.js';
+
 const db = new Database('./database/foobar.db');
 db.pragma('journal_mode = WAL');
 
@@ -15,8 +17,7 @@ DROP TABLE IF EXISTS modules
 db.prepare(sql`
 CREATE TABLE modules (
 	module_id INTEGER PRIMARY KEY,
-	code TEXT NOT NULL
-)
+	code TEXT NOT NULL )
 `).run();
 
 
@@ -33,3 +34,6 @@ SELECT * FROM modules
 `).all();
 
 console.log(readModules);
+
+
+dropColumn(db, 'modules', 'code');
