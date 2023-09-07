@@ -1,39 +1,40 @@
-import Database from 'better-sqlite3';
+import SQLite from 'better-sqlite3';
 
-import { dropColumn } from './features/db-utils/drop-column.js';
+import { Query } from './features/db-utils/query.js';
+import { sql } from './features/db-utils/sql.js';
 
-const db = new Database('./database/foobar.db');
+const db = new SQLite('./database/main.db');
 db.pragma('journal_mode = WAL');
 
-
-const sql = (strings: TemplateStringsArray, ...values: unknown[]): string =>
-	String.raw({ raw: strings }, ...values);
-
-
-db.prepare(sql`
-DROP TABLE IF EXISTS modules
-`).run();
-
+db.prepare(sql`DROP TABLE IF EXISTS modules`).run();
 db.prepare(sql`
 CREATE TABLE modules (
 	module_id INTEGER PRIMARY KEY,
-	code TEXT NOT NULL )
+	code TEXT DEFAULT '' NOT NULL,
+	name TEXT DEFAULT '' NOT NULL,
+	description TEXT DEFAULT '' NOT NULL,
+	active INTEGER DEFAULT FALSE NOT NULL
+)`).run();
+
+
+db.prepare(sql`
+INSERT INTO modules (code)
+VALUES('export const testFn = () => "test";')
 `).run();
 
 
-const insert = sql`
-INSERT INTO modules (code)
-VALUES ('console.log(\"hello\")')
-`;
-console.log(insert);
-
-db.prepare(insert).run();
-
-const readModules = db.prepare(sql`
+const code = db.prepare(sql`
 SELECT * FROM modules
 `).all();
 
-console.log(readModules);
+//console.log(code);
 
 
-dropColumn(db, 'modules', 'code');
+const singleRecord = Query.getById('modules', '1');
+const whereRecord = Query.getByWhere('modules')
+	.fields('code')
+	.where('code', 'LIKE', '%test%')
+	.run();
+
+
+console.log(whereRecord);
