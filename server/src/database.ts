@@ -1,6 +1,6 @@
 import SQLite from 'better-sqlite3';
 
-import { Query } from './features/db-utils/query.js';
+import { Filter, Query } from './features/db-utils/query.js';
 import { sql } from './features/db-utils/sql.js';
 
 const db = new SQLite('./database/main.db');
@@ -27,14 +27,27 @@ const code = db.prepare(sql`
 SELECT * FROM modules
 `).all();
 
-//console.log(code);
 
+interface DBModules {
+	module_id: string;
+	code: string;
+	name: string;
+	description: string;
+	active: 0 | 1;
+}
 
-const singleRecord = Query.getById('modules', '1');
-const whereRecord = Query.getByWhere('modules')
-	.fields('code')
-	.where('code', 'LIKE', '%test%')
-	.run();
+const filter = new Filter<DBModules>();
+const query = new Query('./database/main.db');
 
+const whereRecord = query
+	.get<DBModules>('modules')
+	.where(
+		filter.startsWith('code', 'export'),
+		filter.exists('name'),
+	)
+	.orderBy('active', 'asc')
+	.limit(100)
+	.offset(0)
+	.first();
 
 console.log(whereRecord);
