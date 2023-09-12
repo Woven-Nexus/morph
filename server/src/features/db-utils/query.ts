@@ -1,5 +1,7 @@
 import SQLite from 'better-sqlite3';
 
+import type { Branded } from '../../utilities/brand.js';
+import { exists } from '../../utilities/exists.js';
 import { sql } from './sql.js';
 
 
@@ -16,12 +18,12 @@ export class Query {
 	}
 
 	public get<T extends object = object>(table: string) {
-		return new WhereBuilder<T>(this.#db, table);
+		return new GetBuilder<T>(this.#db, table);
 	}
 
 }
 
-class WhereBuilder<T extends object = object> {
+class GetBuilder<T extends object = object> {
 
 	#select: string[] = [];
 	#where = '';
@@ -98,17 +100,14 @@ class WhereBuilder<T extends object = object> {
 		return qry;
 	}
 
-	public first() {
-		return this.db.prepare(this.build()).get();
-	}
-
-	public all() {
-		return this.db.prepare(this.build()).all();
+	public query(): GetResult<T> {
+		return new GetResult(this.db.prepare(this.build()).all() as T[]);
 	}
 
 }
 
-type FilterCondition = string & {_sign: symbol};
+
+type FilterCondition = Branded<string, 'FilterCondition'>;
 export class Filter<T = Record<string, string | number>> {
 
 	public and(...conditions: FilterCondition[]): FilterCondition {
@@ -185,5 +184,61 @@ export class Filter<T = Record<string, string | number>> {
 }
 
 
-const exists = <T>(value: T): value is T & Record<never, never> =>
-	value !== undefined;
+const GetResult = (() => {
+	class ResultRecord<T extends Record<string, any> = Record<string, any>> {
+
+		private result: T[];
+		private current: T | undefined;
+		private index = -1;
+
+		/** Handlers used through the proxy, which intercept any get or set on the store. */
+		static #proxyHandlers = {
+			get(target: ResultRecord, key: keyof ResultRecord) {
+				if (key as string === '__origin')
+					return target;
+
+				if (key in (target.current ?? {}))
+					return target.current?.[key];
+
+				return target[key];
+			},
+			set(target: ResultRecord, key: keyof ResultRecord, value: any) {
+				if (key in (target.current ?? {}))
+					return Reflect.set(target.current!, key, value);
+
+				return Reflect.set(target, key, value);
+			},
+		};
+
+		/**
+		 * This is accessed through the proxy,
+		 * as that's the only scenario you need to get a reference to the origin.
+		 */
+		private __origin: this;
+
+		constructor(result: T[]) {
+			this.result = result;
+
+			return new Proxy<ResultRecord<T>>(this, ResultRecord.#proxyHandlers);
+		}
+
+		public next() {
+			this.index++;
+			this.current = this.result[this.index];
+
+			return !!this.current;
+		}
+
+	}
+
+	type Cursor<T extends Record<string, any>> = ResultRecord<T> & T
+
+	return ResultRecord as new<T extends Record<string, any>>(result: T[]) => Cursor<T>;
+})();
+
+
+const result = new GetResult([ { kakemann: 'jajajaj' } ]);
+while (result.next())
+	console.log(result.kakemann);
+
+console.log(result);

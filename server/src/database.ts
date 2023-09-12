@@ -28,7 +28,7 @@ SELECT * FROM modules
 `).all();
 
 
-interface DBModules {
+interface IModule {
 	module_id: string;
 	code: string;
 	name: string;
@@ -36,18 +36,15 @@ interface DBModules {
 	active: 0 | 1;
 }
 
-const filter = new Filter<DBModules>();
+const filter = new Filter<IModule>();
 const query = new Query('./database/main.db');
 
 const whereRecord = query
-	.get<DBModules>('modules')
+	.get<IModule>('modules')
 	.where(
 		filter.startsWith('code', 'export'),
 		filter.exists('name'),
 	)
 	.orderBy('active', 'asc')
-	.limit(100)
-	.offset(0)
-	.first();
-
-console.log(whereRecord);
+	.limit(1)
+	.query();
