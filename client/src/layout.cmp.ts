@@ -1,6 +1,10 @@
 import { css, html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
 
+import styles from './test.ccss';
+
+console.log(styles);
+
 
 @customElement('app-layout')
 export class LayoutCmp extends LitElement {
@@ -16,6 +20,7 @@ export class LayoutCmp extends LitElement {
 	}
 
 	public static override styles = [
+		styles,
 		css`
 		:host {
 			overflow: hidden;
