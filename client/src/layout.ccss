@@ -1,0 +1,17 @@
+:host {
+	overflow: hidden;
+	display: grid;
+	grid-template-columns: auto 1fr;
+}
+
+aside {
+	width: 200px;
+	background-color: teal;
+}
+
+main {
+	overflow: hidden;
+	display: grid;
+	grid-template-rows: 30% 1fr;
+
+}

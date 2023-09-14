@@ -100,7 +100,7 @@ class GetBuilder<T extends object = object> {
 		return qry;
 	}
 
-	public query(): GetResult<T> {
+	public query() {
 		return new GetResult(this.db.prepare(this.build()).all() as T[]);
 	}
 
@@ -184,6 +184,11 @@ export class Filter<T = Record<string, string | number>> {
 }
 
 
+type DatabaseEntry<T> = {
+	next(): boolean;
+} & T
+
+
 const GetResult = (() => {
 	class ResultRecord<T extends Record<string, any> = Record<string, any>> {
 
@@ -231,14 +236,13 @@ const GetResult = (() => {
 
 	}
 
-	type Cursor<T extends Record<string, any>> = ResultRecord<T> & T
 
-	return ResultRecord as new<T extends Record<string, any>>(result: T[]) => Cursor<T>;
+	return ResultRecord as new<T extends Record<string, any>>(result: T[]) => DatabaseEntry<T>;
 })();
 
 
-const result = new GetResult([ { kakemann: 'jajajaj' } ]);
-while (result.next())
-	console.log(result.kakemann);
-
-console.log(result);
+//const result = new GetResult([ { kakemann: 'jajajaj' } ]);
+//while (result.next())
+//	console.log(result.kakemann);
+//
+//console.log(result);
