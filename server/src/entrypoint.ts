@@ -1,12 +1,9 @@
-import './database.js';
-
 import dotenv from 'dotenv';
 
 import { app } from './app.js';
 import codemodules from './features/code-modules/routes.js';
 
 app.use('/api/code-modules', codemodules);
-
 
 dotenv.config();
 const port = process.env['PORT'];

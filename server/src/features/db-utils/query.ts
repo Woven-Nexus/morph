@@ -2,7 +2,6 @@ import SQLite from 'better-sqlite3';
 
 import type { Branded } from '../../utilities/brand.js';
 import { exists } from '../../utilities/exists.js';
-import { sql } from './sql.js';
 
 
 // Wrapper around Better SQLite3
@@ -27,6 +26,7 @@ class GetBuilder<T extends object = object> {
 
 	#select: string[] = [];
 	#where = '';
+	#groupBy: string[] = [];
 	#orderBy: string[] = [];
 	#limit?: number;
 	#offset?: number;
@@ -34,17 +34,24 @@ class GetBuilder<T extends object = object> {
 	constructor(
 		protected db: SQLite.Database,
 		public table: string,
+
 	) {}
 
-	public fields(...field: string[]) {
+	public fields<K extends Extract<keyof T, string>>(...field: K[]) {
 		this.#select ??= [];
 		field.forEach(field => this.#select?.push(field));
+
+		return this as GetBuilder<Pick<T, K>>;
+	}
+
+	public where(filter: (filter: Filter<T>) => FilterCondition) {
+		this.#where = filter(new Filter());
 
 		return this;
 	}
 
-	public where(...filters: FilterCondition[]) {
-		this.#where = filters.join(' AND ');
+	public groupBy(...field: Extract<keyof T, string>[]) {
+		this.#groupBy = field;
 
 		return this;
 	}
@@ -78,6 +85,7 @@ class GetBuilder<T extends object = object> {
 		const select = 'SELECT ' + (this.#select.length ? this.#select.join(',') : '*');
 		const from = 'FROM ' + this.table;
 		const where = this.#where ? 'WHERE ' + this.#where : '';
+		const groupBy = this.#groupBy.length ? 'GROUP BY ' + this.#groupBy.join(',') : '';
 		const orderby = this.#orderBy.length
 			? 'ORDER BY ' + this.#orderBy.join(',')
 			: '';
@@ -89,10 +97,11 @@ class GetBuilder<T extends object = object> {
 					? 'LIMIT ' + this.#limit + ' OFFSET ' + this.#offset
 					: '';
 
-		const qry = sql`
+		const qry = `
 		${ select }
 		${ from }
 		${ where }
+		${ groupBy }
 		${ orderby }
 		${ limit }
 		`;
@@ -101,7 +110,7 @@ class GetBuilder<T extends object = object> {
 	}
 
 	public query() {
-		return new GetResult(this.db.prepare(this.build()).all() as T[]);
+		return new Results(this.db.prepare(this.build()).all() as T[]);
 	}
 
 }
@@ -110,19 +119,19 @@ class GetBuilder<T extends object = object> {
 type FilterCondition = Branded<string, 'FilterCondition'>;
 export class Filter<T = Record<string, string | number>> {
 
-	public and(...conditions: FilterCondition[]): FilterCondition {
+	public and(...conditions: FilterCondition[]) {
 		return `${ conditions.join(' AND ') }` as FilterCondition;
 	}
 
-	public or(...conditions: FilterCondition[]): FilterCondition {
+	public or(...conditions: FilterCondition[]) {
 		return `(${ conditions.join(' OR ') })` as FilterCondition;
 	}
 
-	public eq<K extends Extract<keyof T, string>>(field: K, value: T[K]): FilterCondition {
+	public eq<K extends Extract<keyof T, string>>(field: K, value: T[K]) {
 		return `${ field } = '${ value }'` as FilterCondition;
 	}
 
-	public startsWith(field: Extract<keyof T, string>, value: string): FilterCondition {
+	public startsWith(field: Extract<keyof T, string>, value: string) {
 		const mustEscape = this.mustEscape(value);
 		if (mustEscape)
 			value = this.escape(value);
@@ -130,7 +139,7 @@ export class Filter<T = Record<string, string | number>> {
 		return this.finalize(`${ field } LIKE '${ value }%'`, mustEscape);
 	}
 
-	public endsWith(field: Extract<keyof T, string>, value: string): FilterCondition {
+	public endsWith(field: Extract<keyof T, string>, value: string) {
 		const mustEscape = this.mustEscape(value);
 		if (mustEscape)
 			value = this.escape(value);
@@ -138,7 +147,7 @@ export class Filter<T = Record<string, string | number>> {
 		return this.finalize(`${ field } LIKE '%${ value }'`, mustEscape);
 	}
 
-	public contains(field: Extract<keyof T, string>, value: string): FilterCondition {
+	public contains(field: Extract<keyof T, string>, value: string) {
 		const mustEscape = this.mustEscape(value);
 		if (mustEscape)
 			value = this.escape(value);
@@ -146,103 +155,77 @@ export class Filter<T = Record<string, string | number>> {
 		return this.finalize(`${ field } LIKE '%${ value }%'`, mustEscape);
 	}
 
-	public oneOf<K extends Extract<keyof T, string>>(field: K, ...values: T[K][]): FilterCondition {
+	public oneOf<K extends Extract<keyof T, string>>(field: K, ...values: T[K][]) {
 		return `${ field } IN (${ values.join(',') })` as FilterCondition;
 	}
 
-	public notOneOf<K extends Extract<keyof T, string>>(field: K, ...values: T[K][]): FilterCondition {
+	public notOneOf<K extends Extract<keyof T, string>>(field: K, ...values: T[K][]) {
 		return `${ field } NOT IN (${ values.join(',') })` as FilterCondition;
 	}
 
-	public exists(field: Extract<keyof T, string>): FilterCondition {
+	public exists(field: Extract<keyof T, string>) {
 		return `${ field } IS NOT NULL` as FilterCondition;
 	}
 
-	public notExists(field: Extract<keyof T, string>): FilterCondition {
+	public notExists(field: Extract<keyof T, string>) {
 		return `${ field } IS NULL` as FilterCondition;
 	}
 
-	public glob(field: Extract<keyof T, string>, value: string): FilterCondition {
+	public glob(field: Extract<keyof T, string>, value: string) {
 		return `${ field } GLOB '${ value }'` as FilterCondition;
 	}
 
-	protected mustEscape(value: string): boolean {
+	protected mustEscape(value: string) {
 		const mustEscape = value.includes('%') || value.includes('_');
 
 		return mustEscape;
 	}
 
-	protected escape(value: string): string {
+	protected escape(value: string) {
 		return value = value.replaceAll(/%/g, '\\%')
 			.replaceAll(/_/g, '\\_');
 	}
 
-	protected finalize(value: string, escape: boolean): FilterCondition {
+	protected finalize(value: string, escape: boolean) {
 		return value + (escape ? ` ESCAPE '\\'` : '') as FilterCondition;
 	}
 
 }
 
+export class Results<T extends Record<string, any> = Record<string, any>> {
 
-type DatabaseEntry<T> = {
-	next(): boolean;
-} & T
+	#items: (T | Result<T>)[] = [];
 
-
-const GetResult = (() => {
-	class ResultRecord<T extends Record<string, any> = Record<string, any>> {
-
-		private result: T[];
-		private current: T | undefined;
-		private index = -1;
-
-		/** Handlers used through the proxy, which intercept any get or set on the store. */
-		static #proxyHandlers = {
-			get(target: ResultRecord, key: keyof ResultRecord) {
-				if (key as string === '__origin')
-					return target;
-
-				if (key in (target.current ?? {}))
-					return target.current?.[key];
-
-				return target[key];
-			},
-			set(target: ResultRecord, key: keyof ResultRecord, value: any) {
-				if (key in (target.current ?? {}))
-					return Reflect.set(target.current!, key, value);
-
-				return Reflect.set(target, key, value);
-			},
-		};
-
-		/**
-		 * This is accessed through the proxy,
-		 * as that's the only scenario you need to get a reference to the origin.
-		 */
-		private __origin: this;
-
-		constructor(result: T[]) {
-			this.result = result;
-
-			return new Proxy<ResultRecord<T>>(this, ResultRecord.#proxyHandlers);
-		}
-
-		public next() {
-			this.index++;
-			this.current = this.result[this.index];
-
-			return !!this.current;
-		}
-
+	constructor(items: T[]) {
+		this.#items = items;
 	}
 
+	public forEach(func: (result: Result<T>) => any) {
+		for (let i = 0; i < this.#items.length; i++) {
+			let item = this.#items[i]!;
+			if (!(item instanceof Result))
+				item = this.#items[i] = new Result(item);
 
-	return ResultRecord as new<T extends Record<string, any>>(result: T[]) => DatabaseEntry<T>;
-})();
+			func(item);
+		}
+	}
 
+	public at(index = 0) {
+		return this.#items.at(index);
+	}
 
-//const result = new GetResult([ { kakemann: 'jajajaj' } ]);
-//while (result.next())
-//	console.log(result.kakemann);
-//
-//console.log(result);
+}
+
+class Result<T extends Record<string, any> = Record<string, any>> {
+
+	#item: T;
+
+	public get item() {
+		return this.#item;
+	}
+
+	constructor(item: T) {
+		this.#item = item;
+	}
+
+}
