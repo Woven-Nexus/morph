@@ -4,7 +4,7 @@ import { app } from '../../app.js';
 import { createResponse } from '../../utilities/create-response.js';
 import { Filter, Query } from '../db-utils/query.js';
 import dImport from './dynamic-import.js';
-import type { IModule } from './modules-table.js';
+import type { Module } from './modules-table.js';
 import { sandbox } from './sandbox.js';
 
 const router: Router = express.Router();
@@ -48,10 +48,10 @@ router.get('/', async (req, res) => {
 router.get('/namespaces', async (req, res) => {
 	const query = new Query('./database/main.db');
 
-	interface NamespaceDefinition extends Pick<IModule, 'namespace'> {}
+	interface NamespaceDefinition extends Pick<Module, 'namespace'> {}
 
 	const results = query
-		.get<IModule>('modules')
+		.get<Module>('modules')
 		.fields('namespace')
 		.where(filter => filter.exists('namespace'))
 		.groupBy('namespace')
@@ -70,11 +70,11 @@ router.get('/namespaces', async (req, res) => {
 router.get(`/:namespace`, async (req, res) => {
 	const params = req.params;
 
-	interface ModuleNamespace extends Omit<IModule, 'code'> { }
+	interface ModuleNamespace extends Omit<Module, 'code'> { }
 
 	const query = new Query('./database/main.db');
 	const results = query
-		.get<IModule>('modules')
+		.get<Module>('modules')
 		.fields('namespace', 'name', 'module_id', 'active', 'description')
 		.where(filter => filter.and(
 			filter.eq('namespace', params.namespace),
@@ -92,27 +92,26 @@ router.get(`/:namespace`, async (req, res) => {
 });
 
 
-router.get(`/:namespace/:name`, async (req, res) => {
+router.get(`/:namespace/:id`, async (req, res) => {
 	const params = req.params;
 
 	const query = new Query('./database/main.db');
 	const results = query
-		.get<IModule>('modules')
+		.get<Module>('modules')
 		.where(filter => filter.and(
-			filter.eq('namespace', params.namespace),
-			filter.eq('name', params.name),
+			filter.eq('module_id', params.id),
 		))
 		.limit(1)
 		.orderBy('active', 'asc')
 		.orderBy('name', 'asc')
 		.query();
 
-	const modules: IModule[] = [];
+	const modules: Module[] = [];
 	results.forEach(res => modules.push(res.item));
 
 	res.send(createResponse(
 		modules[0],
-		'No code module with name: ' + params.name + ' in namespace: ' + params.namespace,
+		'No code module with id: ' + params.id,
 	));
 });
 

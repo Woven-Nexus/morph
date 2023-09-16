@@ -5,7 +5,7 @@ import { db } from '../../database.js';
 import { escapeSQLiteString } from '../db-utils/escape-string.js';
 
 
-export interface IModule {
+export interface Module {
 	module_id?: string;
 	code: string;
 	name: string;
@@ -29,7 +29,7 @@ export const createModulesTable = () => {
 
 
 export const createModulesDemoData = () => {
-	const createCodeModule = (): IModule => {
+	const createCodeModule = (): Module => {
 		return {
 			active:      1,
 			namespace:   escapeSQLiteString(faker.hacker.adjective()),

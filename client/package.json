@@ -19,13 +19,13 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"monaco-editor": "^0.41.0"
+		"@roenlie/lit-context": "^1.0.2",
+		"@roenlie/mimic-core": "^0.0.43",
+		"@roenlie/mimic-elements": "^0.0.38",
+		"@roenlie/mimic-lit": "^0.0.54",
+		"monaco-editor": "^0.43.0",
+		"unocss": "^0.55.7",
+		"lit": "^2.8.0"
 	},
-	"peerDependencies": {
-		"lit": "*"
-	},
-	"devDependencies": {
-		"lit": "^2.8.0",
-		"rollup-plugin-import-css": "^3.3.3"
-	}
+	"devDependencies": {}
 }

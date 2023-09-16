@@ -1,15 +1,22 @@
 import { readFileSync } from 'fs';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 
 
 export default defineConfig({
 	root:      './src',
 	publicDir: '../public',
+	appType:   'mpa',
 	build:     {
-		outDir: '../dist',
+		outDir:        '../dist',
+		rollupOptions: {
+			input: [
+				'./src/index.html',
+				'./src/login.html',
+			],
+		},
 	},
 	plugins: [
-		(() => {
+		((): Plugin => {
 			const styleMap = new Map<string, string>();
 			const minifyCSS = (content: string) => {
 				content = content

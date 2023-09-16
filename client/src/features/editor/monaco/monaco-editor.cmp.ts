@@ -1,19 +1,23 @@
 import './user-worker';
 
-import { html, LitElement } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
+import { css, html } from 'lit';
+import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import editorStyleUrl from 'monaco-editor/min/vs/editor/editor.main.css?url';
 
-import styles from './editor.ccss';
-
 
 @customElement('monaco-editor')
-export class MonacoEditorCmp extends LitElement {
+export class MonacoEditorCmp extends MimicElement {
 
-	@state() protected editor?: monaco.editor.IStandaloneCodeEditor;
+	public get editor() {
+		return this._editor;
+	}
+
+	@property({ type: String, attribute: false }) public value = '';
+	@state() protected _editor?: monaco.editor.IStandaloneCodeEditor;
 	@state() protected visible = false;
 	protected monacoRef: Ref<HTMLDivElement> = createRef();
 
@@ -24,20 +28,19 @@ export class MonacoEditorCmp extends LitElement {
 
 	public override disconnectedCallback(): void {
 		super.disconnectedCallback();
-		this.editor?.dispose();
+		this._editor?.dispose();
 	}
 
 	protected afterConnected() {
-		this.editor = monaco.editor.create(this.monacoRef.value!, {
+		this._editor = monaco.editor.create(this.monacoRef.value!, {
 			automaticLayout: true,
-			value:           [ 'function x() {', '\tconsole.log("Hello world!");', '}' ].join('\n'),
+			value:           this.value,
 			language:        'typescript',
 			tabSize:         3,
+			theme:           'vs-dark',
 		});
 
-		setTimeout(() => {
-			this.visible = true;
-		}, 0);
+		setTimeout(() => this.visible = true, 100);
 	}
 
 	protected override render(): unknown {
@@ -50,6 +53,18 @@ export class MonacoEditorCmp extends LitElement {
 		`;
 	}
 
-	public static override styles = styles;
+	public static override styles = css`
+	:host {
+		display: grid;
+	}
+
+	.editor {
+		opacity: 0;
+
+		&.visible {
+			opacity: 1;
+		}
+	}
+	`;
 
 }

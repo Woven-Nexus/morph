@@ -1,2 +1,2 @@
-import './layout.cmp.js';
-import './editor.cmp.js';
+import './features/layout/layout.cmp.js';
+import './features/editor/editor.cmp.js';
