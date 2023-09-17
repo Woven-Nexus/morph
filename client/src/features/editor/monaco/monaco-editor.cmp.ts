@@ -20,6 +20,10 @@ export class MonacoEditorCmp extends MimicElement {
 	@state() protected _editor?: monaco.editor.IStandaloneCodeEditor;
 	@state() protected visible = false;
 	protected monacoRef: Ref<HTMLDivElement> = createRef();
+	protected resizeObs = new ResizeObserver(([ entry ]) => {
+		const rect = entry!.contentRect;
+		this.editor?.layout({ height: rect.height, width: rect.width });
+	});
 
 	public override connectedCallback(): void {
 		super.connectedCallback();
@@ -29,6 +33,7 @@ export class MonacoEditorCmp extends MimicElement {
 	public override disconnectedCallback(): void {
 		super.disconnectedCallback();
 		this._editor?.dispose();
+		this.resizeObs.unobserve(this);
 	}
 
 	protected afterConnected() {
@@ -38,8 +43,10 @@ export class MonacoEditorCmp extends MimicElement {
 			language:        'typescript',
 			tabSize:         3,
 			theme:           'vs-dark',
+			mouseWheelZoom:  true,
 		});
 
+		this.resizeObs.observe(this);
 		setTimeout(() => this.visible = true, 100);
 	}
 
@@ -56,6 +63,7 @@ export class MonacoEditorCmp extends MimicElement {
 	public static override styles = css`
 	:host {
 		display: grid;
+		overflow: hidden;
 	}
 
 	.editor {

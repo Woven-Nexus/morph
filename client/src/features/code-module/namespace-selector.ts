@@ -9,17 +9,20 @@ import { map } from 'lit/directives/map.js';
 
 import { serverUrl } from '../../app/backend-url.js';
 import { type DbResponse } from '../../app/response-model.js';
+import type { LayoutStore } from '../layout/layout-store.js';
 import type { NamespaceDefinition } from './namespace-model.js';
 
 
 @customElement('m-namespace-selector')
 export class NamespaceSelectorCmp extends MimicElement {
 
-	@consume('namespace') protected namespace: ContextProp<string>;
+	@consume('store') protected store: ContextProp<LayoutStore>;
 	@state() protected namespaceList: NamespaceDefinition[];
 
 	public override async connectedCallback() {
 		super.connectedCallback();
+
+		this.store.value.connect(this, 'namespace');
 
 		const url = new URL(serverUrl + '/api/code-modules/namespaces');
 		const [ result ] = await maybe<DbResponse<NamespaceDefinition[]>>((await fetch(url)).json());
@@ -34,8 +37,8 @@ export class NamespaceSelectorCmp extends MimicElement {
 		<ul>
 			${ map(this.namespaceList, item => html`
 			<li
-				class=${ classMap({ active: item.namespace === this.namespace.value }) }
-				@click=${ () => this.namespace.value = item.namespace }
+				class=${ classMap({ active: item.namespace === this.store.value.namespace }) }
+				@click=${ () => this.store.value.namespace = item.namespace }
 			>
 				${ item.namespace }
 			</li>

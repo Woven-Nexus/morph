@@ -19,13 +19,13 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"@roenlie/lit-context": "^1.0.2",
-		"@roenlie/mimic-core": "^0.0.43",
-		"@roenlie/mimic-elements": "^0.0.38",
-		"@roenlie/mimic-lit": "^0.0.54",
+		"@roenlie/lit-context": "^1.0.4",
+		"@roenlie/lit-state-store": "^0.0.13",
+		"@roenlie/mimic-core": "^0.0.45",
+		"@roenlie/mimic-elements": "^0.0.40",
+		"@roenlie/mimic-lit": "^0.0.55",
+		"lit": "^2.8.0",
 		"monaco-editor": "^0.43.0",
-		"unocss": "^0.55.7",
-		"lit": "^2.8.0"
-	},
-	"devDependencies": {}
+		"unocss": "^0.55.7"
+	}
 }
