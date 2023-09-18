@@ -8,7 +8,7 @@ import { serverUrl } from '../../app/backend-url.js';
 import type { DbResponse } from '../../app/response-model.js';
 import type { Module } from '../code-module/module-model.js';
 import type { LayoutStore } from '../layout/layout-store.js';
-import { MonacoEditorCmp } from './monaco/monaco-editor.cmp.js';
+import { MonacoEditorCmp } from '../monaco/monaco-editor.cmp.js';
 
 MonacoEditorCmp.register();
 
@@ -21,7 +21,7 @@ export class EditorCmp extends MimicElement {
 
 	public override connectedCallback(): void {
 		super.connectedCallback();
-		import('./monaco/monaco-editor.cmp.js').then(m => m.MonacoEditorCmp.register());
+		import('../monaco/monaco-editor.cmp.js').then(m => m.MonacoEditorCmp.register());
 
 		this.store.value.connect(this, 'moduleId');
 		this.store.value.listen(this, 'moduleId', this.onModuleId);

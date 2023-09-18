@@ -24,6 +24,7 @@
 		"@roenlie/mimic-core": "^0.0.45",
 		"@roenlie/mimic-elements": "^0.0.40",
 		"@roenlie/mimic-lit": "^0.0.55",
+		"@vaadin/router": "^1.7.5",
 		"lit": "^2.8.0",
 		"monaco-editor": "^0.43.0",
 		"unocss": "^0.55.7"

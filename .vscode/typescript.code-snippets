@@ -1,4 +1,17 @@
 {
+	"Lit styles block": {
+		"scope": "typescript",
+		"prefix": "lit-static-styles",
+		"body": [
+			"\tpublic static override styles = [",
+			"\t\tcss`",
+			"\t\t:host {"
+			"\t\t\t${1}",
+			"\t\t}",
+			"\t\t`",
+			"\t]",
+		]
+	}
 	"Lit typescript component": {
 		"scope": "typescript",
 		"prefix": "lit-element",
@@ -37,80 +50,6 @@
 			"",
 		],
 		"description": "Inserts an LIT element for typescript",
-	},
-	"Component preview": {
-		"prefix": "preview-component",
-		"body": [
-			"<es-component-preview>",
-			"   <div slot=\"example\">",
-			"",
-			"   </div>",
-			"",
-			"   <div slot=\"code\">",
-			"   ${`",
-			"",
-			"   `}",
-			"   </div>",
-			"</es-component-preview>"
-		],
-		"description": "Template for writing a component preview"
-	},
-	"Public class property": {
-		"prefix": "pu",
-		"body": [
-			"public ${1:example}: ${2:example} = ${3:example}"
-		],
-		"description": "Public class property"
-	},
-	"Private class property": {
-		"prefix": "pi",
-		"body": [
-			"private ${1:example}: ${2:example} = ${3:example}"
-		],
-		"description": "Private class property"
-	},
-	"Protected class property": {
-		"prefix": "po",
-		"body": [
-			"protected ${1:example}: ${2:example} = ${3:example}"
-		],
-		"description": "Protected class property"
-	},
-	"Public class method": {
-		"prefix": "mu",
-		"body": [
-			"public ${1:method_name}() {",
-			"  ${2:}",
-			"}"
-		],
-		"description": "Public class method"
-	},
-	"Private class method": {
-		"prefix": "mi",
-		"body": [
-			"private ${1:method_name}() {",
-			"  ${2:}",
-			"}"
-		],
-		"description": "Private class method"
-	},
-	"Protected class method": {
-		"prefix": "mo",
-		"body": [
-			"protected ${1:method_name}() {",
-			"  ${2:}",
-			"}"
-		],
-		"description": "Protected class method"
-	},
-	"Divier": {
-		"prefix": "divider",
-		"body": [
-			"",
-			"/* ------------------------------------------------- */",
-			""
-		],
-		"description": "just a divider"
 	},
 	"ComponentRegions": {
 		"prefix": "cmp-regions",
