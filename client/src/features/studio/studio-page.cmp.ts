@@ -14,7 +14,6 @@ export class StudioPageCmp extends MimicElement {
 
 	protected override render(): unknown {
 		return html`
-		<m-module-nav></m-module-nav>
 		<m-editor-panel></m-editor-panel>
 		`;
 	}
@@ -23,7 +22,7 @@ export class StudioPageCmp extends MimicElement {
 		css`
 		:host {
 			display: grid;
-			grid-template-columns: 300px 1fr;
+			grid-template-columns: 1fr;
 			gap: 20px;
 			padding-right: 20px;
 		}

@@ -31,20 +31,9 @@ export class ModuleNavCmp extends MimicElement {
 			--active-height: 1fr;
 			display: grid;
 			grid-template-rows: var(--namespace-height)
-			max-content
-			var(--module-height)
-			max-content
-			var(--active-height);
-		}
-		m-module-nav-selector:first-of-type {
-			border-top: none;
-			border-top-left-radius: 0px;
-			border-top-right-radius: 0px;
-		}
-		m-module-nav-selector:last-of-type {
-			border-bottom: none;
-			border-bottom-left-radius: 0px;
-			border-bottom-right-radius: 0px;
+			20px var(--module-height)
+			20px var(--active-height);
+			padding-block: 10px;
 		}
 		`,
 	];

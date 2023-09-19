@@ -1,0 +1,24 @@
+:host {
+	container-type: size;
+	pointer-events: none;
+	display: grid;
+	place-items: center;
+}
+
+s-drag-handle {
+	pointer-events: auto;
+	display: block;
+	height: 4px;
+	width: 60px;
+	background-color: var(--drag-handle);
+	border-radius: 4px;
+	cursor: ns-resize;
+}
+
+@container (orientation: portrait) {
+	s-drag-handle {
+		height: 60px;
+		width: 4px;
+		cursor: ew-resize;
+	}
+}

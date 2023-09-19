@@ -24,10 +24,6 @@ export class ModuleNavSelector extends MimicElement {
 			display: grid;
 			grid-template-rows: max-content 1fr;
 			background-color: var(--shadow1);
-			border-radius: 12px;
-			border: 1px solid var(--background-strong);
-			padding: 4px;
-			padding-top: 0px;
 		}
 		header {
 			height: 40px;
