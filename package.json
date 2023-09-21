@@ -27,5 +27,10 @@
 		"typescript": "^5.1.6",
 		"vite": "^4.4.9",
 		"vitest": "^0.34.1"
+	},
+	"pnpm": {
+		"patchedDependencies": {
+			"monaco-editor@0.43.0": "patches/monaco-editor@0.43.0.patch"
+		}
 	}
 }
