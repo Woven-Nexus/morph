@@ -34,6 +34,7 @@ export class ModuleNavCmp extends MimicElement {
 			20px var(--module-height)
 			20px var(--active-height);
 			padding-block: 10px;
+			overflow: hidden;
 		}
 		`,
 	];

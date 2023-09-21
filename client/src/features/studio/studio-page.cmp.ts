@@ -21,6 +21,7 @@ export class StudioPageCmp extends MimicElement {
 	public static override styles = [
 		css`
 		:host {
+			overflow: hidden;
 			display: grid;
 			grid-template-columns: 1fr;
 			gap: 20px;

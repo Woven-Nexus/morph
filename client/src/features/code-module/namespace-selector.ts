@@ -22,7 +22,7 @@ export class NamespaceSelectorCmp extends MimicElement {
 	public override async connectedCallback() {
 		super.connectedCallback();
 
-		this.store.value.connect(this, 'namespace');
+		this.store.value.connect(this, 'activeNamespace');
 
 		const url = new URL(serverUrl + '/api/code-modules/namespaces');
 		const [ result ] = await maybe<DbResponse<NamespaceDefinition[]>>((await fetch(url)).json());
@@ -37,8 +37,8 @@ export class NamespaceSelectorCmp extends MimicElement {
 		<ul>
 			${ map(this.namespaceList, item => html`
 			<li
-				class=${ classMap({ active: item.namespace === this.store.value.namespace }) }
-				@click=${ () => this.store.value.namespace = item.namespace }
+				class=${ classMap({ active: item.namespace === this.store.value.activeNamespace }) }
+				@click=${ () => this.store.value.activeNamespace = item.namespace }
 			>
 				${ item.namespace }
 			</li>

@@ -20,16 +20,16 @@ export class ModuleSelectorCmp extends MimicElement {
 	public override connectedCallback(): void {
 		super.connectedCallback();
 
-		this.store.value.connect(this, 'namespace');
-		this.store.value.listen(this, 'namespace', this.handleNamespace);
+		this.store.value.connect(this, 'activeNamespace');
+		this.store.value.listen(this, 'activeNamespace', this.handleNamespace);
 	}
 
 	protected handleNamespace = async () => {
 		const store = this.store.value;
-		if (!store.namespace)
+		if (!store.activeNamespace)
 			return this.moduleList = [];
 
-		const url = new URL(serverUrl + `/api/code-modules/${ store.namespace }`);
+		const url = new URL(serverUrl + `/api/code-modules/${ store.activeNamespace }`);
 		const [ result ] = await maybe<DbResponse<ModuleNamespace[]>>((await fetch(url)).json());
 		if (!result)
 			return;

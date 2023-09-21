@@ -1,12 +1,13 @@
 import { StateStore } from '@roenlie/lit-state-store';
 
-import type { Module } from '../code-module/module-model.js';
+import type { ModuleNamespace, NamespaceDefinition } from '../code-module/namespace-model.js';
 
 
 export class LayoutStore extends StateStore {
 
-	public namespace = '';
-	public moduleId = '';
-	public module: Module | undefined = undefined;
+	public activeNamespace = '';
+	public activeModuleId = '';
+	public availableNamespaces: NamespaceDefinition[] = [];
+	public availableModules: ModuleNamespace[] = [];
 
 }

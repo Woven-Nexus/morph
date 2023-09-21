@@ -1,8 +1,9 @@
 import './user-worker';
 
+import { createPromiseResolver, sleep } from '@roenlie/mimic-core/async';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
@@ -16,9 +17,17 @@ export class MonacoEditorCmp extends MimicElement {
 		return this._editor;
 	}
 
-	@property({ type: String, attribute: false }) public value = '';
 	@state() protected _editor?: monaco.editor.IStandaloneCodeEditor;
 	@state() protected visible = false;
+	public editorReady = (() => {
+		const [ promise, resolve ] = createPromiseResolver();
+
+		const resolveablePromise = promise as Promise<any> & {resolve: (value?: any) => void};
+		resolveablePromise.resolve = resolve;
+
+		return resolveablePromise;
+	})();
+
 	protected monacoRef: Ref<HTMLDivElement> = createRef();
 	protected resizeObs = new ResizeObserver(([ entry ]) => {
 		const rect = entry!.contentRect;
@@ -36,18 +45,21 @@ export class MonacoEditorCmp extends MimicElement {
 		this.resizeObs.unobserve(this);
 	}
 
-	protected afterConnected() {
+	protected async afterConnected() {
 		this._editor = monaco.editor.create(this.monacoRef.value!, {
-			automaticLayout: true,
-			value:           this.value,
-			language:        'typescript',
-			tabSize:         3,
-			theme:           'vs-dark',
-			mouseWheelZoom:  true,
+			model:                null,
+			language:             'typescript',
+			tabSize:              3,
+			theme:                'vs-dark',
+			mouseWheelZoom:       true,
+			fixedOverflowWidgets: true,
+			useShadowDOM:         true,
 		});
 
 		this.resizeObs.observe(this);
-		setTimeout(() => this.visible = true, 100);
+		await sleep(100);
+		this.visible = true;
+		this.editorReady.resolve();
 	}
 
 	protected override render(): unknown {
@@ -65,14 +77,21 @@ export class MonacoEditorCmp extends MimicElement {
 		display: grid;
 		overflow: hidden;
 	}
-
 	.editor {
 		opacity: 0;
-
-		&.visible {
-			opacity: 1;
-		}
+	}
+	.editor.visible {
+		opacity: 1;
 	}
 	`;
 
 }
+
+
+/** Hello */
+function Tester() {
+
+}
+
+
+Tester();

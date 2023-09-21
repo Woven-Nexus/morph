@@ -1,5 +1,5 @@
 export interface Module {
-	module_id: string;
+	module_id: number;
 	code: string;
 	name: string;
 	namespace: string;

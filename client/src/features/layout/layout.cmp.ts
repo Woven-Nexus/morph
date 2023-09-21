@@ -13,10 +13,6 @@ export class AppLayoutCmp extends MimicElement {
 
 	@provide('store') protected store = new LayoutStore();
 
-	public override connectedCallback(): void {
-		super.connectedCallback();
-	}
-
 	protected override render(): unknown {
 		return html`
 		<m-navbar></m-navbar>
@@ -27,6 +23,7 @@ export class AppLayoutCmp extends MimicElement {
 	public static override styles = [
 		css`
 		:host {
+			overflow: hidden;
 			display: grid;
 			grid-template-columns: auto 1fr;
 			gap: 20px;
