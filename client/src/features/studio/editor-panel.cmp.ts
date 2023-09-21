@@ -1,17 +1,17 @@
 import { consume, type ContextProp } from '@roenlie/lit-context';
 import { maybe } from '@roenlie/mimic-core/async';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
-import { css, html } from 'lit';
+import { html } from 'lit';
 import { state } from 'lit/decorators.js';
 
 import { serverUrl } from '../../app/backend-url.js';
 import type { DbResponse } from '../../app/response-model.js';
-import type { Module } from '../code-module/module-model.js';
 import type { ModuleNamespace, NamespaceDefinition } from '../code-module/namespace-model.js';
 import type { LayoutStore } from '../layout/layout-store.js';
 import { sharedStyles } from '../styles/shared-styles.js';
 import { DragHandleCmp } from './drag-handle.cmp.js';
 import { EditorCmp } from './editor.cmp.js';
+import styles from './editor-panel.ccss';
 import { ModuleNavSelector } from './module-nav-selector.cmp.js';
 import { StudioTabPanel } from './studio-tab-panel.cmp.js';
 
@@ -125,56 +125,7 @@ export class EditorPanel extends MimicElement {
 
 	public static override styles = [
 		sharedStyles,
-		css`
-		:host {
-			overflow: hidden;
-			display: grid;
-			margin-block: 10px;
-			background-color: var(--shadow1);
-			padding: 8px;
-			border: 1px solid var(--background-strong);
-			border-radius: 12px;
-		}
-		s-fullwidth {
-			overflow: hidden;
-			display: grid;
-			grid-template-columns: 250px 20px 1fr 20px max-content;
-		}
-		s-nav-panel {
-			--namespace-height: 1fr;
-			--module-height: 2fr;
-			overflow: hidden;
-			display: grid;
-			grid-template-rows: var(--namespace-height)
-				20px var(--module-height);
-			padding-right: 8px;
-		}
-		m-module-nav-selector:not(:last-of-type) {
-			padding-bottom: 8px;
-		}
-		m-editor {
-			background-color: var(--surface);
-			border: 1px solid var(--background);
-			border-inline: none;
-		}
-		m-drag-handle {
-			background-color: var(--background);
-		}
-		m-drag-handle.vertical:first-of-type {
-			border-top-left-radius: 8px;
-			border-bottom-left-radius: 8px;
-		}
-		m-drag-handle.vertical:last-of-type {
-			border-top-right-radius: 8px;
-			border-bottom-right-radius: 8px;
-		}
-		m-drag-handle.horizontal {
-			border-radius: 8px;
-		}
-		m-studio-tab-panel {
-			padding-left: 8px;
-		}
-		`,
+		styles,
 	];
 
 }

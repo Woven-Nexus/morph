@@ -1,0 +1,57 @@
+:host {
+	overflow: hidden;
+	display: grid;
+	margin-block: 10px;
+	background-color: var(--shadow1);
+	padding: 8px;
+	border: 1px solid var(--background-strong);
+	border-radius: 12px;
+}
+
+s-fullwidth {
+	overflow: hidden;
+	display: grid;
+	grid-template-columns: 250px 20px 1fr 20px max-content;
+
+	& s-nav-panel {
+		--namespace-height: 1fr;
+		--module-height: 2fr;
+		overflow: hidden;
+		display: grid;
+		grid-template-rows: var(--namespace-height) 20px var(--module-height);
+		padding-right: 8px;
+	}
+
+	& m-module-nav-selector:not(:last-of-type) {
+		padding-bottom: 8px;
+	}
+
+	& m-editor {
+		background-color: var(--surface);
+		border: 1px solid var(--background);
+		border-inline: none;
+	}
+
+	& m-drag-handle {
+		background-color: var(--background);
+
+		&.vertical:first-of-type {
+			border-top-left-radius: 8px;
+			border-bottom-left-radius: 8px;
+		}
+
+		&.vertical:last-of-type {
+			border-top-right-radius: 8px;
+			border-bottom-right-radius: 8px;
+		}
+
+		&.horizontal {
+			border-radius: 8px;
+		}
+
+	}
+
+	& m-studio-tab-panel {
+		padding-left: 8px;
+	}
+}
