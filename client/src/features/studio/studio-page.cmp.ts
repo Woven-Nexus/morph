@@ -4,7 +4,6 @@ import { css, html } from 'lit';
 import { EditorPanel } from './editor-panel.cmp.js';
 import { ModuleNavCmp } from './module-nav.cmp.js';
 
-
 ModuleNavCmp.register();
 EditorPanel.register();
 

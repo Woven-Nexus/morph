@@ -11,15 +11,18 @@
 s-fullwidth {
 	overflow: hidden;
 	display: grid;
-	grid-template-columns: 250px 20px 1fr 20px max-content;
+	grid-template-columns: max-content 15px 1fr 15px max-content;
 
 	& s-nav-panel {
-		--namespace-height: 1fr;
-		--module-height: 2fr;
 		overflow: hidden;
 		display: grid;
-		grid-template-rows: var(--namespace-height) 20px var(--module-height);
+		grid-template-rows: max-content 15px 1fr;
 		padding-right: 8px;
+		width: 200px;
+	}
+
+	& m-module-nav-selector:first-of-type {
+		height: 250px;
 	}
 
 	& m-module-nav-selector:not(:last-of-type) {
@@ -39,16 +42,20 @@ s-fullwidth {
 			border-top-left-radius: 8px;
 			border-bottom-left-radius: 8px;
 		}
-
 		&.vertical:last-of-type {
 			border-top-right-radius: 8px;
 			border-bottom-right-radius: 8px;
 		}
-
-		&.horizontal {
-			border-radius: 8px;
+		&.vertical::part(handle) {
+			width: 3px;
 		}
+		&.horizontal {
+			border-radius: 4px;
 
+			&::part(handle) {
+				height: 3px;
+			}
+		}
 	}
 
 	& m-studio-tab-panel {

@@ -10,7 +10,9 @@ export class DragHandleCmp extends MimicElement {
 
 	protected override render(): unknown {
 		return html`
-		<s-drag-handle></s-drag-handle>
+		<s-drag-wrapper>
+			<s-drag-handle part="handle"></s-drag-handle>
+		</s-drag-wrapper>
 		`;
 	}
 

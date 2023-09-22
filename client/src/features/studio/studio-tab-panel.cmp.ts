@@ -25,6 +25,7 @@ export class StudioTabPanel extends MimicElement {
 			width: 300px;
 		}
 		header {
+			overflow: auto;
 			display: grid;
 			grid-auto-flow: column;
 			grid-auto-columns: max-content;

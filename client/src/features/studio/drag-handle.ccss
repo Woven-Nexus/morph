@@ -2,23 +2,40 @@
 	container-type: size;
 	pointer-events: none;
 	display: grid;
+}
+
+s-drag-wrapper {
+	position: relative;
+	pointer-events: auto;
+	align-self: center;
+	justify-self: center;
+	display: grid;
 	place-items: center;
+	height: max-content;
+	width: 90%;
+	cursor: ns-resize;
+}
+s-drag-wrapper:hover {
+	background-color: color-mix(in srgb, var(--drag-handle) 50%, transparent);
+	border-radius: 4px;
 }
 
 s-drag-handle {
-	pointer-events: auto;
 	display: block;
 	height: 4px;
 	width: 60px;
 	background-color: var(--drag-handle);
 	border-radius: 4px;
-	cursor: ns-resize;
 }
 
 @container (orientation: portrait) {
+	s-drag-wrapper {
+		justify-self: center;
+		cursor: ew-resize;
+		height: 90%;
+		width: max-content;
+	}
 	s-drag-handle {
 		height: 60px;
-		width: 4px;
-		cursor: ew-resize;
 	}
 }

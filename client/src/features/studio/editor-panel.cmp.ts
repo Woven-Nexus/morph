@@ -85,6 +85,111 @@ export class EditorPanel extends MimicElement {
 		store.activeModuleId = ev.detail;
 	}
 
+	protected handleModuleNavDrag(ev: MouseEvent) {
+		const target = ev.target as HTMLElement;
+
+		const panel = this.renderRoot.querySelector<HTMLElement>('s-nav-panel');
+
+		const query = 'm-module-nav-selector:first-of-type';
+		const selector = this.renderRoot.querySelector<HTMLElement>(query);
+		if (!selector || !panel)
+			return;
+
+		const selectorRect = selector.getBoundingClientRect();
+		const targetRect = target.getBoundingClientRect();
+		const targetCenter = targetRect.y + targetRect.height / 2;
+		const offset = targetCenter - selectorRect.bottom;
+
+		const panelHeight = panel.offsetHeight;
+		const maxHeight = panelHeight / 1.25;
+		const minHeight = panelHeight - maxHeight;
+
+		const moveFn = (ev: MouseEvent) => {
+			ev.preventDefault();
+
+			const distance = ev.y - selectorRect.y - offset;
+			const height = Math.min(maxHeight, Math.max(minHeight, distance));
+			selector.style.setProperty('height', height + 'px');
+		};
+
+		globalThis.addEventListener('mousemove', moveFn);
+		globalThis.addEventListener(
+			'mouseup',
+			() => globalThis.removeEventListener('mousemove', moveFn),
+			{ once: true },
+		);
+	}
+
+	protected handleEditorLeftDrag(ev: MouseEvent) {
+		const target = ev.target as HTMLElement;
+		const container = this.renderRoot.querySelector<HTMLElement>('s-fullwidth');
+		const panel = this.renderRoot.querySelector<HTMLElement>('s-nav-panel');
+		const editor = this.renderRoot.querySelector<HTMLElement>('m-editor');
+
+		if (!container || !panel || !editor)
+			return;
+
+		const editorRect = editor.getBoundingClientRect();
+		const panelRect = panel.getBoundingClientRect();
+		const targetRect = target.getBoundingClientRect();
+		const targetCenter = targetRect.x + targetRect.width / 2;
+		const offset = targetCenter - panelRect.right;
+
+		const containerWidth = container.offsetWidth;
+		const minWidth = containerWidth * 0.15;
+		const maxWidth = editorRect.right - panelRect.left - containerWidth * 0.25;
+
+		const moveFn = (ev: MouseEvent) => {
+			ev.preventDefault();
+
+			const distance = ev.x - panelRect.x - offset;
+			const width = Math.min(maxWidth, Math.max(minWidth, distance));
+			panel.style.setProperty('width', width + 'px');
+		};
+
+		globalThis.addEventListener('mousemove', moveFn);
+		globalThis.addEventListener(
+			'mouseup',
+			() => globalThis.removeEventListener('mousemove', moveFn),
+			{ once: true },
+		);
+	}
+
+	protected handleEditorRightDrag(ev: MouseEvent) {
+		const target = ev.target as HTMLElement;
+		const container = this.renderRoot.querySelector<HTMLElement>('s-fullwidth');
+		const panel = this.renderRoot.querySelector<HTMLElement>('m-studio-tab-panel');
+		const editor = this.renderRoot.querySelector<HTMLElement>('m-editor');
+
+		if (!container || !panel || !editor)
+			return;
+
+		const editorRect = editor.getBoundingClientRect();
+		const panelRect = panel.getBoundingClientRect();
+		const targetRect = target.getBoundingClientRect();
+		const targetCenter = targetRect.x + targetRect.width / 2;
+		const offset = panelRect.left - targetCenter;
+
+		const containerWidth = container.offsetWidth;
+		const minWidth = containerWidth * 0.15;
+		const maxWidth = panelRect.right - editorRect.x - containerWidth * 0.25;
+
+		const moveFn = (ev: MouseEvent) => {
+			ev.preventDefault();
+
+			const distance = panelRect.right - ev.x - offset;
+			const width = Math.min(maxWidth, Math.max(minWidth, distance));
+			panel.style.setProperty('width', width + 'px');
+		};
+
+		globalThis.addEventListener('mousemove', moveFn);
+		globalThis.addEventListener(
+			'mouseup',
+			() => globalThis.removeEventListener('mousemove', moveFn),
+			{ once: true },
+		);
+	}
+
 	protected renderFullWidth() {
 		return html`
 		<s-fullwidth>
@@ -96,7 +201,9 @@ export class EditorPanel extends MimicElement {
 					@m-nav-select-key=${ this.selectNamespace }
 				></m-module-nav-selector>
 
-				<m-drag-handle class="horizontal"></m-drag-handle>
+				<m-drag-handle class="horizontal"
+					@mousedown=${ this.handleModuleNavDrag }
+				></m-drag-handle>
 
 				<m-module-nav-selector
 					header="Modules"
@@ -106,11 +213,15 @@ export class EditorPanel extends MimicElement {
 				></m-module-nav-selector>
 			</s-nav-panel>
 
-			<m-drag-handle class="vertical"></m-drag-handle>
+			<m-drag-handle class="vertical"
+				@mousedown=${ this.handleEditorLeftDrag }
+			></m-drag-handle>
 
 			<m-editor></m-editor>
 
-			<m-drag-handle class="vertical"></m-drag-handle>
+			<m-drag-handle class="vertical"
+				@mousedown=${ this.handleEditorRightDrag }
+			></m-drag-handle>
 
 			<m-studio-tab-panel></m-studio-tab-panel>
 		</s-fullwidth>
