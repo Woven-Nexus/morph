@@ -207,11 +207,17 @@ export class EditorCmp extends MimicElement {
 			display: inline-flex;
 			align-items: center;
 			border: 3px solid var(--shadow1);
-			border-bottom: none;
+			border-block: none;
 			padding-inline: 4px;
 			margin-right: -3px;
 			height: 40px;
 			background-color: var(--background);
+		}
+		s-tab:first-of-type {
+			border-left: none;
+		}
+		s-tab:last-of-type {
+			border-right: none;
 		}
 		s-tab.active {
 			background-color: initial;

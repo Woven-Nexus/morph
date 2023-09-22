@@ -28,11 +28,24 @@ export class EditorPanel extends MimicElement {
 	@state() protected namespaceKeyValues: {key: string; value: string}[] = [];
 	@state() protected modulesKeyValues: {key: string; value: string}[] = [];
 	@state() protected activeKeyValues: {key: string; value: string}[] = [];
+	@state() protected uiMode: 'large' | 'medium' | 'small' = 'large';
 	protected namespaceList: NamespaceDefinition[] = [];
 	protected moduleList: ModuleNamespace[] = [];
+	protected resizeObs = new ResizeObserver(([ entry ]) => {
+		if (!entry)
+			return;
+
+		if (entry.contentRect.width <= 450)
+			this.uiMode = 'small';
+		else if (entry.contentRect.width <= 1440)
+			this.uiMode = 'medium';
+		else
+			this.uiMode = 'large';
+	});
 
 	public override connectedCallback() {
 		super.connectedCallback();
+		this.resizeObs.observe(this);
 
 		const store = this.store.value;
 		store.connect(this, 'activeNamespace', 'activeModuleId');
@@ -50,6 +63,11 @@ export class EditorPanel extends MimicElement {
 		});
 
 		this.populateNamespaceList();
+	}
+
+	public override disconnectedCallback(): void {
+		super.disconnectedCallback();
+		this.resizeObs.unobserve(this);
 	}
 
 	protected async populateNamespaceList() {
@@ -122,7 +140,7 @@ export class EditorPanel extends MimicElement {
 
 	protected handleEditorLeftDrag(ev: MouseEvent) {
 		const target = ev.target as HTMLElement;
-		const container = this.renderRoot.querySelector<HTMLElement>('s-fullwidth');
+		const container = this.renderRoot.querySelector<HTMLElement>('s-large');
 		const panel = this.renderRoot.querySelector<HTMLElement>('s-nav-panel');
 		const editor = this.renderRoot.querySelector<HTMLElement>('m-editor');
 
@@ -157,7 +175,7 @@ export class EditorPanel extends MimicElement {
 
 	protected handleEditorRightDrag(ev: MouseEvent) {
 		const target = ev.target as HTMLElement;
-		const container = this.renderRoot.querySelector<HTMLElement>('s-fullwidth');
+		const container = this.renderRoot.querySelector<HTMLElement>('s-large');
 		const panel = this.renderRoot.querySelector<HTMLElement>('m-studio-tab-panel');
 		const editor = this.renderRoot.querySelector<HTMLElement>('m-editor');
 
@@ -190,9 +208,9 @@ export class EditorPanel extends MimicElement {
 		);
 	}
 
-	protected renderFullWidth() {
+	protected renderLarge() {
 		return html`
-		<s-fullwidth>
+		<s-large>
 			<s-nav-panel>
 				<m-module-nav-selector
 					header="Namespaces"
@@ -224,14 +242,47 @@ export class EditorPanel extends MimicElement {
 			></m-drag-handle>
 
 			<m-studio-tab-panel></m-studio-tab-panel>
-		</s-fullwidth>
+		</s-large>
+		`;
+	}
+
+	protected renderMedium() {
+		return html`
+		<s-medium>
+			<s-nav-panel>
+				<m-module-nav-selector
+					header="Namespaces"
+					.activeItem=${ this.store.value.activeNamespace }
+					.items=${ this.namespaceKeyValues }
+					@m-nav-select-key=${ this.selectNamespace }
+				></m-module-nav-selector>
+
+				<m-drag-handle class="horizontal"
+					@mousedown=${ this.handleModuleNavDrag }
+				></m-drag-handle>
+
+				<m-module-nav-selector
+					header="Modules"
+					.activeItem=${ this.store.value.activeModuleId }
+					.items=${ this.modulesKeyValues }
+					@m-nav-select-key=${ this.selectModule }
+				></m-module-nav-selector>
+			</s-nav-panel>
+
+			<m-drag-handle class="vertical"
+				@mousedown=${ this.handleEditorRightDrag }
+			></m-drag-handle>
+
+			<m-studio-tab-panel></m-studio-tab-panel>
+		</s-medium>
 		`;
 	}
 
 	protected override render(): unknown {
-		return html`
-		${ this.renderFullWidth() }
-		`;
+		if (this.uiMode === 'large')
+			return this.renderLarge();
+		if (this.uiMode === 'medium')
+			return this.renderMedium();
 	}
 
 	public static override styles = [

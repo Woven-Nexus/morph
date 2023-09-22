@@ -8,7 +8,7 @@
 	border-radius: 12px;
 }
 
-s-fullwidth {
+s-large {
 	overflow: hidden;
 	display: grid;
 	grid-template-columns: max-content 15px 1fr 15px max-content;
@@ -46,19 +46,49 @@ s-fullwidth {
 			border-top-right-radius: 8px;
 			border-bottom-right-radius: 8px;
 		}
-		&.vertical::part(handle) {
-			width: 3px;
-		}
 		&.horizontal {
 			border-radius: 4px;
-
-			&::part(handle) {
-				height: 3px;
-			}
 		}
 	}
 
 	& m-studio-tab-panel {
 		padding-left: 8px;
 	}
+}
+
+s-medium {
+	overflow: hidden;
+	display: grid;
+	grid-template-rows: max-content 15px 1fr;
+
+	& s-nav-panel {
+		overflow: hidden;
+		display: grid;
+		grid-template-columns: max-content 15px 1fr;
+		height: 200px;
+		padding-bottom: 8px;
+	}
+
+	& m-module-nav-selector:first-of-type {
+		padding-right: 8px;
+	}
+
+	& m-module-nav-selector:last-of-type {
+		padding-left: 8px;
+	}
+
+	& m-drag-handle {
+		background-color: var(--background);
+
+		&.vertical:first-of-type {
+			border-radius: 8px;
+			/*border-top-left-radius: 8px;
+			border-bottom-left-radius: 8px;*/
+		}
+		&.horizontal {
+			border-radius: 8px;
+			margin-top: 40px;
+		}
+	}
+
 }

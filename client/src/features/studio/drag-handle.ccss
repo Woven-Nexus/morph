@@ -14,18 +14,18 @@ s-drag-wrapper {
 	height: max-content;
 	width: 90%;
 	cursor: ns-resize;
+	border-radius: 2px;
 }
 s-drag-wrapper:hover {
 	background-color: color-mix(in srgb, var(--drag-handle) 50%, transparent);
-	border-radius: 4px;
 }
 
 s-drag-handle {
 	display: block;
-	height: 4px;
+	height: 3px;
 	width: 60px;
 	background-color: var(--drag-handle);
-	border-radius: 4px;
+	border-radius: 2px;
 }
 
 @container (orientation: portrait) {
@@ -36,6 +36,7 @@ s-drag-handle {
 		width: max-content;
 	}
 	s-drag-handle {
+		width: 3px;
 		height: 60px;
 	}
 }
