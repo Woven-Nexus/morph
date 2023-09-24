@@ -2,7 +2,7 @@ import { provide } from '@roenlie/lit-context';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 
-import { LayoutStore } from './layout-store.js';
+import { StudioStore } from '../studio/studio-store.js';
 import { NavbarCmp } from './navbar.cmp.js';
 
 NavbarCmp.register();
@@ -11,7 +11,6 @@ NavbarCmp.register();
 @customElement('app-layout')
 export class AppLayoutCmp extends MimicElement {
 
-	@provide('store') protected store = new LayoutStore();
 
 	protected override render(): unknown {
 		return html`

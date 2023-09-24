@@ -1,9 +1,10 @@
 import { consume, type ContextProp } from '@roenlie/lit-context';
+import { range } from '@roenlie/mimic-core/array';
 import { maybe } from '@roenlie/mimic-core/async';
 import type { EventOf } from '@roenlie/mimic-core/dom';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
-import { eventOptions, state } from 'lit/decorators.js';
+import { eventOptions, property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { map } from 'lit/directives/map.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
@@ -14,13 +15,16 @@ import { serverUrl } from '../../app/backend-url.js';
 import { queryId } from '../../app/queryId.js';
 import type { DbResponse } from '../../app/response-model.js';
 import type { Module } from '../code-module/module-model.js';
-import type { LayoutStore } from '../layout/layout-store.js';
 import { MonacoEditorCmp } from '../monaco/monaco-editor.cmp.js';
 import { sharedStyles } from '../styles/shared-styles.js';
+import { EditorTabs } from './editor-tabs.js';
+import type { StudioStore } from './studio-store.js';
 
 MonacoEditorCmp.register();
+EditorTabs.register();
 
-interface EditorTab {
+
+export interface EditorTab {
 	key: string;
 	model: editor.ITextModel;
 	state: editor.ICodeEditorViewState;
@@ -31,24 +35,39 @@ interface EditorTab {
 @customElement('m-editor')
 export class EditorCmp extends MimicElement {
 
-	@consume('store') protected store: ContextProp<LayoutStore>;
-	@state() protected tabs = new Map<string, EditorTab>();
-	@state() protected activeTab?: EditorTab;
-	@queryId('tabs') protected tabsEl: HTMLElement;
-	@queryId('scrollbar') protected scrollbarEl: HTMLElement;
-	protected editorRef: Ref<MonacoEditorCmp> = createRef();
-	protected resizeObs = new ResizeObserver(() => this.requestUpdate());
+	@property({ attribute: 'tab-placement', reflect: true })
+	public tabPlacement: 'top' | 'left' | 'right' = 'top';
 
-	public override connectedCallback(): void {
+	@consume('store') protected store: ContextProp<StudioStore>;
+	protected editorRef: Ref<MonacoEditorCmp> = createRef();
+
+	protected get tabs() {
+		return [ ...this.store.value.editorTabs ].map(([ , tab ]) => ({
+			key:   tab.key,
+			value: tab.module.namespace + '/' + tab.module.name,
+		}));
+	}
+
+	protected handle = {
+		module:   this.onModule.bind(this),
+		tabClick: (ev: CustomEvent<string>) => {
+			this.store.value.activeModuleId = ev.detail;
+		},
+	};
+
+	public override connectedCallback() {
 		super.connectedCallback();
 		import('../monaco/monaco-editor.cmp.js').then(m => m.MonacoEditorCmp.register());
 
-		this.store.value.connect(this, 'activeModuleId');
-		this.store.value.listen(this, 'activeModuleId', this.onModule);
-		this.resizeObs.observe(this);
+		this.store.value.connect(this, 'activeModuleId', 'editorTabs', 'activeEditorTab');
+		this.store.value.listen(this, 'activeModuleId', this.handle.module);
 	}
 
-	protected onModule = async () => {
+	public override afterConnectedCallback() {
+		this.onModule();
+	}
+
+	protected async onModule() {
 		const store = this.store.value;
 		const activeId = store.activeModuleId;
 		if (!activeId)
@@ -62,7 +81,7 @@ export class EditorCmp extends MimicElement {
 			return;
 
 		// Move to selected tab
-		const existingTab = this.tabs.get(activeId);
+		const existingTab = store.editorTabs.get(activeId);
 		if (existingTab) {
 			editorRef.setModel(existingTab.model);
 			editorRef.restoreViewState(existingTab.state);
@@ -77,7 +96,7 @@ export class EditorCmp extends MimicElement {
 			const url = new URL(serverUrl + `/api/code-modules/${ namespace }/${ activeId }`);
 			const [ result ] = await maybe<DbResponse<Module>>((await fetch(url)).json());
 			if (!result)
-				return store.activeModuleId = '';
+				return void (store.activeModuleId = '');
 
 			const newModel = editor.createModel(result.data.code, 'typescript');
 			editorRef.setModel(newModel);
@@ -89,8 +108,8 @@ export class EditorCmp extends MimicElement {
 				module: result.data,
 			};
 
-			this.tabs.set(activeId, tab);
-			this.activeTab = tab;
+			store.editorTabs.set(activeId, tab);
+			store.activeEditorTab = tab;
 		}
 
 		this.requestUpdate();
@@ -99,68 +118,19 @@ export class EditorCmp extends MimicElement {
 
 		const tab = this.shadowRoot?.getElementById(activeId);
 		tab?.scrollIntoView();
-	};
-
-	protected onTabClick(ev: EventOf, tab: EditorTab) {
-		const store = this.store.value;
-		store.activeModuleId = tab.key;
 	}
 
-	protected onTabWheel(ev: WheelEvent) {
-		const scrollbar = this.scrollbarEl;
-		if (scrollbar)
-			scrollbar.scrollLeft += ev.deltaY;
-	}
-
-	@eventOptions({ passive: true })
-	protected onTabScroll() {
-		const tabs = this.tabsEl, scrollbar = this.scrollbarEl;
-		if (!scrollbar || !tabs)
-			return;
-
-		scrollbar.scrollLeft = tabs.scrollLeft;
-		this.requestUpdate();
-	}
-
-	@eventOptions({ passive: true })
-	protected onScrollbarScroll() {
-		const tabs = this.tabsEl, scrollbar = this.scrollbarEl;
-		if (!scrollbar || !tabs)
-			return;
-
-		tabs.scrollLeft = scrollbar.scrollLeft;
-		this.requestUpdate();
-	}
-
-	protected override render(): unknown {
-		const store = this.store.value;
-		const tabsEl = this.tabsEl;
-		const scrollContainerLeft = (tabsEl?.scrollLeft ?? 0) + 'px';
-		const scrollContainerWidth = (tabsEl?.offsetWidth ?? 0) + 'px';
-		const scrollbarWidth = (tabsEl?.scrollWidth ?? 0) + 'px';
-
+	protected override render() {
 		return html`
-		<s-tabs id="tabs" @scroll=${ this.onTabScroll } @wheel=${ this.onTabWheel }>
-			<s-scrollbar
-				id="scrollbar"
-				style=${ styleMap({ width: scrollContainerWidth, left: scrollContainerLeft }) }
-				@scroll=${ this.onScrollbarScroll }
-			>
-				<s-scrollthumb style=${ styleMap({ width: scrollbarWidth }) }
-				></s-scrollthumb>
-			</s-scrollbar>
+		<m-editor-tabs
+			direction="vertical"
+			.tabs=${ this.tabs }
+			.activeTab=${ this.store.value.activeModuleId }
+			@m-tab-click=${ this.handle.tabClick }
+		></m-editor-tabs>
 
-			${ map(this.tabs, ([ , tab ]) => html`
-			<s-tab
-				id=${ tab.key }
-				class=${ classMap({ active: tab.key === store.activeModuleId }) }
-				@click=${ (ev: EventOf) => this.onTabClick(ev, tab) }>
-				${ tab.module.namespace + '/' + tab.module.name }
-			</s-tab>
-			`) }
-		</s-tabs>
-
-		<monaco-editor ${ ref(this.editorRef) }></monaco-editor>
+		<monaco-editor ${ ref(this.editorRef) }
+		></monaco-editor>
 		`;
 	}
 
@@ -170,57 +140,14 @@ export class EditorCmp extends MimicElement {
 		:host {
 			overflow: hidden;
 			display: grid;
-			grid-template-rows: max-content 1fr;
+			grid-template: "editor tabs" 1fr / 1fr max-content;
 		}
-		s-tabs {
-			position: relative;
-			display: grid;
-			grid-auto-flow: column;
-			grid-auto-columns: max-content;
-			min-height: 40px;
-			font-size: 12px;
-			overflow: hidden;
-			overflow-x: scroll;
+		m-editor-tabs {
+			grid-area: tabs;
+			--m-tab-border: none;
 		}
-		s-tabs::-webkit-scrollbar {
-			display: none;
-		}
-		s-scrollbar {
-			display: block;
-			position: absolute;
-			overflow-x: scroll;
-			bottom: 0px;
-			opacity: 0;
-			transition: opacity 0.2s ease-out;
-		}
-		s-tabs:hover s-scrollbar {
-			opacity: 1;
-		}
-		s-scrollbar::-webkit-scrollbar {
-			height: 4px;
-		}
-		s-scrollthumb {
-			display: block;
-			height:4px;
-		}
-		s-tab {
-			display: inline-flex;
-			align-items: center;
-			border: 3px solid var(--shadow1);
-			border-block: none;
-			padding-inline: 4px;
-			margin-right: -3px;
-			height: 40px;
-			background-color: var(--background);
-		}
-		s-tab:first-of-type {
-			border-left: none;
-		}
-		s-tab:last-of-type {
-			border-right: none;
-		}
-		s-tab.active {
-			background-color: initial;
+		monaco-editor {
+			grid-area: editor;
 		}
 		`,
 	];

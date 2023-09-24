@@ -71,6 +71,7 @@ s-medium {
 
 	& m-module-nav-selector:first-of-type {
 		padding-right: 8px;
+		width: 300px;
 	}
 
 	& m-module-nav-selector:last-of-type {
@@ -81,12 +82,10 @@ s-medium {
 		background-color: var(--background);
 
 		&.vertical:first-of-type {
-			border-radius: 8px;
-			/*border-top-left-radius: 8px;
-			border-bottom-left-radius: 8px;*/
+			border-radius: 4px;
 		}
 		&.horizontal {
-			border-radius: 8px;
+			border-radius: 4px;
 			margin-top: 40px;
 		}
 	}

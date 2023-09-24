@@ -1,8 +1,10 @@
+import { provide } from '@roenlie/lit-context';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 
 import { EditorPanel } from './editor-panel.cmp.js';
 import { ModuleNavCmp } from './module-nav.cmp.js';
+import { StudioStore } from './studio-store.js';
 
 ModuleNavCmp.register();
 EditorPanel.register();
@@ -10,6 +12,8 @@ EditorPanel.register();
 
 @customElement('m-studio-page')
 export class StudioPageCmp extends MimicElement {
+
+	@provide('store') protected store = new StudioStore();
 
 	protected override render(): unknown {
 		return html`

@@ -9,14 +9,14 @@ import { map } from 'lit/directives/map.js';
 
 import { serverUrl } from '../../app/backend-url.js';
 import { type DbResponse } from '../../app/response-model.js';
-import type { LayoutStore } from '../layout/layout-store.js';
+import type { StudioStore } from '../studio/studio-store.js';
 import type { NamespaceDefinition } from './namespace-model.js';
 
 
 @customElement('m-namespace-selector')
 export class NamespaceSelectorCmp extends MimicElement {
 
-	@consume('store') protected store: ContextProp<LayoutStore>;
+	@consume('store') protected store: ContextProp<StudioStore>;
 	@state() protected namespaceList: NamespaceDefinition[];
 
 	public override async connectedCallback() {

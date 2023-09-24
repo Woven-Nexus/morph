@@ -1,18 +1,21 @@
 import { consume, type ContextProp } from '@roenlie/lit-context';
 import { maybe } from '@roenlie/mimic-core/async';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
-import { html } from 'lit';
+import { html, LitElement } from 'lit';
 import { state } from 'lit/decorators.js';
+import { choose } from 'lit/directives/choose.js';
+import { classMap } from 'lit/directives/class-map.js';
+import { map } from 'lit/directives/map.js';
 
 import { serverUrl } from '../../app/backend-url.js';
 import type { DbResponse } from '../../app/response-model.js';
 import type { ModuleNamespace, NamespaceDefinition } from '../code-module/namespace-model.js';
-import type { LayoutStore } from '../layout/layout-store.js';
 import { sharedStyles } from '../styles/shared-styles.js';
 import { DragHandleCmp } from './drag-handle.cmp.js';
 import { EditorCmp } from './editor.cmp.js';
 import styles from './editor-panel.ccss';
 import { ModuleNavSelector } from './module-nav-selector.cmp.js';
+import type { StudioStore } from './studio-store.js';
 import { StudioTabPanel } from './studio-tab-panel.cmp.js';
 
 EditorCmp.register();
@@ -24,24 +27,39 @@ ModuleNavSelector.register();
 @customElement('m-editor-panel')
 export class EditorPanel extends MimicElement {
 
-	@consume('store') protected store: ContextProp<LayoutStore>;
+	@consume('store') protected store: ContextProp<StudioStore>;
 	@state() protected namespaceKeyValues: {key: string; value: string}[] = [];
 	@state() protected modulesKeyValues: {key: string; value: string}[] = [];
 	@state() protected activeKeyValues: {key: string; value: string}[] = [];
 	@state() protected uiMode: 'large' | 'medium' | 'small' = 'large';
+	@state() protected activeTab: 'editor' | 'details' | 'history' = 'details';
 	protected namespaceList: NamespaceDefinition[] = [];
 	protected moduleList: ModuleNamespace[] = [];
 	protected resizeObs = new ResizeObserver(([ entry ]) => {
 		if (!entry)
 			return;
 
-		if (entry.contentRect.width <= 450)
+		if (entry.contentRect.width <= 450) {
 			this.uiMode = 'small';
-		else if (entry.contentRect.width <= 1440)
+		}
+		else if (entry.contentRect.width <= 1440) {
 			this.uiMode = 'medium';
-		else
+			this.activeTab = 'editor';
+		}
+		else {
 			this.uiMode = 'large';
+			if (this.activeTab === 'editor')
+				this.activeTab = 'details';
+		}
 	});
+
+	protected tabLists = {
+		large:  [ 'details', 'history' ],
+		medium: [ 'editor', 'details', 'history' ],
+		small:  [],
+	};
+
+	protected drag = new EditorPanelDrag(this);
 
 	public override connectedCallback() {
 		super.connectedCallback();
@@ -103,13 +121,131 @@ export class EditorPanel extends MimicElement {
 		store.activeModuleId = ev.detail;
 	}
 
-	protected handleModuleNavDrag(ev: MouseEvent) {
+	protected renderTabPanel() {
+		return html`
+		<m-studio-tab-panel>
+			${ map(this.tabLists[this.uiMode], tab => html`
+			<s-tab slot="tab" class=${ classMap({ active: this.activeTab === tab }) }>
+				${ tab }
+			</s-tab>
+			`) }
+
+			${ choose(this.activeTab, [
+				[
+				'editor', () => html`
+					<m-editor></m-editor>
+				`,
+				],
+				[
+				'details', () => html`
+					DETAILS
+				`,
+				],
+				[
+				'history', () => html`
+					HISTORY
+				`,
+				],
+				]) }
+		</m-studio-tab-panel>
+		`;
+	}
+
+	protected renderLarge() {
+		return html`
+		<s-large>
+			<s-nav-panel>
+				<m-module-nav-selector
+					header="Namespaces"
+					.activeItem=${ this.store.value.activeNamespace }
+					.items=${ this.namespaceKeyValues }
+					@m-nav-select-key=${ this.selectNamespace }
+				></m-module-nav-selector>
+
+				<m-drag-handle class="horizontal"
+					@mousedown=${ this.drag.handleModuleNavDrag }
+				></m-drag-handle>
+
+				<m-module-nav-selector
+					header="Modules"
+					.activeItem=${ this.store.value.activeModuleId }
+					.items=${ this.modulesKeyValues }
+					@m-nav-select-key=${ this.selectModule }
+				></m-module-nav-selector>
+			</s-nav-panel>
+
+			<m-drag-handle class="vertical"
+				@mousedown=${ this.drag.handleEditorLeftDrag }
+			></m-drag-handle>
+
+			<m-editor></m-editor>
+
+			<m-drag-handle class="vertical"
+				@mousedown=${ this.drag.handleEditorRightDrag }
+			></m-drag-handle>
+
+			${ this.renderTabPanel() }
+		</s-large>
+		`;
+	}
+
+	protected renderMedium() {
+		return html`
+		<s-medium>
+			<s-nav-panel>
+				<m-module-nav-selector
+					header="Namespaces"
+					.activeItem=${ this.store.value.activeNamespace }
+					.items=${ this.namespaceKeyValues }
+					@m-nav-select-key=${ this.selectNamespace }
+				></m-module-nav-selector>
+
+				<m-drag-handle class="horizontal"
+				></m-drag-handle>
+
+				<m-module-nav-selector
+					header="Modules"
+					.activeItem=${ this.store.value.activeModuleId }
+					.items=${ this.modulesKeyValues }
+					@m-nav-select-key=${ this.selectModule }
+				></m-module-nav-selector>
+			</s-nav-panel>
+
+			<m-drag-handle class="vertical"
+			></m-drag-handle>
+
+			${ this.renderTabPanel() }
+		</s-medium>
+		`;
+	}
+
+
+	protected override render(): unknown {
+		if (this.uiMode === 'large')
+			return this.renderLarge();
+		if (this.uiMode === 'medium')
+			return this.renderMedium();
+	}
+
+	public static override styles = [
+		sharedStyles,
+		styles,
+	];
+
+}
+
+
+class EditorPanelDrag {
+
+	constructor(public element: LitElement) {}
+
+	public handleModuleNavDrag = (ev: MouseEvent) => {
 		const target = ev.target as HTMLElement;
 
-		const panel = this.renderRoot.querySelector<HTMLElement>('s-nav-panel');
+		const panel = this.element.renderRoot.querySelector<HTMLElement>('s-nav-panel');
 
 		const query = 'm-module-nav-selector:first-of-type';
-		const selector = this.renderRoot.querySelector<HTMLElement>(query);
+		const selector = this.element.renderRoot.querySelector<HTMLElement>(query);
 		if (!selector || !panel)
 			return;
 
@@ -136,13 +272,13 @@ export class EditorPanel extends MimicElement {
 			() => globalThis.removeEventListener('mousemove', moveFn),
 			{ once: true },
 		);
-	}
+	};
 
-	protected handleEditorLeftDrag(ev: MouseEvent) {
+	public handleEditorLeftDrag = (ev: MouseEvent) => {
 		const target = ev.target as HTMLElement;
-		const container = this.renderRoot.querySelector<HTMLElement>('s-large');
-		const panel = this.renderRoot.querySelector<HTMLElement>('s-nav-panel');
-		const editor = this.renderRoot.querySelector<HTMLElement>('m-editor');
+		const container = this.element.renderRoot.querySelector<HTMLElement>('s-large');
+		const panel = this.element.renderRoot.querySelector<HTMLElement>('s-nav-panel');
+		const editor = this.element.renderRoot.querySelector<HTMLElement>('m-editor');
 
 		if (!container || !panel || !editor)
 			return;
@@ -171,13 +307,13 @@ export class EditorPanel extends MimicElement {
 			() => globalThis.removeEventListener('mousemove', moveFn),
 			{ once: true },
 		);
-	}
+	};
 
-	protected handleEditorRightDrag(ev: MouseEvent) {
+	public handleEditorRightDrag = (ev: MouseEvent) => {
 		const target = ev.target as HTMLElement;
-		const container = this.renderRoot.querySelector<HTMLElement>('s-large');
-		const panel = this.renderRoot.querySelector<HTMLElement>('m-studio-tab-panel');
-		const editor = this.renderRoot.querySelector<HTMLElement>('m-editor');
+		const container = this.element.renderRoot.querySelector<HTMLElement>('s-large');
+		const panel = this.element.renderRoot.querySelector<HTMLElement>('m-studio-tab-panel');
+		const editor = this.element.renderRoot.querySelector<HTMLElement>('m-editor');
 
 		if (!container || !panel || !editor)
 			return;
@@ -206,88 +342,6 @@ export class EditorPanel extends MimicElement {
 			() => globalThis.removeEventListener('mousemove', moveFn),
 			{ once: true },
 		);
-	}
-
-	protected renderLarge() {
-		return html`
-		<s-large>
-			<s-nav-panel>
-				<m-module-nav-selector
-					header="Namespaces"
-					.activeItem=${ this.store.value.activeNamespace }
-					.items=${ this.namespaceKeyValues }
-					@m-nav-select-key=${ this.selectNamespace }
-				></m-module-nav-selector>
-
-				<m-drag-handle class="horizontal"
-					@mousedown=${ this.handleModuleNavDrag }
-				></m-drag-handle>
-
-				<m-module-nav-selector
-					header="Modules"
-					.activeItem=${ this.store.value.activeModuleId }
-					.items=${ this.modulesKeyValues }
-					@m-nav-select-key=${ this.selectModule }
-				></m-module-nav-selector>
-			</s-nav-panel>
-
-			<m-drag-handle class="vertical"
-				@mousedown=${ this.handleEditorLeftDrag }
-			></m-drag-handle>
-
-			<m-editor></m-editor>
-
-			<m-drag-handle class="vertical"
-				@mousedown=${ this.handleEditorRightDrag }
-			></m-drag-handle>
-
-			<m-studio-tab-panel></m-studio-tab-panel>
-		</s-large>
-		`;
-	}
-
-	protected renderMedium() {
-		return html`
-		<s-medium>
-			<s-nav-panel>
-				<m-module-nav-selector
-					header="Namespaces"
-					.activeItem=${ this.store.value.activeNamespace }
-					.items=${ this.namespaceKeyValues }
-					@m-nav-select-key=${ this.selectNamespace }
-				></m-module-nav-selector>
-
-				<m-drag-handle class="horizontal"
-					@mousedown=${ this.handleModuleNavDrag }
-				></m-drag-handle>
-
-				<m-module-nav-selector
-					header="Modules"
-					.activeItem=${ this.store.value.activeModuleId }
-					.items=${ this.modulesKeyValues }
-					@m-nav-select-key=${ this.selectModule }
-				></m-module-nav-selector>
-			</s-nav-panel>
-
-			<m-drag-handle class="vertical"
-				@mousedown=${ this.handleEditorRightDrag }
-			></m-drag-handle>
-
-			<m-studio-tab-panel></m-studio-tab-panel>
-		</s-medium>
-		`;
-	}
-
-	protected override render(): unknown {
-		if (this.uiMode === 'large')
-			return this.renderLarge();
-		if (this.uiMode === 'medium')
-			return this.renderMedium();
-	}
-
-	public static override styles = [
-		sharedStyles,
-		styles,
-	];
+	};
 
 }
