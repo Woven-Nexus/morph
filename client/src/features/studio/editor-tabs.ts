@@ -1,3 +1,4 @@
+import { range } from '@roenlie/mimic-core/array';
 import { emitEvent, type EventOf } from '@roenlie/mimic-core/dom';
 import { curryDebounce } from '@roenlie/mimic-core/timing';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
@@ -89,13 +90,43 @@ export class EditorTabs extends MimicElement {
 
 	protected override render(): unknown {
 		const tabsEl = this.tabsEl;
-		const scrollContainerLeft = (tabsEl?.scrollLeft ?? 0) + 'px';
-		const scrollContainerWidth = (tabsEl?.offsetWidth ?? 0) + 'px';
-		const scrollbarWidth = (tabsEl?.scrollWidth ?? 0) + 'px';
+		const scrollbarStyles: Record<string, string | number> = {};
+		const scrollthumbStyles: Record<string, string | number> = {};
 
-		const scrollContainerTop = (tabsEl?.scrollTop ?? 0) + 'px';
-		const scrollContainerHeight = (tabsEl?.offsetHeight ?? 0) + 'px';
-		const scrollbarHeight = (tabsEl?.scrollHeight ?? 0) + 'px';
+		if (this.direction === 'vertical') {
+			const scrollContainerTop = (tabsEl?.scrollTop ?? 0) + 'px';
+			const scrollContainerHeight = (tabsEl?.offsetHeight ?? 0) + 'px';
+			const scrollbarHeight = (tabsEl?.scrollHeight ?? 0) + 'px';
+
+			scrollbarStyles['top'] = scrollContainerTop;
+			scrollbarStyles['bottom'] = 0;
+			scrollbarStyles['height'] = scrollContainerHeight;
+
+			scrollthumbStyles['height'] = scrollbarHeight;
+
+			if (this.placement === 'start')
+				scrollbarStyles['left'] = 0;
+
+			if (this.placement === 'end')
+				scrollbarStyles['right'] = 0;
+		}
+
+		if (this.direction === 'horizontal') {
+			const scrollContainerLeft = (tabsEl?.scrollLeft ?? 0) + 'px';
+			const scrollContainerWidth = (tabsEl?.offsetWidth ?? 0) + 'px';
+			const scrollbarWidth = (tabsEl?.scrollWidth ?? 0) + 'px';
+
+			scrollbarStyles['left'] = scrollContainerLeft;
+			scrollbarStyles['right'] = 0;
+			scrollbarStyles['width'] = scrollContainerWidth;
+
+			scrollthumbStyles['width'] = scrollbarWidth;
+
+			if (this.placement === 'start')
+				scrollbarStyles['top'] = 0;
+			if (this.placement === 'end')
+				scrollbarStyles['bottom'] = 0;
+		}
 
 		return html`
 		<s-tabs
@@ -106,22 +137,12 @@ export class EditorTabs extends MimicElement {
 		>
 			<s-scrollbar
 				id="scrollbar"
-				style=${ styleMap({
-					left:   this.direction === 'horizontal' ? scrollContainerLeft : undefined,
-					right:  this.direction === 'horizontal' ? scrollContainerLeft : this.placement === 'end' ? 0 : undefined,
-					width:  this.direction === 'horizontal' ? scrollContainerWidth : undefined,
-					top:    this.direction === 'vertical' ? scrollContainerTop : undefined,
-					bottom: this.direction === 'vertical' ? scrollContainerTop : this.placement === 'end' ? 0 : undefined,
-					height: this.direction === 'vertical' ? scrollContainerHeight : undefined,
-				}) }
+				style=${ styleMap(scrollbarStyles) }
 				@scroll=${ this.onScrollbarScroll }
 				@mousedown=${ (ev: Event) => ev.preventDefault() }
 			>
 				<s-scrollthumb
-					style=${ styleMap({
-						width:  this.direction === 'horizontal' ? scrollbarWidth : undefined,
-						height: this.direction === 'vertical' ? scrollbarHeight : undefined,
-					}) }
+					style=${ styleMap(scrollthumbStyles) }
 				></s-scrollthumb>
 			</s-scrollbar>
 
@@ -143,7 +164,16 @@ export class EditorTabs extends MimicElement {
 		sharedStyles,
 		css`
 		:host {
-			--_border: var(--m-tab-border, 3px solid var(--shadow1));
+			--_border-top:            var(--m-border-top,           initial);
+			--_border-right:          var(--m-border-right,         initial);
+			--_border-bottom:         var(--m-border-bottom,        initial);
+			--_border-left:           var(--m-border-left,          initial);
+			--_tab-background:        var(--m-tab-background,       initial);
+			--_active-border-top:     var(--m-active-border-top,    initial);
+			--_active-border-right:   var(--m-active-border-right,  initial);
+			--_active-border-bottom:  var(--m-active-border-bottom, initial);
+			--_active-border-left:    var(--m-active-border-left,   initial);
+			--_active-tab-background: var(--m-active-tab-background,initial);
 		}
 		`,
 		css`
@@ -151,6 +181,7 @@ export class EditorTabs extends MimicElement {
 			grid-auto-flow: row;
 			overflow-x: hidden;
 			overflow-y: scroll;
+			min-width: 100px;
 		}
 		:host([direction="vertical"]) s-scrollbar {
 			overflow-x: hidden;
@@ -160,14 +191,23 @@ export class EditorTabs extends MimicElement {
 			width: 1px;
 		}
 		:host([direction="vertical"]) s-tab {
-			border-inline: none;
 			margin-bottom: -3px;
 		}
+		:host([direction="vertical"]) s-tab:first-of-type {
+			border-top: none;
+		}
+		:host([direction="vertical"]) s-tab:last-of-type {
+			border-bottom: none;
+		}
 		:host([direction="horizontal"]) s-tab {
-			border-block: none;
 			margin-right: -3px;
 		}
-
+		:host([direction="horizontal"]) s-tab:first-of-type {
+			border-left: none;
+		}
+		:host([direction="horizontal"]) s-tab:last-of-type {
+			border-right: none;
+		}
 		:host {
 			overflow: hidden;
 			display: grid;
@@ -212,28 +252,29 @@ export class EditorTabs extends MimicElement {
 			cursor: pointer;
 			display: inline-flex;
 			align-items: center;
-			border: var(--_border);
-			padding-inline: 4px;
+			padding-inline: 8px;
 			height: 40px;
+			min-width: 100px;
 			max-width: 150px;
 			overflow: hidden;
-			background-color: var(--background);
+			border-top: var(--_border-top);
+			border-right: var(--_border-right);
+			border-bottom: var(--_border-bottom);
+			border-left: var(--_border-left);
+			background-color: var(--_tab-background);
 		}
 		s-tab span {
 			overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
-		s-tab:first-of-type {
-			border-left: none;
-			border-top: none;
-		}
-		s-tab:last-of-type {
-			border-right: none;
-			border-bottom: none;
-		}
+
 		s-tab.active {
-			background-color: initial;
+			border-top: var(--_active-border-top);
+			border-right: var(--_active-border-right);
+			border-bottom: var(--_active-border-bottom);
+			border-left: var(--_active-border-left);
+			background-color: var(--_active-tab-background);
 		}
 		`,
 	];

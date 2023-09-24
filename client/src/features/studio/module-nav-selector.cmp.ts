@@ -13,11 +13,14 @@ export class ModuleNavSelector extends MimicElement {
 
 	@property() public header = '';
 	@property() public activeItem = '';
-	@property({ type: Array }) protected items: {key: string; value: string;}[] = [];
+	@property({ type: Array }) protected items: { key: string; value: string; }[] = [];
 
 	protected override render(): unknown {
 		return html`
-		<header>${ this.header }</header>
+		<header>
+			<span>${ this.header }</span>
+		</header>
+
 		<article>
 			<ul
 				@click=${ (ev: EventOf<HTMLLIElement>) =>
@@ -44,10 +47,16 @@ export class ModuleNavSelector extends MimicElement {
 			background-color: var(--shadow1);
 		}
 		header {
+			overflow: hidden;
+			display: flex;
+			place-items: center start;
 			height: 40px;
 			padding-inline: 20px;
-			display: grid;
-			place-items: center start;
+		}
+		header span {
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 		article {
 			overflow: hidden;
@@ -68,7 +77,7 @@ export class ModuleNavSelector extends MimicElement {
 			border-bottom-right-radius: 8px;
 		}
 		li.active {
-			background-color: lime;
+			background-color: var(--surface1);
 		}
 		`,
 	];

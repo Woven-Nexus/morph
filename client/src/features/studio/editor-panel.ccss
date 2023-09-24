@@ -8,6 +8,19 @@
 	border-radius: 12px;
 }
 
+s-tab {
+	cursor: pointer;
+}
+
+s-action-container {
+	overflow: auto;
+	display: grid;
+	grid-auto-rows: max-content;
+	gap: 8px;
+	padding-inline: 8px;
+	margin-top: 40px;
+}
+
 s-large {
 	overflow: hidden;
 	display: grid;
@@ -64,17 +77,20 @@ s-medium {
 	& s-nav-panel {
 		overflow: hidden;
 		display: grid;
-		grid-template-columns: max-content 15px 1fr;
+		grid-template-columns: max-content 15px 1fr 15px max-content;
 		height: 200px;
 		padding-bottom: 8px;
 	}
 
 	& m-module-nav-selector:first-of-type {
-		padding-right: 8px;
 		width: 300px;
 	}
+	& m-module-nav-selector {
+		padding-right: 8px;
+	}
 
-	& m-module-nav-selector:last-of-type {
+	& m-module-nav-selector:not(:first-of-type),
+	& s-action-container {
 		padding-left: 8px;
 	}
 

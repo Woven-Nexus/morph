@@ -1,18 +1,12 @@
 import { consume, type ContextProp } from '@roenlie/lit-context';
-import { range } from '@roenlie/mimic-core/array';
 import { maybe } from '@roenlie/mimic-core/async';
-import type { EventOf } from '@roenlie/mimic-core/dom';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
-import { eventOptions, property, state } from 'lit/decorators.js';
-import { classMap } from 'lit/directives/class-map.js';
-import { map } from 'lit/directives/map.js';
+import { property } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
-import { styleMap } from 'lit/directives/style-map.js';
 import { editor } from 'monaco-editor';
 
 import { serverUrl } from '../../app/backend-url.js';
-import { queryId } from '../../app/queryId.js';
 import type { DbResponse } from '../../app/response-model.js';
 import type { Module } from '../code-module/module-model.js';
 import { MonacoEditorCmp } from '../monaco/monaco-editor.cmp.js';
@@ -141,22 +135,28 @@ export class EditorCmp extends MimicElement {
 	public static override styles = [
 		sharedStyles,
 		css`
+		`,
+		css`
 		:host {
 			overflow: hidden;
 			display: grid;
+		}
+		:host([tab-placement="top"]) {
+			grid-template: "tabs" max-content "editor" 1fr / 1fr;
+		}
+		:host([tab-placement="bottom"]) {
+			grid-template: "editor" 1fr "tabs" max-content / 1fr;
+		}
+		:host([tab-placement="left"]) {
+			grid-template: "tabs editor" 1fr / 1fr max-content;
+		}
+		:host([tab-placement="right"]) {
 			grid-template: "editor tabs" 1fr / 1fr max-content;
-		}
-		:host([tab-placement="top"]) {
-			grid-template: "tabs" max-content
-				"editor" 1fr
-				/ 1fr;
-		}
-		:host([tab-placement="top"]) {
-
 		}
 		m-editor-tabs {
 			grid-area: tabs;
-			--m-tab-border: none;
+			background-color: var(--surface1);
+			--m-active-tab-background: var(--surface);
 		}
 		monaco-editor {
 			grid-area: editor;

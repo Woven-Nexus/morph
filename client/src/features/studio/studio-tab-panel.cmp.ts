@@ -45,10 +45,14 @@ export class StudioTabPanel extends MimicElement {
 			border-radius: 8px;
 			padding: 10px;
 			text-transform: capitalize;
+			border: 1px solid transparent;
+		}
+		::slotted([slot="tab"]:hover) {
+			background-color: var(--surface1);
 		}
 		::slotted([slot="tab"].active) {
 			background-color: var(--surface);
-			border: 1px solid var(--background);
+			border-color: var(--background);
 		}
 		section {
 			overflow: hidden;
