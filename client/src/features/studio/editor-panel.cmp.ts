@@ -133,7 +133,9 @@ export class EditorPanel extends MimicElement {
 			${ choose(this.activeTab, [
 				[
 				'editor', () => html`
-					<m-editor></m-editor>
+					<m-editor
+						tab-placement="right"
+					></m-editor>
 				`,
 				],
 				[
@@ -178,7 +180,9 @@ export class EditorPanel extends MimicElement {
 				@mousedown=${ this.drag.handleEditorLeftDrag }
 			></m-drag-handle>
 
-			<m-editor></m-editor>
+			<m-editor
+				tab-placement="top"
+			></m-editor>
 
 			<m-drag-handle class="vertical"
 				@mousedown=${ this.drag.handleEditorRightDrag }

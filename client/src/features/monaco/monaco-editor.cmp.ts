@@ -54,6 +54,7 @@ export class MonacoEditorCmp extends MimicElement {
 			mouseWheelZoom:       true,
 			fixedOverflowWidgets: true,
 			useShadowDOM:         true,
+			minimap:              { enabled: false },
 		});
 
 		this.resizeObs.observe(this);

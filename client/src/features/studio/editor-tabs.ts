@@ -1,4 +1,3 @@
-import { range } from '@roenlie/mimic-core/array';
 import { emitEvent, type EventOf } from '@roenlie/mimic-core/dom';
 import { curryDebounce } from '@roenlie/mimic-core/timing';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
@@ -13,6 +12,8 @@ import { sharedStyles } from '../styles/shared-styles.js';
 
 
 /**
+ * @csspart tab - the tab element.
+ * @csspart tabs - container for tabs.
  * @fires m-tab-click emitted when clicking on a tab, detail contains the tab key.
  */
 @customElement('m-editor-tabs')
@@ -98,6 +99,7 @@ export class EditorTabs extends MimicElement {
 
 		return html`
 		<s-tabs
+			part="tabs"
 			id="tabs"
 			@wheel=${ this.onTabWheel }
 			@scroll=${ this.onTabScroll }
@@ -125,6 +127,7 @@ export class EditorTabs extends MimicElement {
 
 			${ map(this.tabs, ({ key, value }) => html`
 			<s-tab
+				part="tab"
 				id=${ key }
 				class=${ classMap({ active: key === this.activeTab }) }
 				@click=${ this.onTabClick }

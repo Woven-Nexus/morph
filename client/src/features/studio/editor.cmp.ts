@@ -121,9 +121,13 @@ export class EditorCmp extends MimicElement {
 	}
 
 	protected override render() {
+		const direction = this.tabPlacement === 'top' ? 'horizontal' : 'vertical';
+		const placement = this.tabPlacement === 'left' ? 'start' : 'end';
+
 		return html`
 		<m-editor-tabs
-			direction="vertical"
+			direction=${ direction }
+			placement=${ placement }
 			.tabs=${ this.tabs }
 			.activeTab=${ this.store.value.activeModuleId }
 			@m-tab-click=${ this.handle.tabClick }
@@ -141,6 +145,14 @@ export class EditorCmp extends MimicElement {
 			overflow: hidden;
 			display: grid;
 			grid-template: "editor tabs" 1fr / 1fr max-content;
+		}
+		:host([tab-placement="top"]) {
+			grid-template: "tabs" max-content
+				"editor" 1fr
+				/ 1fr;
+		}
+		:host([tab-placement="top"]) {
+
 		}
 		m-editor-tabs {
 			grid-area: tabs;
