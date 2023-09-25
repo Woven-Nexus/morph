@@ -12,6 +12,12 @@ s-tab {
 	cursor: pointer;
 }
 
+s-placeholder {
+	display: grid;
+	place-items: center;
+	opacity: 0.5;
+}
+
 s-action-container {
 	overflow: auto;
 	display: grid;
@@ -19,6 +25,10 @@ s-action-container {
 	gap: 8px;
 	padding-inline: 8px;
 	margin-top: 40px;
+}
+s-action-container::-webkit-scrollbar-thumb {
+	border-top-right-radius: 8px;
+	border-bottom-right-radius: 8px;
 }
 
 s-large {
@@ -82,14 +92,15 @@ s-medium {
 		padding-bottom: 8px;
 	}
 
-	& m-module-nav-selector:first-of-type {
+	& m-module-nav-selector:nth-of-type(1),
+	& m-module-nav-selector:nth-of-type(3) {
 		width: 300px;
 	}
 	& m-module-nav-selector {
 		padding-right: 8px;
 	}
 
-	& m-module-nav-selector:not(:first-of-type),
+	& m-module-nav-selector:not(:nth-of-type(1)),
 	& s-action-container {
 		padding-left: 8px;
 	}

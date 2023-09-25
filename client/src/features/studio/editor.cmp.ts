@@ -30,7 +30,7 @@ export interface EditorTab {
 export class EditorCmp extends MimicElement {
 
 	@property({ attribute: 'tab-placement', reflect: true })
-	public tabPlacement: 'top' | 'left' | 'right' = 'top';
+	public tabPlacement: 'none' |'top' | 'left' | 'right' = 'top';
 
 	@consume('store') protected store: ContextProp<StudioStore>;
 	protected editorRef: Ref<MonacoEditorCmp> = createRef();
@@ -102,7 +102,7 @@ export class EditorCmp extends MimicElement {
 				module: result.data,
 			};
 
-			store.editorTabs.set(activeId, tab);
+			store.update('editorTabs', tabs => void tabs.set(activeId, tab));
 			store.activeEditorTab = tab;
 		}
 
@@ -140,6 +140,12 @@ export class EditorCmp extends MimicElement {
 		:host {
 			overflow: hidden;
 			display: grid;
+		}
+		:host([tab-placement="none"]) {
+			grid-template: "editor" 1fr / 1fr;
+		}
+		:host([tab-placement="none"]) m-editor-tabs {
+			display: none;
 		}
 		:host([tab-placement="top"]) {
 			grid-template: "tabs" max-content "editor" 1fr / 1fr;

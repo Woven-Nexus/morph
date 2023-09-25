@@ -28,7 +28,6 @@ ul, li {
 *::-webkit-scrollbar-thumb {
 	background: var(--scrollbar-thumb-bg, rgba(255,255,255, 0.2));
 	border-radius: var(--scrollbar-thumb-border-radius, 0.2rem);
-	border-top-right-radius: 12px;
 	-webkit-background-clip: padding-box;
 	background-clip: padding-box;
 }

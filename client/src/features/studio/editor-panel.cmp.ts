@@ -33,8 +33,8 @@ export class EditorPanel extends MimicElement {
 	@state() protected namespaceKeyValues: {key: string; value: string}[] = [];
 	@state() protected modulesKeyValues: {key: string; value: string}[] = [];
 	@state() protected activeKeyValues: {key: string; value: string}[] = [];
-	@state() protected uiMode: 'large' | 'medium' | 'small' = 'large';
-	@state() protected activeTab: 'editor' | 'details' | 'history' = 'details';
+	@state() protected uiMode: 'large'|'medium'|'small' = 'large';
+	@state() protected activeTab: 'none'|'editor'|'details'|'history' = 'none';
 	protected namespaceList: NamespaceDefinition[] = [];
 	protected moduleList: ModuleNamespace[] = [];
 	protected previousUiMode = this.uiMode;
@@ -51,15 +51,19 @@ export class EditorPanel extends MimicElement {
 		else
 			newUIMode = 'large';
 
-		if (this.uiMode !== newUIMode) {
-			this.uiMode = newUIMode;
+		if (this.uiMode === newUIMode)
+			return;
 
-			if (newUIMode === 'medium')
-				this.activeTab = 'editor';
+		this.uiMode = newUIMode;
 
-			if (newUIMode === 'large' && this.activeTab === 'editor')
-				this.activeTab = 'details';
-		}
+		const moduleActive = !!this.store.value.activeModuleId;
+		if (!moduleActive)
+			return;
+
+		if (newUIMode === 'medium')
+			this.activeTab = 'editor';
+		if (newUIMode === 'large' && this.activeTab === 'editor')
+			this.activeTab = 'details';
 	});
 
 	protected tabLists = {
@@ -87,6 +91,11 @@ export class EditorPanel extends MimicElement {
 			const modules = this.store.value.availableModules;
 			this.modulesKeyValues = modules.map(def =>
 				({ key: def.module_id.toString(), value: def.name }));
+		});
+
+		store.listen(this, 'editorTabs', () => {
+			this.activeKeyValues = [ ...this.store.value.editorTabs ].map(([ , tab ]) =>
+				({ key: tab.key, value: tab.module.namespace + '/' + tab.module.name }));
 		});
 
 		this.populateNamespaceList();
@@ -131,6 +140,16 @@ export class EditorPanel extends MimicElement {
 	}
 
 	protected renderTabPanel() {
+		if (!this.store.value.activeModuleId) {
+			return html`
+			<m-studio-tab-panel>
+				<s-placeholder>
+					Select a module...
+				</s-placeholder>
+			</m-studio-tab-panel>
+			`;
+		}
+
 		return html`
 		<m-studio-tab-panel>
 			${ map(this.tabLists[this.uiMode], tab => html`
@@ -147,7 +166,7 @@ export class EditorPanel extends MimicElement {
 				[
 				'editor', () => html`
 					<m-editor
-						tab-placement="right"
+						tab-placement="none"
 					></m-editor>
 				`,
 				],
@@ -161,7 +180,7 @@ export class EditorPanel extends MimicElement {
 					HISTORY
 				`,
 				],
-				]) }
+			]) }
 		</m-studio-tab-panel>
 		`;
 	}
@@ -232,13 +251,12 @@ export class EditorPanel extends MimicElement {
 					@mousedown=${ this.drag.handle.mediumNavRightDrag }
 				></m-drag-handle>
 
-				<s-action-container>
-					<mm-button shape="rounded" size="small">Button 1</mm-button>
-					<mm-button shape="rounded" size="small">Button 2</mm-button>
-					<mm-button shape="rounded" size="small">Button 3</mm-button>
-					<mm-button shape="rounded" size="small">Button 4</mm-button>
-					<mm-button shape="rounded" size="small">Button 5</mm-button>
-				</s-action-container>
+				<m-module-nav-selector
+					header="Active"
+					.activeItem=${ this.store.value.activeModuleId }
+					.items=${ this.activeKeyValues }
+					@m-nav-select-key=${ this.selectModule }
+				></m-module-nav-selector>
 			</s-nav-panel>
 
 			<m-drag-handle class="vertical"
@@ -363,8 +381,8 @@ class EditorPanelDrag {
 	protected mediumNavLeftDrag(ev: MouseEvent) {
 		const target = ev.target as HTMLElement;
 		const container = this.element.renderRoot.querySelector<HTMLElement>('s-nav-panel');
-		const leftPanel = this.element.renderRoot.querySelector<HTMLElement>('m-module-nav-selector:first-of-type');
-		const center = this.element.renderRoot.querySelector<HTMLElement>('m-module-nav-selector:last-of-type');
+		const leftPanel = this.element.renderRoot.querySelector<HTMLElement>('m-module-nav-selector:nth-of-type(1)');
+		const center = this.element.renderRoot.querySelector<HTMLElement>('m-module-nav-selector:nth-of-type(2)');
 
 		if (!container || !leftPanel || !center)
 			return;
@@ -392,8 +410,8 @@ class EditorPanelDrag {
 	protected mediumNavRightDrag(ev: MouseEvent) {
 		const target = ev.target as HTMLElement;
 		const container = this.element.renderRoot.querySelector<HTMLElement>('s-nav-panel');
-		const center = this.element.renderRoot.querySelector<HTMLElement>('m-module-nav-selector:last-of-type');
-		const rightPanel = this.element.renderRoot.querySelector<HTMLElement>('s-action-container');
+		const center = this.element.renderRoot.querySelector<HTMLElement>('m-module-nav-selector:nth-of-type(2)');
+		const rightPanel = this.element.renderRoot.querySelector<HTMLElement>('m-module-nav-selector:nth-of-type(3)');
 
 		if (!container || !rightPanel || !center)
 			return;
