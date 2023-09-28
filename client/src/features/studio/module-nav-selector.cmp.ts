@@ -22,10 +22,12 @@ export class ModuleNavSelector extends MimicElement {
 		</header>
 
 		<article>
-			<ul
-				@click=${ (ev: EventOf<HTMLLIElement>) =>
-					emitEvent(this, 'm-nav-select-key', { detail: ev.target.id }) }
-			>
+			<ul @click=${ (ev: EventOf<HTMLLIElement>) => {
+				if (!(ev.target instanceof HTMLLIElement))
+					return;
+
+				emitEvent(this, 'm-nav-select-key', { detail: ev.target.id });
+			} }>
 				${ map(this.items, item => html`
 				<li
 					id=${ item.key }

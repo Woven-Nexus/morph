@@ -3,17 +3,19 @@ import { maybe } from '@roenlie/mimic-core/async';
 import { MMButton } from '@roenlie/mimic-elements/button';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { html, LitElement } from 'lit';
-import { state } from 'lit/decorators.js';
+import { query, state } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { map } from 'lit/directives/map.js';
+import { editor } from 'monaco-editor';
 
 import { serverUrl } from '../../app/backend-url.js';
 import type { DbResponse } from '../../app/response-model.js';
+import type { Module } from '../code-module/module-model.js';
 import type { ModuleNamespace, NamespaceDefinition } from '../code-module/namespace-model.js';
 import { sharedStyles } from '../styles/shared-styles.js';
 import { DragHandleCmp } from './drag-handle.cmp.js';
-import { EditorCmp } from './editor.cmp.js';
+import { EditorCmp, type EditorTab } from './editor.cmp.js';
 import styles from './editor-panel.ccss';
 import { ModuleNavSelector } from './module-nav-selector.cmp.js';
 import type { StudioStore } from './studio-store.js';
@@ -30,6 +32,7 @@ ModuleNavSelector.register();
 export class EditorPanel extends MimicElement {
 
 	@consume('store') protected store: ContextProp<StudioStore>;
+	@query('m-editor') protected editorQry?: EditorCmp;
 	@state() protected namespaceKeyValues: {key: string; value: string}[] = [];
 	@state() protected modulesKeyValues: {key: string; value: string}[] = [];
 	@state() protected activeKeyValues: {key: string; value: string}[] = [];
@@ -42,15 +45,7 @@ export class EditorPanel extends MimicElement {
 		if (!entry)
 			return;
 
-		let newUIMode = this.uiMode;
-
-		if (entry.contentRect.width <= 450)
-			newUIMode = 'small';
-		else if (entry.contentRect.width <= 1440)
-			newUIMode = 'medium';
-		else
-			newUIMode = 'large';
-
+		const newUIMode = this.getUiMode(entry.contentRect.width);
 		if (this.uiMode === newUIMode)
 			return;
 
@@ -79,24 +74,12 @@ export class EditorPanel extends MimicElement {
 		this.resizeObs.observe(this);
 
 		const store = this.store.value;
-		store.connect(this, 'activeNamespace', 'activeModuleId');
+		store.connect(this, 'activeNamespace', 'activeModuleId', 'editorTabs');
 		store.listen(this, 'activeNamespace', () => this.populateModuleList());
-		store.listen(this, 'availableNamespaces', () => {
-			const namespaces = this.store.value.availableNamespaces;
-			this.namespaceKeyValues = namespaces.map(def =>
-				({ key: def.namespace, value: def.namespace }));
-		});
-
-		store.listen(this, 'availableModules', () => {
-			const modules = this.store.value.availableModules;
-			this.modulesKeyValues = modules.map(def =>
-				({ key: def.module_id.toString(), value: def.name }));
-		});
-
-		store.listen(this, 'editorTabs', () => {
-			this.activeKeyValues = [ ...this.store.value.editorTabs ].map(([ , tab ]) =>
-				({ key: tab.key, value: tab.module.namespace + '/' + tab.module.name }));
-		});
+		store.listen(this, 'availableNamespaces',  this.setNamespaceKeyValues);
+		store.listen(this, 'availableModules', this.setModulesKeyValues);
+		store.listen(this, 'activeModuleId', () => this.onActiveModuleId());
+		store.listen(this, 'editorTabs', this.setActiveKeyValues);
 
 		this.populateNamespaceList();
 	}
@@ -138,6 +121,77 @@ export class EditorPanel extends MimicElement {
 		const store = this.store.value;
 		store.activeModuleId = ev.detail;
 	}
+
+	protected onActiveModuleId() {
+		this.updateEditorTabs();
+	}
+
+	protected async updateEditorTabs() {
+		const store = this.store.value;
+		const activeId = store.activeModuleId;
+		if (!activeId)
+			return;
+
+		// Create tab as it does not exist.
+		const existingTab = store.editorTabs.get(activeId);
+		if (existingTab)
+			return void (store.activeEditorTab = existingTab);
+
+		const namespace = store.activeNamespace;
+		if (!namespace)
+			return;
+
+		const url = new URL(serverUrl + `/api/code-modules/${ namespace }/${ activeId }`);
+		const [ result ] = await maybe<DbResponse<Module>>((await fetch(url)).json());
+		if (!result)
+			return void (store.activeModuleId = '');
+
+		const newModel = editor.createModel(result.data.code, 'typescript');
+		const tab: EditorTab = {
+			key:    activeId,
+			model:  newModel,
+			state:  defaultEditorState(),
+			module: result.data,
+		};
+
+		store.update('editorTabs', tabs => void tabs.set(activeId, tab));
+		store.activeEditorTab = tab;
+	}
+
+	protected getUiMode(width: number) {
+		if (width <= 450)
+			return 'small';
+		else if (width <= 1440)
+			return 'medium';
+		else
+			return 'large';
+	}
+
+	protected setNamespaceKeyValues = () => {
+		const namespaces = this.store.value.availableNamespaces;
+		this.namespaceKeyValues = namespaces.map(def =>
+			({ key: def.namespace, value: def.namespace }));
+	};
+
+	protected setModulesKeyValues = () => {
+		const modules = this.store.value.availableModules;
+		this.modulesKeyValues = modules.map(def =>
+			({ key: def.module_id.toString(), value: def.name }));
+	};
+
+	protected setActiveKeyValues = () => {
+		const store = this.store.value;
+		this.activeKeyValues = [ ...store.editorTabs ].map(([ , tab ]) =>
+			({ key: tab.key, value: tab.module.namespace + '/' + tab.module.name }));
+
+		if (this.store.value.activeModuleId) {
+			if (this.activeTab === 'none')
+				this.activeTab = 'editor';
+		}
+		else {
+			this.activeTab = 'none';
+		}
+	};
 
 	protected renderTabPanel() {
 		if (!this.store.value.activeModuleId) {
@@ -486,3 +540,25 @@ class EditorPanelDrag {
 	}
 
 }
+
+
+const defaultEditorState = (): editor.ICodeEditorViewState => {
+	return {
+		cursorState: [
+			{
+				inSelectionMode: false,
+				selectionStart:  { lineNumber: 1, column: 1 },
+				position:        { lineNumber: 1, column: 1 },
+			},
+		],
+		viewState: {
+			scrollLeft:            0,
+			firstPosition:         { lineNumber: 1, column: 1 },
+			firstPositionDeltaTop: 0,
+		},
+		contributionsState: {
+			'editor.contrib.folding':         { lineCount: 1, foldedImports: false },
+			'editor.contrib.wordHighlighter': false,
+		},
+	};
+};

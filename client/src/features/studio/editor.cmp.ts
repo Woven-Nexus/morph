@@ -1,13 +1,10 @@
 import { consume, type ContextProp } from '@roenlie/lit-context';
-import { maybe } from '@roenlie/mimic-core/async';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { editor } from 'monaco-editor';
 
-import { serverUrl } from '../../app/backend-url.js';
-import type { DbResponse } from '../../app/response-model.js';
 import type { Module } from '../code-module/module-model.js';
 import { MonacoEditorCmp } from '../monaco/monaco-editor.cmp.js';
 import { sharedStyles } from '../styles/shared-styles.js';
@@ -42,9 +39,13 @@ export class EditorCmp extends MimicElement {
 		}));
 	}
 
+	public get editor() {
+		return this.editorRef.value;
+	}
+
 	protected handle = {
-		module:   this.onModule.bind(this),
-		tabClick: (ev: CustomEvent<string>) => {
+		activeEditorTab: this.onActiveEditorTab.bind(this),
+		tabClick:        (ev: CustomEvent<string>) => {
 			this.store.value.activeModuleId = ev.detail;
 		},
 	};
@@ -54,63 +55,38 @@ export class EditorCmp extends MimicElement {
 		import('../monaco/monaco-editor.cmp.js').then(m => m.MonacoEditorCmp.register());
 
 		this.store.value.connect(this, 'activeModuleId', 'editorTabs', 'activeEditorTab');
-		this.store.value.listen(this, 'activeModuleId', this.handle.module);
+		this.store.value.listen(this, 'activeEditorTab', this.handle.activeEditorTab);
 	}
 
 	public override afterConnectedCallback() {
-		this.onModule();
+		this.onActiveEditorTab();
 	}
 
-	protected async onModule() {
+	protected async onActiveEditorTab() {
 		const store = this.store.value;
-		const activeId = store.activeModuleId;
-		if (!activeId)
+		const activeTab = store.activeEditorTab;
+		if (!activeTab)
 			return;
 
 		await this.updateComplete;
-		await this.editorRef.value?.editorReady;
-
-		const editorRef = this.editorRef.value?.editor;
+		const editorRef = this.editorRef.value;
 		if (!editorRef)
 			return;
 
-		// Move to selected tab
-		const existingTab = store.editorTabs.get(activeId);
-		if (existingTab) {
-			editorRef.setModel(existingTab.model);
-			editorRef.restoreViewState(existingTab.state);
-			editorRef.focus();
-		}
-		// Create tab as it does not exist.
-		else {
-			const namespace = store.activeNamespace;
-			if (!namespace)
-				return;
+		await editorRef.editorReady;
+		const editor = editorRef?.editor;
+		if (!editor)
+			return;
 
-			const url = new URL(serverUrl + `/api/code-modules/${ namespace }/${ activeId }`);
-			const [ result ] = await maybe<DbResponse<Module>>((await fetch(url)).json());
-			if (!result)
-				return void (store.activeModuleId = '');
-
-			const newModel = editor.createModel(result.data.code, 'typescript');
-			editorRef.setModel(newModel);
-
-			const tab: EditorTab = {
-				key:    activeId,
-				model:  newModel,
-				state:  editorRef.saveViewState()!,
-				module: result.data,
-			};
-
-			store.update('editorTabs', tabs => void tabs.set(activeId, tab));
-			store.activeEditorTab = tab;
-		}
+		editor.setModel(activeTab.model);
+		editor.restoreViewState(activeTab.state);
+		editor.focus();
 
 		this.requestUpdate();
 		await this.updateComplete;
 		this.requestUpdate();
 
-		const tab = this.shadowRoot?.getElementById(activeId);
+		const tab = this.shadowRoot?.getElementById(activeTab.key);
 		tab?.scrollIntoView();
 	}
 
