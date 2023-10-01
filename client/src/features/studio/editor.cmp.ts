@@ -17,9 +17,9 @@ EditorTabs.register();
 
 export interface EditorTab {
 	key: string;
-	model: editor.ITextModel;
-	state: editor.ICodeEditorViewState;
 	module: Module;
+	model?: editor.ITextModel;
+	state?: editor.ICodeEditorViewState;
 }
 
 
@@ -44,6 +44,7 @@ export class EditorCmp extends MimicElement {
 	}
 
 	protected handle = {
+		saveEditorState: this.saveEditorState.bind(this),
 		activeEditorTab: this.onActiveEditorTab.bind(this),
 		tabClick:        (ev: CustomEvent<string>) => {
 			this.store.value.activeModuleId = ev.detail;
@@ -56,10 +57,27 @@ export class EditorCmp extends MimicElement {
 
 		this.store.value.connect(this, 'activeModuleId', 'editorTabs', 'activeEditorTab');
 		this.store.value.listen(this, 'activeEditorTab', this.handle.activeEditorTab);
+		this.store.value.listen(this, 'activeEditorTab', this.handle.saveEditorState, {
+			type: 'before',
+		});
 	}
 
 	public override afterConnectedCallback() {
 		this.onActiveEditorTab();
+	}
+
+	public override disconnectedCallback(): void {
+		this.saveEditorState();
+		super.disconnectedCallback();
+	}
+
+	protected saveEditorState() {
+		const activeTab = this.store.value.activeEditorTab;
+		const editor = this.editorRef.value?.editor;
+		if (!activeTab || !editor)
+			return;
+
+		activeTab.state = editor.saveViewState() ?? undefined;
 	}
 
 	protected async onActiveEditorTab() {
@@ -74,13 +92,16 @@ export class EditorCmp extends MimicElement {
 			return;
 
 		await editorRef.editorReady;
-		const editor = editorRef?.editor;
-		if (!editor)
+		const editorInstance = editorRef?.editor;
+		if (!editorInstance)
 			return;
 
-		editor.setModel(activeTab.model);
-		editor.restoreViewState(activeTab.state);
-		editor.focus();
+		if (!activeTab.model)
+			activeTab.model = editor.createModel(activeTab.module.code, 'typescript');
+
+		editorInstance.setModel(activeTab.model);
+		editorInstance.restoreViewState(activeTab.state ?? null);
+		editorInstance.focus();
 
 		this.requestUpdate();
 		await this.updateComplete;

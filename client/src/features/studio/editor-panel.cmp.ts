@@ -7,7 +7,7 @@ import { query, state } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { map } from 'lit/directives/map.js';
-import { editor } from 'monaco-editor';
+import { when } from 'lit/directives/when.js';
 
 import { serverUrl } from '../../app/backend-url.js';
 import type { DbResponse } from '../../app/response-model.js';
@@ -40,7 +40,6 @@ export class EditorPanel extends MimicElement {
 	@state() protected activeTab: 'none'|'editor'|'details'|'history' = 'none';
 	protected namespaceList: NamespaceDefinition[] = [];
 	protected moduleList: ModuleNamespace[] = [];
-	protected previousUiMode = this.uiMode;
 	protected resizeObs = new ResizeObserver(([ entry ]) => {
 		if (!entry)
 			return;
@@ -146,11 +145,8 @@ export class EditorPanel extends MimicElement {
 		if (!result)
 			return void (store.activeModuleId = '');
 
-		const newModel = editor.createModel(result.data.code, 'typescript');
 		const tab: EditorTab = {
 			key:    activeId,
-			model:  newModel,
-			state:  defaultEditorState(),
 			module: result.data,
 		};
 
@@ -185,8 +181,12 @@ export class EditorPanel extends MimicElement {
 			({ key: tab.key, value: tab.module.namespace + '/' + tab.module.name }));
 
 		if (this.store.value.activeModuleId) {
-			if (this.activeTab === 'none')
-				this.activeTab = 'editor';
+			if (this.activeTab === 'none') {
+				if (this.uiMode === 'large')
+					this.activeTab = 'details';
+				if (this.uiMode === 'medium')
+					this.activeTab = 'editor';
+			}
 		}
 		else {
 			this.activeTab = 'none';
@@ -215,6 +215,26 @@ export class EditorPanel extends MimicElement {
 				${ tab }
 			</s-tab>
 			`) }
+
+			<button slot="action">ACTION!1</button>
+			<button slot="action">ACTION!2</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!</button>
 
 			${ choose(this.activeTab, [
 				[
@@ -266,9 +286,15 @@ export class EditorPanel extends MimicElement {
 				@mousedown=${ this.drag.handle.largeEditorLeftDrag }
 			></m-drag-handle>
 
+			${ when(this.store.value.activeModuleId, () => html`
 			<m-editor
 				tab-placement="top"
 			></m-editor>
+			`, () => html`
+			<s-editor-placeholder>
+				Select a module...
+			</s-editor-placeholder>
+			`) }
 
 			<m-drag-handle class="vertical"
 				@mousedown=${ this.drag.handle.largeEditorRightDrag }
@@ -540,25 +566,3 @@ class EditorPanelDrag {
 	}
 
 }
-
-
-const defaultEditorState = (): editor.ICodeEditorViewState => {
-	return {
-		cursorState: [
-			{
-				inSelectionMode: false,
-				selectionStart:  { lineNumber: 1, column: 1 },
-				position:        { lineNumber: 1, column: 1 },
-			},
-		],
-		viewState: {
-			scrollLeft:            0,
-			firstPosition:         { lineNumber: 1, column: 1 },
-			firstPositionDeltaTop: 0,
-		},
-		contributionsState: {
-			'editor.contrib.folding':         { lineCount: 1, foldedImports: false },
-			'editor.contrib.wordHighlighter': false,
-		},
-	};
-};

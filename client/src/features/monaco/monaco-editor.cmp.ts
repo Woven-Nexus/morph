@@ -87,12 +87,3 @@ export class MonacoEditorCmp extends MimicElement {
 	`;
 
 }
-
-
-/** Hello */
-function Tester() {
-
-}
-
-
-Tester();

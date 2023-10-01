@@ -19,14 +19,14 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"@roenlie/lit-context": "^1.0.4",
-		"@roenlie/lit-state-store": "^0.0.13",
-		"@roenlie/mimic-core": "^0.0.45",
-		"@roenlie/mimic-elements": "^0.0.40",
-		"@roenlie/mimic-lit": "^0.0.55",
+		"@roenlie/lit-context": "^1.0.5",
+		"@roenlie/lit-state-store": "^0.0.14",
+		"@roenlie/mimic-core": "^0.0.46",
+		"@roenlie/mimic-elements": "^0.0.41",
+		"@roenlie/mimic-lit": "^0.0.56",
 		"@vaadin/router": "^1.7.5",
 		"lit": "^2.8.0",
 		"monaco-editor": "^0.43.0",
-		"unocss": "^0.55.7"
+		"unocss": "^0.56.4"
 	}
 }
