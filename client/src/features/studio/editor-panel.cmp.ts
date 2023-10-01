@@ -218,23 +218,23 @@ export class EditorPanel extends MimicElement {
 
 			<button slot="action">ACTION!1</button>
 			<button slot="action">ACTION!2</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
-			<button slot="action">ACTION!</button>
+			<button slot="action">ACTION!3</button>
+			<button slot="action">ACTION!4</button>
+			<button slot="action">ACTION!5</button>
+			<button slot="action">ACTION!6</button>
+			<button slot="action">ACTION!7</button>
+			<button slot="action">ACTION!8</button>
+			<button slot="action">ACTION!9</button>
+			<button slot="action">ACTION!10</button>
+			<button slot="action">ACTION!11</button>
+			<button slot="action">ACTION!12</button>
+			<button slot="action">ACTION!13</button>
+			<button slot="action">ACTION!14</button>
+			<button slot="action">ACTION!15</button>
+			<button slot="action">ACTION!16</button>
+			<button slot="action">ACTION!17</button>
+			<button slot="action">ACTION!18</button>
+			<button slot="action">ACTION!19</button>
 
 			${ choose(this.activeTab, [
 				[

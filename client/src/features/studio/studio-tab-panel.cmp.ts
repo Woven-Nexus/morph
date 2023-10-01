@@ -1,7 +1,9 @@
+import { debounce } from '@roenlie/mimic-core/timing';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { queryAssignedElements, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { styleMap } from 'lit/directives/style-map.js';
 import { when } from 'lit/directives/when.js';
 
 import { queryId } from '../../app/queryId.js';
@@ -26,6 +28,7 @@ export class StudioTabPanel extends MimicElement {
 
 			<m-studio-action-bar>
 				<slot name="action"></slot>
+				<slot slot="overflow" name="overflow"></slot>
 			</m-studio-action-bar>
 		</header>
 		<section>
@@ -80,7 +83,8 @@ export class StudioTabPanel extends MimicElement {
 			background-color: var(--surface);
 			border-color: var(--background);
 		}
-		::slotted([slot="action"]) {
+		::slotted([slot="action"]),
+		::slotted([slot="overflow"]) {
 			all: unset;
     		direction: ltr;
 			border-radius: 4px;
@@ -89,19 +93,22 @@ export class StudioTabPanel extends MimicElement {
 			border: 1px solid var(--background);
 			background-color: var(--surface1);
 		}
-		::slotted([slot="action"]:hover) {
+		::slotted([slot="action"]:hover),
+		::slotted([slot="overflow"]:hover) {
 			background-color: var(--background);
 		}
-		::slotted([slot="action"]:active) {
+		::slotted([slot="action"]:active),
+		::slotted([slot="overflow"]:active) {
 			background-color: var(--surface1);
 		}
-		::slotted([slot="action"]:hover:not(:disabled)) {
+		::slotted([slot="action"]:hover:not(:disabled)),
+		::slotted([slot="overflow"]:hover:not(:disabled)) {
 			cursor: pointer;
 		}
-		::slotted([slot="action"]:first-child) {
+		::slotted([slot="action"]:first-child),
+		::slotted([slot="overflow"]:first-child) {
 			margin-left: auto;
 		}
-
 		section {
 			overflow: hidden;
 			display: grid;
@@ -115,41 +122,92 @@ export class StudioTabPanel extends MimicElement {
 }
 
 
+interface SlotActionElement extends HTMLElement {
+	previousSlot?: string;
+}
+
+
 @customElement('m-studio-action-bar')
 export class StudioActionBar extends MimicElement {
 
-	@state() protected overflow = false;
 	@state() protected ready = false;
+	@state() protected overflowOpen = false;
 	@queryId('wrapper') protected wrapperEl?: HTMLElement;
 
+	@queryAssignedElements({ flatten: true })
+	protected slotContent: SlotActionElement[];
+
+	@queryAssignedElements({ slot: 'overflow', flatten: true })
+	protected overflowSlot: SlotActionElement[];
+
+	protected resizeObs = new ResizeObserver(([ entry ]) => {
+		const hostRect = entry?.contentRect;
+		if (!hostRect)
+			return;
+
+		this.updateSlotNames();
+	});
+
 	public override connectedCallback(): void {
-		this.setAttribute('not-ready', '');
 		super.connectedCallback();
 	}
 
 	public override afterConnectedCallback(): void {
-		console.log('after connected');
-
-		const hostRect = this.getBoundingClientRect();
-		const wrapperRect = this.wrapperEl?.getBoundingClientRect();
-		console.log(hostRect.width, wrapperRect?.width);
+		this.updateSlotNames();
+		this.resizeObs.observe(this);
 	}
 
-	protected slotChanged() {
-		console.log('slot changed');
+	protected updateSlotNames() {
+		const hostRect = this.getBoundingClientRect();
+		if (!this.wrapperEl || !hostRect)
+			return;
+
+		let wrapperRect: DOMRect;
+		do {
+			wrapperRect = this.wrapperEl.getBoundingClientRect();
+			const els = this.slotContent;
+
+			if (wrapperRect.width < hostRect.width) {
+				const firstOverflowEl = this.overflowSlot.at(0);
+				if (firstOverflowEl)
+					firstOverflowEl.slot = firstOverflowEl.previousSlot ?? '';
+			}
+
+			if (wrapperRect.width > hostRect.width) {
+				const el = els.at(-1)!;
+				el.previousSlot = el.slot;
+				el.slot = 'overflow';
+			}
+
+			wrapperRect = this.wrapperEl.getBoundingClientRect();
+		} while (wrapperRect.width > hostRect.width);
+
+		this.updateComplete.then(() => void this.requestUpdate());
+	}
+
+	protected slotChanged(ev: Event) {
+		console.log(
+			'slot changed',
+			ev,
+		);
 	}
 
 	protected override render(): unknown {
 		return html`
 		<s-wrapper id="wrapper" class=${ classMap({ 'not-ready': !this.ready }) }>
 			<slot @slotchange=${ this.slotChanged }></slot>
-			${ when(this.overflow, () => html`
-			<button>...</button>
+			${ when(this.overflowSlot.length, () => html`
+			<button @click=${ () => this.overflowOpen = !this.overflowOpen }>...</button>
 			`) }
 		</s-wrapper>
+
+		<s-popout style=${ styleMap({
+			display: this.overflowOpen ? '' : 'none',
+		}) }>
+			<slot name="overflow"></slot>
+		</s-popout>
 		`;
 	}
-
 
 	public static override styles = [
 		sharedStyles,
@@ -170,6 +228,17 @@ export class StudioActionBar extends MimicElement {
 		}
 		s-wrapper.not-ready {
 			/*opacity: 0;*/
+		}
+		s-popout {
+			position: fixed;
+			overflow: auto;
+			background-color: green;
+			display: grid;
+			grid-auto-flow: row;
+			grid-auto-rows: max-content;
+			width: max-content;
+			z-index: 1;
+			max-height: 200px;
 		}
 		`,
 	];
