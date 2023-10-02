@@ -64,6 +64,9 @@ importers:
 
   client:
     dependencies:
+      '@floating-ui/dom':
+        specifier: ^1.5.3
+        version: 1.5.3
       '@roenlie/lit-context':
         specifier: ^1.0.5
         version: 1.0.5(lit@2.8.0)

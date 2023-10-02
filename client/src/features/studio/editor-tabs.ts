@@ -1,6 +1,6 @@
 import { range } from '@roenlie/mimic-core/array';
 import { emitEvent, type EventOf } from '@roenlie/mimic-core/dom';
-import { curryDebounce } from '@roenlie/mimic-core/timing';
+import { curryDebounce, debounce } from '@roenlie/mimic-core/timing';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { eventOptions, property } from 'lit/decorators.js';
@@ -27,9 +27,9 @@ export class EditorTabs extends MimicElement {
 	@queryId('tabs') protected tabsEl?: HTMLElement;
 	@queryId('scrollbar') protected scrollbarEl: HTMLElement;
 
-	protected scrollOrigin?: 'tabs' | 'scrollbar' = undefined;
-	protected resetScrollOrigin = curryDebounce(50, () => this.scrollOrigin = undefined);
 	protected resizeObs = new ResizeObserver(() => this.requestUpdate());
+	protected resetScrollOrigin = debounce(() => this.scrollOrigin = undefined, 50);
+	protected scrollOrigin?: 'tabs' | 'scrollbar' = undefined;
 
 	public override connectedCallback(): void {
 		super.connectedCallback();

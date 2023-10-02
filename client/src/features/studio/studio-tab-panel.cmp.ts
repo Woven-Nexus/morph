@@ -1,13 +1,20 @@
-import { debounce } from '@roenlie/mimic-core/timing';
+import { autoUpdate, computePosition, flip, offset, type Placement, shift } from '@floating-ui/dom';
+import { MMButton } from '@roenlie/mimic-elements/button';
+import { MMIcon } from '@roenlie/mimic-elements/icon';
+import { watch } from '@roenlie/mimic-lit/decorators';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { queryAssignedElements, state } from 'lit/decorators.js';
-import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { when } from 'lit/directives/when.js';
 
 import { queryId } from '../../app/queryId.js';
 import { sharedStyles } from '../styles/shared-styles.js';
+import { VirtualScrollbar } from './virtual-scrollbar.cmp.js';
+
+MMIcon.register();
+MMButton.register();
+VirtualScrollbar.register();
 
 
 @customElement('m-studio-tab-panel')
@@ -83,8 +90,7 @@ export class StudioTabPanel extends MimicElement {
 			background-color: var(--surface);
 			border-color: var(--background);
 		}
-		::slotted([slot="action"]),
-		::slotted([slot="overflow"]) {
+		::slotted([slot="action"]) {
 			all: unset;
     		direction: ltr;
 			border-radius: 4px;
@@ -93,20 +99,16 @@ export class StudioTabPanel extends MimicElement {
 			border: 1px solid var(--background);
 			background-color: var(--surface1);
 		}
-		::slotted([slot="action"]:hover),
-		::slotted([slot="overflow"]:hover) {
+		::slotted([slot="action"]:hover) {
 			background-color: var(--background);
 		}
-		::slotted([slot="action"]:active),
-		::slotted([slot="overflow"]:active) {
+		::slotted([slot="action"]:active) {
 			background-color: var(--surface1);
 		}
-		::slotted([slot="action"]:hover:not(:disabled)),
-		::slotted([slot="overflow"]:hover:not(:disabled)) {
+		::slotted([slot="action"]:hover:not(:disabled)) {
 			cursor: pointer;
 		}
-		::slotted([slot="action"]:first-child),
-		::slotted([slot="overflow"]:first-child) {
+		::slotted([slot="action"]:first-child) {
 			margin-left: auto;
 		}
 		section {
@@ -130,8 +132,8 @@ interface SlotActionElement extends HTMLElement {
 @customElement('m-studio-action-bar')
 export class StudioActionBar extends MimicElement {
 
-	@state() protected ready = false;
 	@state() protected overflowOpen = false;
+	protected autoUpdateCleanup?: () => void;
 	@queryId('wrapper') protected wrapperEl?: HTMLElement;
 
 	@queryAssignedElements({ flatten: true })
@@ -150,6 +152,11 @@ export class StudioActionBar extends MimicElement {
 
 	public override connectedCallback(): void {
 		super.connectedCallback();
+	}
+
+	public override disconnectedCallback(): void {
+		super.disconnectedCallback();
+		this.autoUpdateCleanup?.();
 	}
 
 	public override afterConnectedCallback(): void {
@@ -185,26 +192,81 @@ export class StudioActionBar extends MimicElement {
 		this.updateComplete.then(() => void this.requestUpdate());
 	}
 
-	protected slotChanged(ev: Event) {
-		console.log(
-			'slot changed',
-			ev,
-		);
+	@watch('overflowOpen') protected onOverflowOpen() {
+		if (!this.overflowOpen)
+			return;
+
+		const referenceEl = this.renderRoot.querySelector<HTMLElement>('mm-button');
+		const floatingEl = this.renderRoot.querySelector<HTMLElement>('s-popout');
+		if (!referenceEl || !floatingEl)
+			return;
+
+		const placement = 'bottom-end' as Placement;
+
+		this.autoUpdateCleanup?.();
+		this.autoUpdateCleanup = autoUpdate(referenceEl, floatingEl, () => {
+			computePosition(referenceEl, floatingEl, {
+				strategy:   'fixed',
+				placement:  placement,
+				middleware: [
+					offset({ mainAxis: 0, crossAxis: 0 }),
+					flip(),
+					shift(),
+				],
+			}).then(({ x, y }) => {
+				Object.entries({
+					position: 'fixed',
+					left:     `${ x }px`,
+					top:      `${ y }px`,
+				}).forEach(([ prop, val ]) => floatingEl.style.setProperty(prop, val));
+				floatingEl.setAttribute('data-placement', placement);
+			});
+		});
+
+
+		setTimeout(() => {
+			const clickEvent = (ev: MouseEvent) => {
+				const path = ev.composedPath();
+				if (path.some(el => el === floatingEl || el === referenceEl))
+					return;
+
+				this.overflowOpen = false;
+				globalThis.removeEventListener('click', clickEvent);
+			};
+
+			globalThis.addEventListener('click', clickEvent);
+		});
 	}
 
 	protected override render(): unknown {
 		return html`
-		<s-wrapper id="wrapper" class=${ classMap({ 'not-ready': !this.ready }) }>
-			<slot @slotchange=${ this.slotChanged }></slot>
+		<s-wrapper id="wrapper">
+			<slot></slot>
+
 			${ when(this.overflowSlot.length, () => html`
-			<button @click=${ () => this.overflowOpen = !this.overflowOpen }>...</button>
+			<mm-button
+				type="icon"
+				size="small"
+				variant="elevated"
+				@click=${ () => this.overflowOpen = !this.overflowOpen }
+			>
+				<mm-icon
+					style="font-size:18px;"
+					url="https://icons.getbootstrap.com/assets/icons/three-dots.svg"
+				></mm-icon>
+			</mm-button>
 			`) }
 		</s-wrapper>
 
-		<s-popout style=${ styleMap({
+		<s-popout part="popout" style=${ styleMap({
 			display: this.overflowOpen ? '' : 'none',
 		}) }>
 			<slot name="overflow"></slot>
+			<m-virtual-scrollbar
+				.reference=${ this.renderRoot.querySelector('s-popout') }
+				placement="end"
+				direction="vertical"
+			></m-virtual-scrollbar>
 		</s-popout>
 		`;
 	}
@@ -218,6 +280,7 @@ export class StudioActionBar extends MimicElement {
 			grid-auto-columns: max-content;
 			grid-auto-flow: column;
 			place-content: center end;
+			padding-inline: 4px;
 		}
 		s-wrapper {
 			display: grid;
@@ -226,19 +289,20 @@ export class StudioActionBar extends MimicElement {
 			place-items: center;
 			gap: 8px;
 		}
-		s-wrapper.not-ready {
-			/*opacity: 0;*/
-		}
 		s-popout {
 			position: fixed;
-			overflow: auto;
-			background-color: green;
+			overflow: hidden;
+			overflow-y: scroll;
 			display: grid;
 			grid-auto-flow: row;
 			grid-auto-rows: max-content;
 			width: max-content;
 			z-index: 1;
 			max-height: 200px;
+			border-radius: 4px;
+		}
+		s-popout::-webkit-scrollbar {
+			display: none;
 		}
 		`,
 	];
