@@ -1,10 +1,10 @@
+import { isPromise } from '@roenlie/mimic-core/async';
 import { debounce } from '@roenlie/mimic-core/timing';
 import { watch } from '@roenlie/mimic-lit/decorators';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { eventOptions, property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import { queryId } from '../../app/queryId.js';
 import { sharedStyles } from '../styles/shared-styles.js';
@@ -15,32 +15,61 @@ export class VirtualScrollbar extends MimicElement {
 
 	@property() public placement: 'start' | 'end' = 'end';
 	@property() public direction: 'vertical' | 'horizontal' = 'horizontal';
-	@property({ type: Object }) public reference: HTMLElement;
+	@property({ type: Object }) public reference: HTMLElement | Promise<HTMLElement>;
+	@state() protected resolvedRef?: HTMLElement;
 	@state() protected show = false;
+	@queryId('thumb') protected thumbEl: HTMLElement;
 	@queryId('scrollbar') protected scrollbarEl: HTMLElement;
+	@queryId('scrollbar-wrapper') protected wrapperEl: HTMLElement;
 
 	protected resetScrollOrigin = debounce(() => this.scrollOrigin = undefined, 50);
 	protected scrollOrigin?: 'reference' | 'scrollbar' = undefined;
 	protected unlistenReference?: () => void;
 
-	public override connectedCallback(): void {
-		super.connectedCallback();
-	}
+	protected readonly resizeObs = new ResizeObserver(([ entry ]) => {
+		if (!entry)
+			return;
 
-	public override disconnectedCallback(): void {
+		const reference = this.resolvedRef;
+		const wrapper = this.wrapperEl;
+		const scrollbar = this.scrollbarEl;
+		if (!reference || !wrapper || !scrollbar)
+			return;
+
+		if (this.direction === 'vertical') {
+			wrapper.style.height = (reference?.offsetHeight ?? 0) + 'px';
+			scrollbar.style.height = (reference?.scrollHeight ?? 0) + 'px';
+		}
+
+		if (this.direction === 'horizontal') {
+			wrapper.style.width = (reference?.offsetWidth ?? 0) + 'px';
+			scrollbar.style.width = (reference?.scrollWidth ?? 0) + 'px';
+		}
+	});
+
+	public override disconnectedCallback() {
 		super.disconnectedCallback();
 		this.unlistenReference?.();
+		this.resizeObs.disconnect();
 	}
 
-	@watch('reference') protected onReference() {
+	@watch('reference') protected async onReference() {
 		if (!this.reference)
 			return;
 
+		this.resolvedRef = isPromise(this.reference)
+			? await this.reference
+			: this.reference;
+
+		const ref = this.resolvedRef;
+
 		this.unlistenReference?.();
+		this.resizeObs.disconnect();
+		this.resizeObs.observe(this.resolvedRef);
 
 		const pointerMoveListener = (ev: PointerEvent) => {
 			const path = ev.composedPath();
-			const pathHasReference = path.some(el => el === this.reference);
+			const pathHasReference = path.some(el => el === ref);
 			if (!pathHasReference) {
 				globalThis.removeEventListener('pointermove', pointerMoveListener);
 				this.show = false;
@@ -63,24 +92,37 @@ export class VirtualScrollbar extends MimicElement {
 			this.scrollOrigin = 'reference';
 			this.resetScrollOrigin();
 
-			const ref = this.reference;
-			const scrollbar = this.scrollbarEl;
+			const scrollbar = this.wrapperEl;
+			const ref = this.resolvedRef;
 			if (!scrollbar || !ref)
 				return;
 
 			scrollbar.scrollLeft = ref.scrollLeft;
 			scrollbar.scrollTop = ref.scrollTop;
-			this.requestUpdate();
+
+			this.syncPosition();
 		};
 
-		this.reference.addEventListener('scroll', scrollListener);
-		this.reference.addEventListener('pointerenter', pointerEnterListener);
+		ref.addEventListener('scroll', scrollListener);
+		ref.addEventListener('pointerenter', pointerEnterListener);
 
 		this.unlistenReference = () => {
-			this.reference.removeEventListener('scroll', scrollListener);
-			this.reference.removeEventListener('pointerenter', pointerEnterListener);
-			this.reference.removeEventListener('pointermove', pointerMoveListener);
+			ref.removeEventListener('scroll', scrollListener);
+			ref.removeEventListener('pointerenter', pointerEnterListener);
+			ref.removeEventListener('pointermove', pointerMoveListener);
 		};
+
+		if (!ref.querySelector('#scroll-removal')) {
+			const scrollRemoval = document.createElement('style');
+			scrollRemoval.id = 'scroll-removal';
+			scrollRemoval.innerHTML = `
+			${ ref.tagName.toLowerCase() }::-webkit-scrollbar {
+				display: none;
+			}
+			`;
+
+			ref.appendChild(scrollRemoval);
+		}
 	}
 
 	@eventOptions({ passive: true })
@@ -91,66 +133,43 @@ export class VirtualScrollbar extends MimicElement {
 		this.scrollOrigin = 'scrollbar';
 		this.resetScrollOrigin();
 
-		const scrollbar = this.scrollbarEl;
-		if (!scrollbar || !this.reference)
+		const scrollbar = this.wrapperEl;
+		if (!scrollbar || !this.resolvedRef)
 			return;
 
-		this.reference.scrollLeft = scrollbar.scrollLeft;
-		this.reference.scrollTop = scrollbar.scrollTop;
-		this.requestUpdate();
+		if (this.direction === 'horizontal')
+			this.resolvedRef.scrollLeft = scrollbar.scrollLeft;
+		if (this.direction === 'vertical')
+			this.resolvedRef.scrollTop = scrollbar.scrollTop;
+
+		this.syncPosition();
 	}
 
-	protected override render(): unknown {
-		const reference = this.reference;
-		const scrollbarStyles: Record<string, string | number> = {};
-		const scrollthumbStyles: Record<string, string | number> = {};
+	protected syncPosition() {
+		const bar = this.wrapperEl;
+		const reference = this.resolvedRef;
+		if (!reference || !bar)
+			return;
 
-		if (this.direction === 'vertical') {
-			const scrollContainerTop = (reference?.scrollTop ?? 0) + 'px';
-			const scrollContainerHeight = (reference?.offsetHeight ?? 0) + 'px';
-			const scrollbarHeight = (reference?.scrollHeight ?? 0) + 'px';
+		const x = (reference?.scrollLeft ?? 0) + 'px';
+		const y = (reference?.scrollTop ?? 0) + 'px';
+		bar.style.translate = x + ' ' + y;
+	}
 
-			scrollbarStyles['top'] = scrollContainerTop;
-			scrollbarStyles['bottom'] = 0;
-			scrollbarStyles['height'] = scrollContainerHeight;
-
-			scrollthumbStyles['height'] = scrollbarHeight;
-
-			if (this.placement === 'start')
-				scrollbarStyles['left'] = 0;
-
-			if (this.placement === 'end')
-				scrollbarStyles['right'] = 0;
-		}
-
-		if (this.direction === 'horizontal') {
-			const scrollContainerLeft = (reference?.scrollLeft ?? 0) + 'px';
-			const scrollContainerWidth = (reference?.offsetWidth ?? 0) + 'px';
-			const scrollbarWidth = (reference?.scrollWidth ?? 0) + 'px';
-
-			scrollbarStyles['left'] = scrollContainerLeft;
-			scrollbarStyles['right'] = 0;
-			scrollbarStyles['width'] = scrollContainerWidth;
-
-			scrollthumbStyles['width'] = scrollbarWidth;
-
-			if (this.placement === 'start')
-				scrollbarStyles['top'] = 0;
-			if (this.placement === 'end')
-				scrollbarStyles['bottom'] = 0;
-		}
-
+	protected override render() {
 		return html`
-		<s-scrollbar
-			id="scrollbar"
-			style=${ styleMap(scrollbarStyles) }
-			class=${ classMap({ show: this.show }) }
+		<s-scrollbar-wrapper
+			id="scrollbar-wrapper"
+			class=${ classMap({
+				show:             this.show,
+				[this.direction]: true,
+				[this.placement]: true,
+			}) }
 			@scroll=${ this.onScrollbarScroll }
 			@mousedown=${ (ev: Event) => ev.preventDefault() }
 		>
-			<s-scrollthumb style=${ styleMap(scrollthumbStyles) }
-			></s-scrollthumb>
-		</s-scrollbar>
+			<s-scrollbar id="scrollbar"></s-scrollbar>
+		</s-scrollbar-wrapper>
 		`;
 	}
 
@@ -161,14 +180,14 @@ export class VirtualScrollbar extends MimicElement {
 			position: relative;
 			display: contents;
 		}
-		:host([direction="vertical"]) s-scrollbar {
+		:host([direction="vertical"]) s-scrollbar-wrapper {
 			overflow-x: hidden;
 			overflow-y: scroll;
 		}
-		:host([direction="vertical"]) s-scrollthumb {
-			width: 1px;
+		:host([direction="vertical"]) s-scrollbar {
+			width: 0.1px;
 		}
-		s-scrollbar {
+		s-scrollbar-wrapper {
 			cursor: grab;
 			display: block;
 			position: absolute;
@@ -176,23 +195,54 @@ export class VirtualScrollbar extends MimicElement {
 			opacity: 0;
 			transition: opacity 0.2s ease-out;
 		}
-		s-scrollbar.show {
+		s-scrollbar-wrapper.show {
 			opacity: 1;
 		}
-		s-scrollbar:active {
+		s-scrollbar-wrapper:active {
 			cursor: grabbing;
 		}
-		s-scrollbar::-webkit-scrollbar {
+		s-scrollbar-wrapper::-webkit-scrollbar {
 			height: 6px;
 			width: 6px;
 		}
-		s-scrollbar::-webkit-scrollbar-thumb {
+		s-scrollbar-wrapper::-webkit-scrollbar-thumb {
 			border-radius: 1px;
 			background: rgb(0 0 0 / 50%);
 		}
-		s-scrollthumb {
+		s-scrollbar {
 			display: block;
-			height: 1px;
+			height: 0.1px;
+		}
+		s-thumb {
+			position: absolute;
+			display: block;
+			background-color: hotpink;
+		}
+		.vertical s-thumb {
+			width: 50px;
+		}
+		.horizontal s-thumb {
+			height: 50px;
+		}
+		.vertical {
+			top: 0;
+			bottom: 0;
+		}
+		.vertical.start {
+			left: 0;
+		}
+		.vertical.end {
+			right: 0;
+		}
+		.horizontal {
+			left: 0;
+			right: 0;
+		}
+		.horizontal.start {
+			top: 0;
+		}
+		.horizontal.end {
+			bottom: 0;
 		}
 		`,
 	];

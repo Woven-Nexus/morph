@@ -1,5 +1,5 @@
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
-import { type Route, Router } from '@vaadin/router';
+import { type Context, type Route, Router } from '@vaadin/router';
 import { css } from 'lit';
 
 
@@ -11,21 +11,22 @@ export class AppRouterCmp extends MimicElement {
 		{
 			name:   'root',
 			path:   '/',
-			action: async (ctx) => {
-				const cmp = (await import('../layout/layout.cmp.js')).AppLayoutCmp;
-				ctx.route.component = cmp.tagName;
-				cmp.register();
-			},
+			action: this.routeComponent(
+				() => import('../layout/layout.cmp.js').then(m => m.AppLayoutCmp),
+			),
 			children: [
 				{ path: '/', redirect: '/studio' },
 				{
-					path:      '/studio',
-					component: '',
-					action:    async (ctx) => {
-						const cmp = (await import('../studio/studio-page.cmp.js')).StudioPageCmp;
-						ctx.route.component = cmp.tagName;
-						cmp.register();
-					},
+					path:   '/studio',
+					action: this.routeComponent(
+						() => import('../studio/studio-page.cmp.js').then(m => m.StudioPageCmp),
+					),
+				},
+				{
+					path:   '/demo',
+					action: this.routeComponent(
+						() => import('../demo/demo-page.cmp.js').then(m => m.Demopage),
+					),
 				},
 			],
 		},
@@ -36,6 +37,14 @@ export class AppRouterCmp extends MimicElement {
 
 		this.router.setOutlet(this.shadowRoot);
 		this.router.setRoutes(this.routes);
+	}
+
+	protected routeComponent<T extends() => Promise<typeof MimicElement>>(importFn: T) {
+		return async (context: Context) => {
+			const cmp = await importFn();
+			context.route.component = cmp.tagName;
+			cmp.register();
+		};
 	}
 
 	public static override styles = [

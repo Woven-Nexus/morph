@@ -1,6 +1,5 @@
-import { range } from '@roenlie/mimic-core/array';
 import { emitEvent, type EventOf } from '@roenlie/mimic-core/dom';
-import { curryDebounce, debounce } from '@roenlie/mimic-core/timing';
+import { debounce } from '@roenlie/mimic-core/timing';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { eventOptions, property } from 'lit/decorators.js';
