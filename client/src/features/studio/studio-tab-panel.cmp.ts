@@ -99,17 +99,32 @@ export class StudioTabPanel extends MimicElement {
 			border: 1px solid var(--background);
 			background-color: var(--surface1);
 		}
-		::slotted([slot="action"]:hover) {
-			background-color: var(--background);
-		}
-		::slotted([slot="action"]:active) {
-			background-color: var(--surface1);
-		}
 		::slotted([slot="action"]:hover:not(:disabled)) {
+			background-color: var(--background);
 			cursor: pointer;
 		}
-		::slotted([slot="action"]:first-child) {
-			margin-left: auto;
+		::slotted([slot="action"]:active:not(:disabled)) {
+			background-color: var(--surface1);
+		}
+		m-studio-action-bar::part(popout) {
+			border: 1px solid var(--background);
+			background-color: var(--surface1);
+			row-gap: 2px;
+			min-width: 200px;
+		}
+		::slotted([slot="overflow"]) {
+			all: unset;
+    		direction: ltr;
+			padding: 12px;
+			text-transform: capitalize;
+			background-color: var(--shadow1);
+		}
+		::slotted([slot="overflow"]:hover:not(:disabled)) {
+			background-color: var(--surface1);
+			cursor: pointer;
+		}
+		::slotted([slot="overflow"]:active:not(:disabled)) {
+			background-color: var(--shadow1);
 		}
 		section {
 			overflow: hidden;
@@ -262,10 +277,12 @@ export class StudioActionBar extends MimicElement {
 			display: this.overflowOpen ? '' : 'none',
 		}) }>
 			<slot name="overflow"></slot>
+
 			<m-virtual-scrollbar
-				.reference=${ this.renderRoot.querySelector('s-popout') }
 				placement="end"
 				direction="vertical"
+				.reference=${ this.updateComplete
+					.then(() => this.renderRoot.querySelector('s-popout')) }
 			></m-virtual-scrollbar>
 		</s-popout>
 		`;

@@ -1,14 +1,14 @@
 import { emitEvent, type EventOf } from '@roenlie/mimic-core/dom';
-import { debounce } from '@roenlie/mimic-core/timing';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
-import { eventOptions, property } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { map } from 'lit/directives/map.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
-import { queryId } from '../../app/queryId.js';
 import { sharedStyles } from '../styles/shared-styles.js';
+import { VirtualScrollbar } from './virtual-scrollbar.cmp.js';
+
+VirtualScrollbar.register();
 
 
 /**
@@ -23,17 +23,6 @@ export class EditorTabs extends MimicElement {
 	@property({ type: Array }) public tabs: {key: string, value: string}[] = [];
 	@property({ reflect: true }) public direction: 'vertical' | 'horizontal' = 'horizontal';
 	@property({ reflect: true }) public placement: 'start' | 'end' = 'end';
-	@queryId('tabs') protected tabsEl?: HTMLElement;
-	@queryId('scrollbar') protected scrollbarEl: HTMLElement;
-
-	protected resizeObs = new ResizeObserver(() => this.requestUpdate());
-	protected resetScrollOrigin = debounce(() => this.scrollOrigin = undefined, 50);
-	protected scrollOrigin?: 'tabs' | 'scrollbar' = undefined;
-
-	public override connectedCallback(): void {
-		super.connectedCallback();
-		this.resizeObs.observe(this);
-	}
 
 	protected onTabClick(ev: EventOf) {
 		const tab = (ev.composedPath() as HTMLElement[])
@@ -42,109 +31,12 @@ export class EditorTabs extends MimicElement {
 		emitEvent(this, 'm-tab-click', { detail: tab?.id });
 	}
 
-	protected onTabWheel(ev: WheelEvent) {
-		if (this.direction === 'vertical')
-			return;
-
-		const scrollbar = this.scrollbarEl;
-		if (scrollbar) {
-			ev.preventDefault();
-			scrollbar.scrollLeft += ev.deltaY;
-		}
-	}
-
-	@eventOptions({ passive: true })
-	protected onTabScroll() {
-		if (this.scrollOrigin === 'scrollbar')
-			return;
-
-		this.scrollOrigin = 'tabs';
-		this.resetScrollOrigin();
-
-		const tabs = this.tabsEl, scrollbar = this.scrollbarEl;
-		if (!scrollbar || !tabs)
-			return;
-
-		scrollbar.scrollLeft = tabs.scrollLeft;
-		scrollbar.scrollTop = tabs.scrollTop;
-		this.requestUpdate();
-	}
-
-	@eventOptions({ passive: true })
-	protected onScrollbarScroll() {
-		if (this.scrollOrigin === 'tabs')
-			return;
-
-		this.scrollOrigin = 'scrollbar';
-		this.resetScrollOrigin();
-
-		const tabs = this.tabsEl, scrollbar = this.scrollbarEl;
-		if (!scrollbar || !tabs)
-			return;
-
-		tabs.scrollLeft = scrollbar.scrollLeft;
-		tabs.scrollTop = scrollbar.scrollTop;
-		this.requestUpdate();
-	}
-
 	protected override render(): unknown {
-		const tabsEl = this.tabsEl;
-		const scrollbarStyles: Record<string, string | number> = {};
-		const scrollthumbStyles: Record<string, string | number> = {};
-
-		if (this.direction === 'vertical') {
-			const scrollContainerTop = (tabsEl?.scrollTop ?? 0) + 'px';
-			const scrollContainerHeight = (tabsEl?.offsetHeight ?? 0) + 'px';
-			const scrollbarHeight = (tabsEl?.scrollHeight ?? 0) + 'px';
-
-			scrollbarStyles['top'] = scrollContainerTop;
-			scrollbarStyles['bottom'] = 0;
-			scrollbarStyles['height'] = scrollContainerHeight;
-
-			scrollthumbStyles['height'] = scrollbarHeight;
-
-			if (this.placement === 'start')
-				scrollbarStyles['left'] = 0;
-
-			if (this.placement === 'end')
-				scrollbarStyles['right'] = 0;
-		}
-
-		if (this.direction === 'horizontal') {
-			const scrollContainerLeft = (tabsEl?.scrollLeft ?? 0) + 'px';
-			const scrollContainerWidth = (tabsEl?.offsetWidth ?? 0) + 'px';
-			const scrollbarWidth = (tabsEl?.scrollWidth ?? 0) + 'px';
-
-			scrollbarStyles['left'] = scrollContainerLeft;
-			scrollbarStyles['right'] = 0;
-			scrollbarStyles['width'] = scrollContainerWidth;
-
-			scrollthumbStyles['width'] = scrollbarWidth;
-
-			if (this.placement === 'start')
-				scrollbarStyles['top'] = 0;
-			if (this.placement === 'end')
-				scrollbarStyles['bottom'] = 0;
-		}
-
 		return html`
 		<s-tabs
 			part="tabs"
 			id="tabs"
-			@wheel=${ this.onTabWheel }
-			@scroll=${ this.onTabScroll }
 		>
-			<s-scrollbar
-				id="scrollbar"
-				style=${ styleMap(scrollbarStyles) }
-				@scroll=${ this.onScrollbarScroll }
-				@mousedown=${ (ev: Event) => ev.preventDefault() }
-			>
-				<s-scrollthumb
-					style=${ styleMap(scrollthumbStyles) }
-				></s-scrollthumb>
-			</s-scrollbar>
-
 			${ map(this.tabs, ({ key, value }) => html`
 			<s-tab
 				part="tab"
@@ -155,6 +47,14 @@ export class EditorTabs extends MimicElement {
 				<span>${ value }</span>
 			</s-tab>
 			`) }
+
+			<m-virtual-scrollbar
+				horizontal-scroll
+				direction="horizontal"
+				placement="end"
+				.reference=${ this.updateComplete
+					.then(() => this.renderRoot.querySelector('#tabs'))  }
+			></m-virtual-scrollbar>
 		</s-tabs>
 		`;
 	}
@@ -221,31 +121,6 @@ export class EditorTabs extends MimicElement {
 			font-size: 12px;
 			overflow: hidden;
 			overflow-x: scroll;
-		}
-		s-tabs::-webkit-scrollbar {
-			display: none;
-		}
-		s-scrollbar {
-			cursor: grab;
-			display: block;
-			position: absolute;
-			overflow-x: scroll;
-			opacity: 0;
-			transition: opacity 0.2s ease-out;
-		}
-		s-scrollbar:active {
-			cursor: grabbing;
-		}
-		s-tabs:hover s-scrollbar {
-			opacity: 1;
-		}
-		s-scrollbar::-webkit-scrollbar {
-			height: 4px;
-			width: 4px;
-		}
-		s-scrollthumb {
-			display: block;
-			height: 1px;
 		}
 		s-tab {
 			cursor: pointer;

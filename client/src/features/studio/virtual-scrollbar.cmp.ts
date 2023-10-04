@@ -15,16 +15,17 @@ export class VirtualScrollbar extends MimicElement {
 
 	@property() public placement: 'start' | 'end' = 'end';
 	@property() public direction: 'vertical' | 'horizontal' = 'horizontal';
+	@property({ type: Boolean, attribute: 'horizontal-scroll' }) public horizontalScroll?: boolean;
 	@property({ type: Object }) public reference: HTMLElement | Promise<HTMLElement>;
 	@state() protected resolvedRef?: HTMLElement;
 	@state() protected show = false;
-	@queryId('thumb') protected thumbEl: HTMLElement;
 	@queryId('scrollbar') protected scrollbarEl: HTMLElement;
 	@queryId('scrollbar-wrapper') protected wrapperEl: HTMLElement;
 
 	protected resetScrollOrigin = debounce(() => this.scrollOrigin = undefined, 50);
 	protected scrollOrigin?: 'reference' | 'scrollbar' = undefined;
 	protected unlistenReference?: () => void;
+	protected unlistenHorizontalScroll?: () => void;
 
 	protected readonly resizeObs = new ResizeObserver(([ entry ]) => {
 		if (!entry)
@@ -37,12 +38,12 @@ export class VirtualScrollbar extends MimicElement {
 			return;
 
 		if (this.direction === 'vertical') {
-			wrapper.style.height = (reference?.offsetHeight ?? 0) + 'px';
+			wrapper.style.height = (reference?.clientHeight ?? 0) + 'px';
 			scrollbar.style.height = (reference?.scrollHeight ?? 0) + 'px';
 		}
 
 		if (this.direction === 'horizontal') {
-			wrapper.style.width = (reference?.offsetWidth ?? 0) + 'px';
+			wrapper.style.width = (reference?.clientWidth ?? 0) + 'px';
 			scrollbar.style.width = (reference?.scrollWidth ?? 0) + 'px';
 		}
 	});
@@ -50,6 +51,7 @@ export class VirtualScrollbar extends MimicElement {
 	public override disconnectedCallback() {
 		super.disconnectedCallback();
 		this.unlistenReference?.();
+		this.unlistenHorizontalScroll?.();
 		this.resizeObs.disconnect();
 	}
 
@@ -122,6 +124,26 @@ export class VirtualScrollbar extends MimicElement {
 			`;
 
 			ref.appendChild(scrollRemoval);
+		}
+
+		if (this.horizontalScroll) {
+			this.unlistenHorizontalScroll?.();
+
+			const listener = (ev: WheelEvent) => {
+				if (this.direction === 'vertical')
+					return;
+
+				const wrapper = this.wrapperEl;
+				if (wrapper) {
+					ev.preventDefault();
+					wrapper.scrollLeft += ev.deltaY;
+				}
+			};
+
+			ref.addEventListener('wheel', listener);
+			this.unlistenHorizontalScroll = () => {
+				ref.removeEventListener('wheel', listener);
+			};
 		}
 	}
 

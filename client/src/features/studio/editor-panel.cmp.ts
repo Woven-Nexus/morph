@@ -288,10 +288,13 @@ export class EditorPanel extends MimicElement {
 
 			${ when(this.store.value.activeModuleId, () => html`
 			<m-editor
+				id="editor"
 				tab-placement="top"
 			></m-editor>
 			`, () => html`
-			<s-editor-placeholder>
+			<s-editor-placeholder
+				id="editor"
+			>
 				Select a module...
 			</s-editor-placeholder>
 			`) }
@@ -408,7 +411,7 @@ class EditorPanelDrag {
 		const target = ev.target as HTMLElement;
 		const container = this.element.renderRoot.querySelector<HTMLElement>('s-large');
 		const panel = this.element.renderRoot.querySelector<HTMLElement>('s-nav-panel');
-		const editor = this.element.renderRoot.querySelector<HTMLElement>('m-editor');
+		const editor = this.element.renderRoot.querySelector<HTMLElement>('#editor');
 
 		if (!container || !panel || !editor)
 			return;
@@ -435,7 +438,7 @@ class EditorPanelDrag {
 		const target = ev.target as HTMLElement;
 		const container = this.element.renderRoot.querySelector<HTMLElement>('s-large');
 		const panel = this.element.renderRoot.querySelector<HTMLElement>('m-studio-tab-panel');
-		const editor = this.element.renderRoot.querySelector<HTMLElement>('m-editor');
+		const editor = this.element.renderRoot.querySelector<HTMLElement>('#editor');
 
 		if (!container || !panel || !editor)
 			return;
