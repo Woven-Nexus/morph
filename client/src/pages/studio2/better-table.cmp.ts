@@ -1,9 +1,10 @@
-import { sleep } from '@roenlie/mimic-core/async';
+import { createPromiseResolver, sleep } from '@roenlie/mimic-core/async';
 import { domId } from '@roenlie/mimic-core/dom';
 import { debounce } from '@roenlie/mimic-core/timing';
 import type { ComputedFlat } from '@roenlie/mimic-core/types';
+import { watch } from '@roenlie/mimic-lit/decorators';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
-import { css, html } from 'lit';
+import { css, CSSResult, html, unsafeCSS } from 'lit';
 import { property, queryAssignedElements, state } from 'lit/decorators.js';
 import { map } from 'lit/directives/map.js';
 
@@ -13,21 +14,36 @@ import { queryId } from '../../app/queryId.js';
 @customElement('b-table')
 class BetterTable extends MimicElement {
 
+	protected static getPath(startEl: Element | ShadowRoot) {
+		const path: Element[] = [];
+
+		type El = (HTMLElement & ShadowRoot);
+		let el = startEl as El;
+		do
+			path.push(el);
+		while ((el = el.host as El ||
+			el.parentNode ||
+			el.parentElement as El ||
+			el.offsetParent as El) && el);
+
+		return path;
+	}
+
 	@queryAssignedElements() protected slotEls: HTMLElement[];
 	@queryId('clone-target') protected cloneTarget: HTMLElement;
+	@state() protected columnProps = '';
+	protected columnWidths: number[] = [];
+	protected measurementOngoing: Promise<any> | undefined = undefined;
 
 	protected obs = new MutationObserver((entries) => {
-		//console.log('tree mutated', entries);
 		let redoWidthCalculations = false;
 
 		for (const entry of entries) {
-			const slot = (entry.target as Element).assignedSlot;
-			const parent = (slot?.parentNode as ShadowRoot | undefined)?.host;
-			const isCell = parent instanceof BetterTableHeaderCell
-				||	parent instanceof BetterTableBodyCell;
+			const slot = (entry.target as Element);
+			const path = BetterTable.getPath(slot);
 
-			if (isCell)
-				redoWidthCalculations = true;
+			redoWidthCalculations = path.some(el =>
+				el instanceof BetterTableHeaderCell || el instanceof BetterTableBodyCell);
 		}
 
 		if (redoWidthCalculations)
@@ -45,7 +61,13 @@ class BetterTable extends MimicElement {
 		this.obs.disconnect();
 	}
 
-	protected onSlotChange = debounce(async () => {
+	protected readonly elementsToMeasure: Element[][] = [];
+	protected async onSlotChange() {
+		await this.measurementOngoing;
+		const [ promise, resolve ] = createPromiseResolver();
+		this.measurementOngoing = promise;
+		this.setAttribute('prepearing', '');
+
 		for (const el of this.slotEls) {
 			if (el instanceof BetterTableHead)
 				el.slot = 'header';
@@ -55,57 +77,59 @@ class BetterTable extends MimicElement {
 				el.slot = 'footer';
 		}
 
-		const id = domId(5);
-		const rows = [ ...this.querySelectorAll<BetterTableRow>('b-tr') ];
-		const columnWidths: number[] = [];
+		const rows = this.querySelectorAll<BetterTableRow>('b-tr');
 
-		console.time('getting column widths: ' + id);
 		for (const row of rows) {
-			const fields = [ ...row.querySelectorAll('b-td, b-th') ];
-			const fieldWidths: number[] = [];
+			const fields = row.querySelectorAll('b-td, b-th');
 
 			for (let i = 0; i < fields.length; i++) {
 				const field = fields[i]!;
-				const cloned = field.cloneNode(true) as HTMLElement;
-				this.cloneTarget.replaceChildren(cloned);
 
-				// TODO need another alternative to sleeping here.
-				// As it is waaaaaay too slow.
-				//await sleep(0);
-
-				const clonedWidth = this.cloneTarget.getBoundingClientRect().width;
-				fieldWidths[i] = clonedWidth;
-			}
-
-			for (let i = 0; i < fieldWidths.length; i++) {
-				const width = fieldWidths[i]!;
-				columnWidths[i] = (columnWidths[i] ?? 0) > width
-					? (columnWidths[i] ?? 0)
-					: width;
+				this.elementsToMeasure[i] ??= [];
+				this.elementsToMeasure[i]?.push(field);
 			}
 		}
-		console.timeEnd('getting column widths: ' + id);
 
-		while (this.cloneTarget.hasChildNodes())
-			this.cloneTarget.removeChild(this.cloneTarget.firstChild!);
+		this.columnProps = '';
+		await sleep(0);
 
-		for (const row of rows)
-			row.columnWidths = columnWidths;
+		const columnWidths: number[] = [];
+		for (let i = 0; i < this.elementsToMeasure.length; i++) {
+			const elements = this.elementsToMeasure[i]!;
+			let width = 0;
+			for (const element of elements)
+				width = Math.max(element.getBoundingClientRect().width, width);
+
+			columnWidths[i] = width;
+			elements.length = 0;
+		}
+
+		this.columnWidths = columnWidths;
+		this.columnProps = columnWidths
+			.map((width, i) => `--btable-td-width${ i + 1 }:${ width }px;`)
+			.join('\n');
 
 		this.removeAttribute('prepearing');
-	}, 100);
 
-	protected updateColumn(columnIndex: number) {
+		resolve();
+	}
+
+	protected getPath() {
 
 	}
 
 	protected override render(): unknown {
 		return html`
+		<style>
+			::slotted(*) {
+				${ this.columnProps }
+			}
+		</style>
+
 		<slot name="header"></slot>
 		<slot name="body"></slot>
 		<slot name="footer"></slot>
 		<slot style="display:none;" @slotchange=${ this.onSlotChange }></slot>
-		<div id="clone-target"></div>
 		`;
 	}
 
@@ -118,10 +142,6 @@ class BetterTable extends MimicElement {
 			grid-auto-rows: max-content;
 		}
 		:host([prepearing=""]) {
-			visibility: hidden;
-		}
-		#clone-target {
-			position: fixed;
 			visibility: hidden;
 		}
 		`,
@@ -181,13 +201,18 @@ class BetterTableRow extends MimicElement {
 	}
 
 	protected override render() {
+		const style: CSSResult[] = [];
+		for (let i = 0; i < this.fieldCount; i++) {
+			style.push(css`
+			::slotted(*:nth-child(${ i + 1 })) {
+				--btable-td-width: var(--btable-td-width${ i + 1 });
+			}
+			`);
+		}
+
 		return html`
 		<style>
-			${ map(this.columnWidths, (width, i) => css`
-			::slotted(*:nth-child(${ i + 1 })) {
-				--btable-td-width: ${ width }px;
-			}
-			`) }
+		${ style }
 		</style>
 
 		<slot @slotchange=${ this.onSlotChange }></slot>
