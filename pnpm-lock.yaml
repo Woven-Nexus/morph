@@ -64,6 +64,9 @@ importers:
 
   client:
     dependencies:
+      '@faker-js/faker':
+        specifier: ^8.0.2
+        version: 8.0.2
       '@floating-ui/dom':
         specifier: ^1.5.3
         version: 1.5.3

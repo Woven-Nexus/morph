@@ -19,6 +19,7 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
+		"@faker-js/faker": "^8.0.2",
 		"@floating-ui/dom": "^1.5.3",
 		"@roenlie/lit-context": "^1.0.7",
 		"@roenlie/lit-state-store": "^0.0.16",

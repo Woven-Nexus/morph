@@ -1,12 +1,8 @@
 import { createPromiseResolver, sleep } from '@roenlie/mimic-core/async';
-import { domId } from '@roenlie/mimic-core/dom';
-import { debounce } from '@roenlie/mimic-core/timing';
 import type { ComputedFlat } from '@roenlie/mimic-core/types';
-import { watch } from '@roenlie/mimic-lit/decorators';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
-import { css, CSSResult, html, unsafeCSS } from 'lit';
+import { css, CSSResult, html } from 'lit';
 import { property, queryAssignedElements, state } from 'lit/decorators.js';
-import { map } from 'lit/directives/map.js';
 
 import { queryId } from '../../app/queryId.js';
 
@@ -187,17 +183,13 @@ class BetterTableRow extends MimicElement {
 	@property({
 		type: Array,
 		// TODO, make this check each entry if it is different
-		hasChanged(value: number[], oldValue: number[]) {
+		hasChanged() {
 			return true;
 		},
 	}) public columnWidths: number[] = [];
 
 	public get fieldCount() {
 		return this.querySelectorAll('b-td, b-th').length;
-	}
-
-	protected onSlotChange(ev: Event) {
-		//console.log('slot changed in td');
 	}
 
 	protected override render() {
@@ -215,7 +207,7 @@ class BetterTableRow extends MimicElement {
 		${ style }
 		</style>
 
-		<slot @slotchange=${ this.onSlotChange }></slot>
+		<slot></slot>
 		`;
 	}
 
