@@ -44,6 +44,23 @@ router.get('/', async (req, res) => {
 	res.send('CODE MODULES!');
 });
 
+router.get('/all', async (req, res) => {
+	const query = new Query('./database/main.db');
+	const results = query
+		.get<Module>('modules')
+		.orderBy('active', 'asc')
+		.orderBy('name', 'asc')
+		.query();
+
+	const modules: Module[] = [];
+	results.forEach(res => modules.push(res.item));
+
+	res.send(createResponse(
+		modules,
+		'',
+	));
+});
+
 
 router.get('/namespaces', async (req, res) => {
 	const query = new Query('./database/main.db');

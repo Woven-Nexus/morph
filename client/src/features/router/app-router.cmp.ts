@@ -23,6 +23,12 @@ export class AppRouterCmp extends MimicElement {
 					),
 				},
 				{
+					path:   '/studio2',
+					action: this.routeComponent(
+						() => import('../../pages/studio2/studio-page.cmp.js').then(m => m.StudioPageCmp),
+					),
+				},
+				{
 					path:   '/demo',
 					action: this.routeComponent(
 						() => import('../demo/demo-page.cmp.js').then(m => m.Demopage),
