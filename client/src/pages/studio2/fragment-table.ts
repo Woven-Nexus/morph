@@ -5,6 +5,9 @@ import { property } from 'lit/decorators.js';
 import { map } from 'lit/directives/map.js';
 
 import { queryId } from '../../app/queryId.js';
+import { VirtualScrollbar } from '../../features/studio/virtual-scrollbar.cmp.js';
+
+VirtualScrollbar.register();
 
 
 export interface Column<T extends Record<string, any>> {
@@ -12,7 +15,7 @@ export interface Column<T extends Record<string, any>> {
 	minWidth?: number;
 	width?: string;
 	label: string;
-	headerRender: (data: T) => TemplateResult<any>;
+	headerRender: (data: T[]) => TemplateResult<any>;
 	fieldRender: (data: T) => TemplateResult<any>;
 }
 
@@ -33,7 +36,17 @@ export class FragmentTable1 extends MimicElement {
 	@property({ type: Array }) public data: Record<string, any>[] = [];
 	@property({ type: Boolean }) public dynamic?: boolean;
 	@queryId('table') protected table?: HTMLTableElement;
+	protected focusRow: number | undefined = undefined;
+	protected focusedCell: number | undefined = undefined;
 	protected columnIdBeingResized?: string;
+
+	protected getHeaderCell(index: number) {
+
+	}
+
+	protected getRowCell(rowIndex: number, columnIndex: number) {
+
+	}
 
 	protected initResize(ev: EventOf<HTMLElement>) {
 		ev.preventDefault();
@@ -59,8 +72,9 @@ export class FragmentTable1 extends MimicElement {
 			return;
 
 		// Calculate the desired width
+		const columnRect = columnEl.getBoundingClientRect();
 		const horizontalScrollOffset = this.scrollLeft;
-		const width = (horizontalScrollOffset + e.clientX) - columnEl.offsetLeft;
+		const width = (horizontalScrollOffset + e.clientX) - columnRect.x;
 
 		const columnIndex = parseInt(this.columnIdBeingResized);
 
@@ -72,9 +86,8 @@ export class FragmentTable1 extends MimicElement {
 		if (!this.dynamic) {
 			// For the other headers which don't have a set width, fix it to their computed width
 			this.columns.forEach((column) => {
-				if (!column.width) { // isn't fixed yet (it would be a pixel value otherwise)
+				if (!column.width)
 					column.width = columnEl.clientWidth + 'px';
-				}
 			});
 		}
 
@@ -101,6 +114,7 @@ export class FragmentTable1 extends MimicElement {
 				}).join(' ') };
 			}
 		</style>
+
 		<table id="table">
 			<thead>
 				<tr>
@@ -112,6 +126,7 @@ export class FragmentTable1 extends MimicElement {
 					`) }
 				</tr>
 			</thead>
+
 			<tbody>
 				${ map(this.data, data => html`
 				<tr>
@@ -122,8 +137,22 @@ export class FragmentTable1 extends MimicElement {
 				</tr>
 				`) }
 			</tbody>
+
 		</table>
 
+		<m-virtual-scrollbar
+			placement="end"
+			direction="horizontal"
+			.reference=${ this.updateComplete
+				.then(() => this.shadowRoot?.getElementById('table')) }
+		></m-virtual-scrollbar>
+
+		<m-virtual-scrollbar
+			placement="end"
+			direction="vertical"
+			.reference=${ this.updateComplete
+				.then(() => this.shadowRoot?.getElementById('table')) }
+		></m-virtual-scrollbar>
 		`;
 	}
 
@@ -133,26 +162,43 @@ export class FragmentTable1 extends MimicElement {
 		* {
 			box-sizing: border-box;
 		}
+		m-virtual-scrollbar {
+			--vscroll-size: 12px;
+			--vscroll-background: rgb(100 100 100 / 90%);
+		}
+		m-virtual-scrollbar[direction="vertical"]::part(wrapper) {
+			top: 50px;
+		}
+		:host {
+			position: relative;
+			display: grid;
+			overflow: hidden;
+		}
 		table {
+			position: relative;
+			overflow: auto;
 			display: grid;
 			border-collapse: collapse;
 			min-width: 100%;
+
+			font-size: 0.9em;
+			box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+			color: black;
+			border-bottom: 2px solid #009879;
 		}
-		thead,
-		tbody,
-		tr {
+		thead, tbody, tr {
 			display: contents;
 		}
-		th,
-		td {
+		th, td {
 			display: flex;
 			place-items: center start;
 			overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;
 			height: 50px;
+			padding-inline: 6px;
 		}
-		td span {
+		th span, td span {
 			overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;
@@ -167,8 +213,25 @@ export class FragmentTable1 extends MimicElement {
 			color: white;
 		}
 		th:last-child {
-			border: 0;
+			border-right: 0;
 		}
+		tr th {
+			background-color: #009879;
+			color: #ffffff;
+			text-align: left;
+		}
+		tr td {
+			border-bottom: 1px solid #dddddd;
+		}
+		tr:nth-of-type(even) td {
+			background-color: #f3f3f3;
+		}
+		tr.active-row td {
+			font-weight: bold;
+			color: #009879;
+		}
+		`,
+		css` /* Resize handle */
 		.resize-handle {
 			position: absolute;
 			top: 0;
@@ -180,22 +243,24 @@ export class FragmentTable1 extends MimicElement {
 			cursor: col-resize;
 		}
 		.resize-handle:hover,
-		/*
-			The following selector is needed so the handle is visible
-			during resize even if the mouse isn't over the handle anymore
-		*/
 		.header--being-resized .resize-handle {
 			opacity: 0.5;
 		}
 		th:hover .resize-handle {
 			opacity: 0.3;
 		}
-		td {
-			color: #808080;
+		`,
+		css` /* Using subgrid, slower than display: contents. */
+		/*thead tr {
+			position: sticky;
+			top: 0;
+			z-index: 1;
 		}
-		tr:nth-child(even) td {
-			background: #f8f6ff;
-		}
+		tr {
+			display: grid;
+			grid-template-columns: subgrid;
+			grid-column: 1 / 9;
+		}*/
 		`,
 	];
 

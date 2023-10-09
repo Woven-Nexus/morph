@@ -6,22 +6,27 @@ import { css, html } from 'lit';
 import { eventOptions, property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
+import { getPath } from '../../app/get-path.js';
 import { queryId } from '../../app/queryId.js';
 import { sharedStyles } from '../styles/shared-styles.js';
+
+export type Placement = 'start' | 'end';
+export type Direction = 'vertical' | 'horizontal';
 
 
 @customElement('m-virtual-scrollbar')
 export class VirtualScrollbar extends MimicElement {
 
-	@property() public placement: 'start' | 'end' = 'end';
-	@property() public direction: 'vertical' | 'horizontal' = 'horizontal';
-	@property({ type: Boolean, attribute: 'horizontal-scroll' }) public horizontalScroll?: boolean;
+	@property() public placement: Placement = 'end';
+	@property() public direction: Direction = 'horizontal';
+	@property({ attribute: 'default-scroll' }) public defaultScroll: Direction = 'vertical';
 	@property({ type: Object }) public reference: HTMLElement | Promise<HTMLElement>;
 	@state() protected resolvedRef?: HTMLElement;
 	@state() protected show = false;
 	@queryId('scrollbar') protected scrollbarEl: HTMLElement;
 	@queryId('scrollbar-wrapper') protected wrapperEl: HTMLElement;
 
+	protected isChild = false;
 	protected resetScrollOrigin = debounce(() => this.scrollOrigin = undefined, 50);
 	protected scrollOrigin?: 'reference' | 'scrollbar' = undefined;
 	protected unlistenReference?: () => void;
@@ -38,12 +43,14 @@ export class VirtualScrollbar extends MimicElement {
 			return;
 
 		if (this.direction === 'vertical') {
-			wrapper.style.height = (reference?.clientHeight ?? 0) + 'px';
+			// Think this is not needed.
+			//wrapper.style.height = (reference?.clientHeight ?? 0) + 'px';
 			scrollbar.style.height = (reference?.scrollHeight ?? 0) + 'px';
 		}
 
 		if (this.direction === 'horizontal') {
-			wrapper.style.width = (reference?.clientWidth ?? 0) + 'px';
+			// Think this is not needed.
+			//wrapper.style.width = (reference?.clientWidth ?? 0) + 'px';
 			scrollbar.style.width = (reference?.scrollWidth ?? 0) + 'px';
 		}
 	});
@@ -64,6 +71,8 @@ export class VirtualScrollbar extends MimicElement {
 			: this.reference;
 
 		const ref = this.resolvedRef;
+		const path = getPath(this);
+		this.isChild = path.some(el => el === ref);
 
 		this.unlistenReference?.();
 		this.resizeObs.disconnect();
@@ -99,8 +108,19 @@ export class VirtualScrollbar extends MimicElement {
 			if (!scrollbar || !ref)
 				return;
 
-			scrollbar.scrollLeft = ref.scrollLeft;
-			scrollbar.scrollTop = ref.scrollTop;
+			const scrollbarHeight = ref.scrollHeight - ref.offsetHeight;
+			const scrollbarHPercent = ref.scrollTop / scrollbarHeight * 100;
+			const localHeight = scrollbar.scrollHeight - scrollbar.offsetHeight;
+			const localTop = localHeight / 100 * scrollbarHPercent;
+
+			scrollbar.scrollTop = localTop;
+
+			const scrollbarWidth = ref.scrollWidth - ref.offsetWidth;
+			const scrollbarWPercent = ref.scrollLeft / scrollbarWidth * 100;
+			const localWidth = scrollbar.scrollWidth - scrollbar.offsetWidth;
+			const localLeft = localWidth / 100 * scrollbarWPercent;
+
+			scrollbar.scrollLeft = localLeft;
 
 			this.syncPosition();
 		};
@@ -126,7 +146,7 @@ export class VirtualScrollbar extends MimicElement {
 			ref.appendChild(scrollRemoval);
 		}
 
-		if (this.horizontalScroll) {
+		if (this.defaultScroll === 'horizontal') {
 			this.unlistenHorizontalScroll?.();
 
 			const listener = (ev: WheelEvent) => {
@@ -170,7 +190,7 @@ export class VirtualScrollbar extends MimicElement {
 	protected syncPosition() {
 		const bar = this.wrapperEl;
 		const reference = this.resolvedRef;
-		if (!reference || !bar)
+		if (!this.isChild || !reference || !bar)
 			return;
 
 		const x = (reference?.scrollLeft ?? 0) + 'px';
@@ -182,6 +202,7 @@ export class VirtualScrollbar extends MimicElement {
 		return html`
 		<s-scrollbar-wrapper
 			id="scrollbar-wrapper"
+			part="wrapper"
 			class=${ classMap({
 				show:             this.show,
 				[this.direction]: true,
@@ -190,7 +211,8 @@ export class VirtualScrollbar extends MimicElement {
 			@scroll=${ this.onScrollbarScroll }
 			@mousedown=${ (ev: Event) => ev.preventDefault() }
 		>
-			<s-scrollbar id="scrollbar"></s-scrollbar>
+			<s-scrollbar id="scrollbar" part="scrollbar"
+			></s-scrollbar>
 		</s-scrollbar-wrapper>
 		`;
 	}
@@ -199,6 +221,8 @@ export class VirtualScrollbar extends MimicElement {
 		sharedStyles,
 		css`
 		:host {
+			--_vscroll-size: var(--vscroll-size, 6px);
+			--_vscroll-background: var(--vscroll-background, rgb(0 0 0 / 50%));
 			position: relative;
 			display: contents;
 		}
@@ -217,34 +241,24 @@ export class VirtualScrollbar extends MimicElement {
 			opacity: 0;
 			transition: opacity 0.2s ease-out;
 		}
-		s-scrollbar-wrapper.show {
+		s-scrollbar-wrapper.show,
+		s-scrollbar-wrapper:hover {
 			opacity: 1;
 		}
 		s-scrollbar-wrapper:active {
 			cursor: grabbing;
 		}
 		s-scrollbar-wrapper::-webkit-scrollbar {
-			height: 6px;
-			width: 6px;
+			width: var(--_vscroll-size);
+			height: var(--_vscroll-size);
 		}
 		s-scrollbar-wrapper::-webkit-scrollbar-thumb {
 			border-radius: 1px;
-			background: rgb(0 0 0 / 50%);
+			background: var(--_vscroll-background);
 		}
 		s-scrollbar {
 			display: block;
 			height: 0.1px;
-		}
-		s-thumb {
-			position: absolute;
-			display: block;
-			background-color: hotpink;
-		}
-		.vertical s-thumb {
-			width: 50px;
-		}
-		.horizontal s-thumb {
-			height: 50px;
 		}
 		.vertical {
 			top: 0;

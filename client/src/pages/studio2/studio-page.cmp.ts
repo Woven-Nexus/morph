@@ -121,7 +121,7 @@ export class StudioPageCmp extends MimicElement {
 		},
 	];
 
-	protected data: Data[] = range(100).map(() => ({
+	protected data: Data[] = range(500).map(() => ({
 		id:        faker.database.mongodbObjectId(),
 		firstName: faker.person.firstName(),
 		lastName:  faker.person.lastName(),
@@ -162,6 +162,8 @@ export class StudioPageCmp extends MimicElement {
 			display: grid;
 			overflow: auto;
 			margin-right: 5vw;
+			margin-bottom: 5vw;
+			background-color: white;
 		}
 		`,
 	];
