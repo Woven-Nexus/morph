@@ -125,6 +125,8 @@ export class VirtualScrollbar extends MimicElement {
 			this.syncPosition();
 		};
 
+		console.log('added listener');
+
 		ref.addEventListener('scroll', scrollListener);
 		ref.addEventListener('pointerenter', pointerEnterListener);
 

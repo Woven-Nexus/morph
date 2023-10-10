@@ -1,11 +1,14 @@
+import { sleep } from '@roenlie/mimic-core/async';
 import type { EventOf } from '@roenlie/mimic-core/dom';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { map } from 'lit/directives/map.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import { queryId } from '../../app/queryId.js';
 import { VirtualScrollbar } from '../../features/studio/virtual-scrollbar.cmp.js';
+import { getCssStyle } from './better-table.cmp.js';
 
 VirtualScrollbar.register();
 
@@ -23,25 +26,60 @@ export interface Column<T extends Record<string, any>> {
 @customElement('f-table1')
 export class FragmentTable1 extends MimicElement {
 
-	@property({ type: Object }) public mapper: () => any;
-	@property({ type: Array }) public columns: {
-		fraction?: number;
-		minWidth?: number;
-		width?: string;
-		label: string;
-		headerRender: (data: any[]) => TemplateResult<any>;
-		fieldRender: (data: any) => TemplateResult<any>;
-	}[] = [];
+	@property({ type: Array }) public columns: Column<any>[] = [];
 
 	@property({ type: Array }) public data: Record<string, any>[] = [];
 	@property({ type: Boolean }) public dynamic?: boolean;
 	@queryId('table') protected table?: HTMLTableElement;
+	protected tablePromise = this.updateComplete.then(() => this.table);
 	protected focusRow: number | undefined = undefined;
 	protected focusedCell: number | undefined = undefined;
 	protected columnIdBeingResized?: string;
+	protected rowOverflow = 10;
+
+	protected get rowHeight() {
+		return parseInt(getCssStyle(this, [ '--_row-height' ])['--_row-height']);
+	}
+
+	protected get visibleRows() {
+		return Math.floor(this.getBoundingClientRect().height / this.rowHeight);
+	}
+
+	protected get currentRow() {
+		return Math.floor((this.table?.scrollTop ?? 0) / this.rowHeight);
+	}
+
+	protected get topBufferRange() {
+		const topBufferEnd = Math.max(0, this.currentRow - this.rowOverflow);
+
+		return topBufferEnd;
+	}
+
+	protected get botBufferRange() {
+		const dataEndIndex = Math.min(this.currentRow + this.visibleRows + this.rowOverflow, this.data.length);
+		const remainingLength = this.data.length - dataEndIndex;
+
+		return Math.max(0, remainingLength);
+	}
+
+	protected get dataRange() {
+		const dataStartIndex = Math.max(0, this.currentRow - this.rowOverflow);
+		const dataEndIndex = Math.min(this.currentRow + this.visibleRows + this.rowOverflow, this.data.length);
+
+		return this.data.slice(dataStartIndex, dataEndIndex);
+	}
+
+
+	public override connectedCallback(): void {
+		super.connectedCallback();
+	}
+
+	public override disconnectedCallback(): void {
+		super.disconnectedCallback();
+	}
 
 	protected getHeaderCell(index: number) {
-
+		return this.shadowRoot!.getElementById(String(index));
 	}
 
 	protected getRowCell(rowIndex: number, columnIndex: number) {
@@ -67,7 +105,7 @@ export class FragmentTable1 extends MimicElement {
 		if (this.columnIdBeingResized === undefined)
 			return;
 
-		const columnEl = this.shadowRoot!.getElementById(this.columnIdBeingResized);
+		const columnEl = this.getHeaderCell(parseInt(this.columnIdBeingResized));
 		if (!columnEl)
 			return;
 
@@ -85,9 +123,11 @@ export class FragmentTable1 extends MimicElement {
 
 		if (!this.dynamic) {
 			// For the other headers which don't have a set width, fix it to their computed width
-			this.columns.forEach((column) => {
-				if (!column.width)
+			this.columns.forEach((column, i) => {
+				if (!column.width) {
+					const columnEl = this.getHeaderCell(i)!;
 					column.width = columnEl.clientWidth + 'px';
+				}
 			});
 		}
 
@@ -105,6 +145,10 @@ export class FragmentTable1 extends MimicElement {
 		}
 	};
 
+	//protected override scheduleUpdate(): void | Promise<unknown> {
+	//	return sleep(1000).then(() => super.scheduleUpdate());
+	//}
+
 	protected override render() {
 		return html`
 		<style>
@@ -113,9 +157,25 @@ export class FragmentTable1 extends MimicElement {
 					return width ? width : `minmax(${ minWidth ?? 150 }px, ${ fraction ?? 1 }fr)`;
 				}).join(' ') };
 			}
+			tr.s-top-buffer {
+				all: unset;
+				height: ${ this.topBufferRange * this.rowHeight }px;
+			}
+			tr.s-bot-buffer {
+				all: unset;
+				height: ${ this.botBufferRange * this.rowHeight }px;
+			}
 		</style>
 
-		<table id="table">
+		<div style=${ styleMap({ position: 'absolute', top: 0, left: 0, zIndex: 1 }) }>
+			visibleRows: ${ this.visibleRows }
+			currentRow: ${ this.currentRow }
+			rowAmount:${ this.dataRange.length }
+			topBuffer: ${ this.topBufferRange }
+			botBuffer: ${ this.botBufferRange }
+		</div>
+
+		<table id="table" @scroll=${ () => this.requestUpdate() }>
 			<thead>
 				<tr>
 					${ map(this.columns, (column, i) => html`
@@ -128,29 +188,30 @@ export class FragmentTable1 extends MimicElement {
 			</thead>
 
 			<tbody>
-				${ map(this.data, data => html`
-				<tr>
-					${ map(Object.entries(data), (_, i) => html`
-					<td>
-					${ this.columns[i]?.fieldRender(data) }</td>
-					`) }
+				<tr class="s-top-buffer"></tr>
+
+				${ map(this.dataRange, (data, i) => html`
+				<tr data-row-index=${ i }>
+				${ map(Object.entries(data), (_, i) => html`
+					<td>${ this.columns[i]?.fieldRender(data) }</td>
+				`) }
 				</tr>
 				`) }
+
+				<tr class="s-bot-buffer"></tr>
 			</tbody>
 		</table>
 
 		<m-virtual-scrollbar
 			placement="end"
 			direction="horizontal"
-			.reference=${ this.updateComplete
-				.then(() => this.shadowRoot?.getElementById('table')) }
+			.reference=${ this.tablePromise }
 		></m-virtual-scrollbar>
 
 		<m-virtual-scrollbar
 			placement="end"
 			direction="vertical"
-			.reference=${ this.updateComplete
-				.then(() => this.shadowRoot?.getElementById('table')) }
+			.reference=${ this.tablePromise }
 		></m-virtual-scrollbar>
 		`;
 	}
@@ -168,6 +229,17 @@ export class FragmentTable1 extends MimicElement {
 			top: 50px;
 		}
 		:host {
+			--_header-color:         var(--header-color, #ffffff);
+			--_header-background:    var(--header-background, #009879);
+			--_header-bottom-border: var(--header-bottom-border);
+			--_row-height:           var(--row-height, 50px);
+			--_row-background:       var(--row-background);
+			--_row-even-background:  var(--row-even-background, #f3f3f3);
+			--_row-bottom-border:    var(--row-bottom-border, 1px solid #dddddd);
+			--_table-color:          var(--table-color, black);
+			--_table-background:     var(--table-background, white);
+			--_table-bottom-border:  var(--table-bottom-border, 2px solid #009879);
+
 			position: relative;
 			display: grid;
 			overflow: hidden;
@@ -182,11 +254,12 @@ export class FragmentTable1 extends MimicElement {
 			min-width: 100%;
 
 			font-size: 0.9em;
-			box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
-			color: black;
-			border-bottom: 2px solid #009879;
+			box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
+			color: var(--_table-color);
+			background: var(--_table-background);
+			border-bottom: var(--_table-bottom-border);
 
-			contain: content; // Used for performance
+			contain: content; /* Used for performance */
 		}
 		thead, tbody {
 			display: contents;
@@ -194,15 +267,16 @@ export class FragmentTable1 extends MimicElement {
 		thead tr {
 			position: sticky;
 			top: 0;
-			background-color: #009879;
-			color: #ffffff;
 			z-index: 1;
+			color: var(--_header-color);
+			background-color: var(--_header-background);
+			border-bottom: var(--_header-bottom-border);
 		}
 		tr {
 			display: grid;
-			height: 50px;
-			content-visibility: auto;  // Used for performance
-  			contain-intrinsic-size: 50px;  // Used for performance
+ 			height: var(--_row-height);
+			content-visibility: auto; /* Used for performance */
+  			contain-intrinsic-size: var(--_row-height); /* Used for performance */
 		}
 		th, td {
 			display: flex;
@@ -220,7 +294,6 @@ export class FragmentTable1 extends MimicElement {
 			text-align: left;
 			font-weight: normal;
 			font-size: 1.1rem;
-			color: white;
 		}
 		th:last-child {
 			border-right: 0;
@@ -228,15 +301,12 @@ export class FragmentTable1 extends MimicElement {
 		tr th {
 			text-align: left;
 		}
-		tr td {
-			border-bottom: 1px solid #dddddd;
+		tbody tr {
+			background-color: var(--_row-background);
+			border-bottom: var(--_row-bottom-border);
 		}
 		tbody tr:nth-of-type(even) {
-			background-color: #f3f3f3;
-		}
-		tbody tr.active-row {
-			font-weight: bold;
-			color: #009879;
+			background-color: var(--_row-even-background);
 		}
 		`,
 		css` /* Resize handle */

@@ -132,7 +132,6 @@ export class StudioPageCmp extends MimicElement {
 		IBAN:      faker.finance.iban(),
 	}));
 
-
 	public override async connectedCallback() {
 		super.connectedCallback();
 
@@ -147,13 +146,11 @@ export class StudioPageCmp extends MimicElement {
 	protected override render() {
 		return html`
 		<f-table1
-			dynamic
 			.columns=${ this.columns }
 			.data=${ this.data }
 		></f-table1>
 		`;
 	}
-
 
 	public static override styles = [
 		sharedStyles,
@@ -161,9 +158,17 @@ export class StudioPageCmp extends MimicElement {
 		:host {
 			display: grid;
 			overflow: auto;
-			margin-right: 5vw;
-			margin-bottom: 5vw;
-			background-color: white;
+			margin: 24px;
+		}
+		f-table1 {
+			--header-color:        var(--on-background);
+			--header-background:   var(--shadow1);
+			--header-bottom-border:2px solid var(--background-strong);
+			--row-even-background: var(--surface1);
+			--row-bottom-border:   2px solid var(--background-strong);
+			--table-color:         var(--on-background);
+			--table-background:    var(--surface);
+			--table-bottom-border: 2px solid var(--shadow1);
 		}
 		`,
 	];
