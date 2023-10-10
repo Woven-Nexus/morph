@@ -108,7 +108,7 @@ export class FragmentTable1 extends MimicElement {
 	protected override render() {
 		return html`
 		<style>
-			table#table {
+			tr {
 				grid-template-columns:${ this.columns.map(({ fraction, width, minWidth }) => {
 					return width ? width : `minmax(${ minWidth ?? 150 }px, ${ fraction ?? 1 }fr)`;
 				}).join(' ') };
@@ -137,7 +137,6 @@ export class FragmentTable1 extends MimicElement {
 				</tr>
 				`) }
 			</tbody>
-
 		</table>
 
 		<m-virtual-scrollbar
@@ -155,7 +154,6 @@ export class FragmentTable1 extends MimicElement {
 		></m-virtual-scrollbar>
 		`;
 	}
-
 
 	public static override styles = [
 		css`
@@ -178,6 +176,8 @@ export class FragmentTable1 extends MimicElement {
 			position: relative;
 			overflow: auto;
 			display: grid;
+			grid-auto-flow: row;
+			grid-auto-rows: max-content;
 			border-collapse: collapse;
 			min-width: 100%;
 
@@ -185,28 +185,38 @@ export class FragmentTable1 extends MimicElement {
 			box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
 			color: black;
 			border-bottom: 2px solid #009879;
+
+			contain: content; // Used for performance
 		}
-		thead, tbody, tr {
+		thead, tbody {
 			display: contents;
+		}
+		thead tr {
+			position: sticky;
+			top: 0;
+			background-color: #009879;
+			color: #ffffff;
+			z-index: 1;
+		}
+		tr {
+			display: grid;
+			height: 50px;
+			content-visibility: auto;  // Used for performance
+  			contain-intrinsic-size: 50px;  // Used for performance
 		}
 		th, td {
 			display: flex;
 			place-items: center start;
-			overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-			height: 50px;
 			padding-inline: 6px;
 		}
+		th, td,
 		th span, td span {
 			overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
 		th {
-			position: sticky;
-			top: 0;
-			background: #6c7ae0;
+			position: relative;
 			text-align: left;
 			font-weight: normal;
 			font-size: 1.1rem;
@@ -216,17 +226,15 @@ export class FragmentTable1 extends MimicElement {
 			border-right: 0;
 		}
 		tr th {
-			background-color: #009879;
-			color: #ffffff;
 			text-align: left;
 		}
 		tr td {
 			border-bottom: 1px solid #dddddd;
 		}
-		tr:nth-of-type(even) td {
+		tbody tr:nth-of-type(even) {
 			background-color: #f3f3f3;
 		}
-		tr.active-row td {
+		tbody tr.active-row {
 			font-weight: bold;
 			color: #009879;
 		}
@@ -249,18 +257,6 @@ export class FragmentTable1 extends MimicElement {
 		th:hover .resize-handle {
 			opacity: 0.3;
 		}
-		`,
-		css` /* Using subgrid, slower than display: contents. */
-		/*thead tr {
-			position: sticky;
-			top: 0;
-			z-index: 1;
-		}
-		tr {
-			display: grid;
-			grid-template-columns: subgrid;
-			grid-column: 1 / 9;
-		}*/
 		`,
 	];
 
