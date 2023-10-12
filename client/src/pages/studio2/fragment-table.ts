@@ -1,12 +1,17 @@
-import { sleep } from '@roenlie/mimic-core/async';
+import { createPromiseResolver, paintCycle, sleep } from '@roenlie/mimic-core/async';
 import type { EventOf } from '@roenlie/mimic-core/dom';
+import { withDebounce } from '@roenlie/mimic-core/timing';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html, type TemplateResult } from 'lit';
-import { property } from 'lit/decorators.js';
+import { eventOptions, property, state } from 'lit/decorators.js';
+import { classMap } from 'lit/directives/class-map.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import { map } from 'lit/directives/map.js';
+import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { queryId } from '../../app/queryId.js';
+import { throttle } from '../../app/throttle.js';
 import { VirtualScrollbar } from '../../features/studio/virtual-scrollbar.cmp.js';
 import { getCssStyle } from './better-table.cmp.js';
 
@@ -27,11 +32,13 @@ export interface Column<T extends Record<string, any>> {
 export class FragmentTable1 extends MimicElement {
 
 	@property({ type: Array }) public columns: Column<any>[] = [];
-
 	@property({ type: Array }) public data: Record<string, any>[] = [];
 	@property({ type: Boolean }) public dynamic?: boolean;
 	@queryId('table') protected table?: HTMLTableElement;
+	@queryId('s-top-buffer') protected topBuffer?: HTMLElement;
 	protected tablePromise = this.updateComplete.then(() => this.table);
+	protected topBufferPromise = this.updateComplete.then(() => this.topBuffer);
+
 	protected focusRow: number | undefined = undefined;
 	protected focusedCell: number | undefined = undefined;
 	protected columnIdBeingResized?: string;
@@ -42,36 +49,91 @@ export class FragmentTable1 extends MimicElement {
 	}
 
 	protected get visibleRows() {
-		return Math.floor(this.getBoundingClientRect().height / this.rowHeight);
+		let rowCount = Math.floor(this.getBoundingClientRect().height / this.rowHeight);
+		if (rowCount % 2 === 1)
+			rowCount++;
+
+		return rowCount;
 	}
 
 	protected get currentRow() {
 		return Math.floor((this.table?.scrollTop ?? 0) / this.rowHeight);
 	}
 
-	protected get topBufferRange() {
+	@state() protected topBufferRange = 0;
+	protected updateTopBufferRange() {
 		const topBufferEnd = Math.max(0, this.currentRow - this.rowOverflow);
 
-		return topBufferEnd;
+		this.topBufferRange = topBufferEnd;
 	}
 
-	protected get botBufferRange() {
+	@state() protected botBufferRange = 0;
+	protected updateBotBufferRange() {
 		const dataEndIndex = Math.min(this.currentRow + this.visibleRows + this.rowOverflow, this.data.length);
 		const remainingLength = this.data.length - dataEndIndex;
 
-		return Math.max(0, remainingLength);
+		this.botBufferRange = Math.max(0, remainingLength);
 	}
 
-	protected get dataRange() {
+	@state() protected dataRange: Record<string, any>[] = [];
+	protected async updateDataRange() {
 		const dataStartIndex = Math.max(0, this.currentRow - this.rowOverflow);
-		const dataEndIndex = Math.min(this.currentRow + this.visibleRows + this.rowOverflow, this.data.length);
+		// We add +1 so that it doesn't swap which rows are even and odd.
+		const dataEndIndex = Math.min(this.currentRow + this.visibleRows + this.rowOverflow + 1, this.data.length);
 
-		return this.data.slice(dataStartIndex, dataEndIndex);
+		this.dataRange = this.data.slice(dataStartIndex, dataEndIndex);
+
+		await this.updateComplete;
+		const firstRow = this.shadowRoot?.getElementById('first-row');
+		const lastRow = this.shadowRoot?.getElementById('last-row');
+		if (!firstRow || !lastRow)
+			return;
+
+		if (this.interObs) {
+			this.interObs.disconnect();
+			this.interObs.observe(firstRow);
+			this.interObs.observe(lastRow);
+		}
 	}
 
+	protected interObs: IntersectionObserver;
 
 	public override connectedCallback(): void {
 		super.connectedCallback();
+	}
+
+	public override async afterConnectedCallback() {
+		this.interObs?.disconnect();
+		let initial = true;
+		this.interObs = new IntersectionObserver(async (entries) => {
+			if (initial)
+				return initial = false;
+
+			for (const entry of entries) {
+				if (entry.isIntersecting) {
+					if (entry.target.id === 'first-row' && this.topBufferRange === 0)
+						return;
+					if (entry.target.id === 'last-row' && this.botBufferRange === 0)
+						return;
+
+					const oldScrollTop = this.table!.scrollTop;
+
+					this.updateTopBufferRange();
+					this.updateBotBufferRange();
+					this.updateDataRange();
+					await paintCycle();
+
+					this.table!.scrollTop = oldScrollTop;
+				}
+			}
+		}, {
+			root: this.table,
+		});
+
+		await paintCycle();
+		this.updateTopBufferRange();
+		this.updateBotBufferRange();
+		this.updateDataRange();
 	}
 
 	public override disconnectedCallback(): void {
@@ -123,12 +185,13 @@ export class FragmentTable1 extends MimicElement {
 
 		if (!this.dynamic) {
 			// For the other headers which don't have a set width, fix it to their computed width
-			this.columns.forEach((column, i) => {
+			for (let i = 0; i < this.columns.length; i++) {
+				const column = this.columns[i]!;
 				if (!column.width) {
 					const columnEl = this.getHeaderCell(i)!;
 					column.width = columnEl.clientWidth + 'px';
 				}
-			});
+			}
 		}
 
 		this.requestUpdate();
@@ -145,9 +208,24 @@ export class FragmentTable1 extends MimicElement {
 		}
 	};
 
-	//protected override scheduleUpdate(): void | Promise<unknown> {
-	//	return sleep(1000).then(() => super.scheduleUpdate());
-	//}
+	protected handleTableScroll = {
+		handleEvent: (() => {
+			const func = () => {
+				const tableRect = this.table!.getBoundingClientRect();
+				const centerX = (tableRect.width / 2) + tableRect.left;
+				const centerY = (tableRect.height / 2) + tableRect.top;
+				const element = this.shadowRoot?.elementFromPoint(centerX, centerY);
+				if (element?.id === 's-top-buffer' || element?.id === 's-bot-buffer') {
+					this.updateTopBufferRange();
+					this.updateBotBufferRange();
+					this.updateDataRange();
+				}
+			};
+
+			return withDebounce(throttle(func, 25), func, 100);
+		})(),
+		passive: true,
+	};
 
 	protected override render() {
 		return html`
@@ -165,17 +243,21 @@ export class FragmentTable1 extends MimicElement {
 				all: unset;
 				height: ${ this.botBufferRange * this.rowHeight }px;
 			}
+			${ this.topBufferRange % 2 === 0 ? `
+			tbody tr:nth-of-type(even) {
+				background-color: var(--_row-even-background);
+			}
+			` : `
+			tbody tr:nth-of-type(odd) {
+				background-color: var(--_row-even-background);
+			}
+			` }
+
 		</style>
 
-		<div style=${ styleMap({ position: 'absolute', top: 0, left: 0, zIndex: 1 }) }>
-			visibleRows: ${ this.visibleRows }
-			currentRow: ${ this.currentRow }
-			rowAmount:${ this.dataRange.length }
-			topBuffer: ${ this.topBufferRange }
-			botBuffer: ${ this.botBufferRange }
-		</div>
-
-		<table id="table" @scroll=${ () => this.requestUpdate() }>
+		<table id="table"
+			@scroll=${ this.handleTableScroll }
+		>
 			<thead>
 				<tr>
 					${ map(this.columns, (column, i) => html`
@@ -188,17 +270,23 @@ export class FragmentTable1 extends MimicElement {
 			</thead>
 
 			<tbody>
-				<tr class="s-top-buffer"></tr>
+				<tr id="s-top-buffer" class="s-top-buffer"></tr>
 
-				${ map(this.dataRange, (data, i) => html`
-				<tr data-row-index=${ i }>
+				${ repeat(this.dataRange, data => data, (data, i) => html`
+				<tr
+					data-row-index=${ i }
+					id=${ ifDefined(i === 0 ? 'first-row'
+						: i === this.dataRange.length - 1 ? 'last-row'
+						: undefined)
+					}
+				>
 				${ map(Object.entries(data), (_, i) => html`
 					<td>${ this.columns[i]?.fieldRender(data) }</td>
 				`) }
 				</tr>
 				`) }
 
-				<tr class="s-bot-buffer"></tr>
+				<tr id="s-bot-buffer" class="s-bot-buffer"></tr>
 			</tbody>
 		</table>
 
@@ -206,8 +294,8 @@ export class FragmentTable1 extends MimicElement {
 			placement="end"
 			direction="horizontal"
 			.reference=${ this.tablePromise }
+			.widthResizeRef=${ this.topBufferPromise }
 		></m-virtual-scrollbar>
-
 		<m-virtual-scrollbar
 			placement="end"
 			direction="vertical"
@@ -304,9 +392,6 @@ export class FragmentTable1 extends MimicElement {
 		tbody tr {
 			background-color: var(--_row-background);
 			border-bottom: var(--_row-bottom-border);
-		}
-		tbody tr:nth-of-type(even) {
-			background-color: var(--_row-even-background);
 		}
 		`,
 		css` /* Resize handle */

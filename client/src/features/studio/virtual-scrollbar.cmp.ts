@@ -20,6 +20,7 @@ export class VirtualScrollbar extends MimicElement {
 	@property() public placement: Placement = 'end';
 	@property() public direction: Direction = 'horizontal';
 	@property({ attribute: 'default-scroll' }) public defaultScroll: Direction = 'vertical';
+	@property({ type: Object }) public widthResizeRef: HTMLElement | Promise<HTMLElement>;
 	@property({ type: Object }) public reference: HTMLElement | Promise<HTMLElement>;
 	@state() protected resolvedRef?: HTMLElement;
 	@state() protected show = false;
@@ -30,6 +31,7 @@ export class VirtualScrollbar extends MimicElement {
 	protected resetScrollOrigin = debounce(() => this.scrollOrigin = undefined, 50);
 	protected scrollOrigin?: 'reference' | 'scrollbar' = undefined;
 	protected unlistenReference?: () => void;
+	protected unlistenWidthResizeRef?: () => void;
 	protected unlistenHorizontalScroll?: () => void;
 
 	protected readonly resizeObs = new ResizeObserver(([ entry ]) => {
@@ -45,13 +47,17 @@ export class VirtualScrollbar extends MimicElement {
 		if (this.direction === 'vertical') {
 			// Think this is not needed.
 			//wrapper.style.height = (reference?.clientHeight ?? 0) + 'px';
-			scrollbar.style.height = (reference?.scrollHeight ?? 0) + 'px';
+			const scrollHeight = reference?.scrollHeight ?? 0;
+			const diff = reference.offsetHeight - reference.clientHeight + 1;
+			scrollbar.style.height = Math.max(0, scrollHeight - diff) + 'px';
 		}
 
 		if (this.direction === 'horizontal') {
 			// Think this is not needed.
 			//wrapper.style.width = (reference?.clientWidth ?? 0) + 'px';
-			scrollbar.style.width = (reference?.scrollWidth ?? 0) + 'px';
+			const scrollWidth = reference?.scrollWidth ?? 0;
+			const diff = reference.offsetWidth - reference.clientWidth + 1;
+			scrollbar.style.width = Math.max(0, scrollWidth - diff) + 'px';
 		}
 	});
 
@@ -77,6 +83,14 @@ export class VirtualScrollbar extends MimicElement {
 		this.unlistenReference?.();
 		this.resizeObs.disconnect();
 		this.resizeObs.observe(this.resolvedRef);
+
+		if (this.widthResizeRef) {
+			const widthResizeRef = isPromise(this.widthResizeRef)
+				? await this.widthResizeRef
+				: this.widthResizeRef;
+
+			this.resizeObs.observe(widthResizeRef);
+		}
 
 		const pointerMoveListener = (ev: PointerEvent) => {
 			const path = ev.composedPath();
@@ -124,8 +138,6 @@ export class VirtualScrollbar extends MimicElement {
 
 			this.syncPosition();
 		};
-
-		console.log('added listener');
 
 		ref.addEventListener('scroll', scrollListener);
 		ref.addEventListener('pointerenter', pointerEnterListener);
