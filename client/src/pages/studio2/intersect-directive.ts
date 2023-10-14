@@ -23,6 +23,7 @@ class IntersectDirective extends AsyncDirective {
 			this.#initialized = true;
 			(async () => {
 				const obs = await observer;
+
 				this.#observer = obs;
 				this.#observer.observe(this.#part.element);
 			})();

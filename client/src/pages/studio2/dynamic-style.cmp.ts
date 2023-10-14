@@ -3,10 +3,13 @@ import { html } from 'lit';
 import { property } from 'lit/decorators.js';
 
 
+type StyleObject = Record<string, Record<string, string | number>>;
+
+
 @customElement('dynamic-style')
 export class DynamicStyle extends MimicElement {
 
-	@property({ type: Object }) public styles: Record<string, Record<string, string | number>> = {};
+	@property({ type: Object }) public styles: StyleObject = {};
 	#styleString = '';
 
 	protected override createRenderRoot() {
@@ -19,14 +22,19 @@ export class DynamicStyle extends MimicElement {
 			this.#styleString = this.transformStyles(this.styles);
 	}
 
-	protected transformStyles(styles: Record<string, Record<string, string | number>>) {
-		return Object.entries(styles).map(([ selector, props ]) => {
-			const propsString = Object.entries(props).map(([ key, value ]) => {
-				return key + ':' + value + ';';
-			}).join('\n');
+	protected transformStyles(styles: StyleObject) {
+		let str = '';
 
-			return selector + '{\n' + propsString + '\n}';
-		}).join('\n');
+		for (const [ selector, props ] of Object.entries(styles)) {
+			str += selector + '{';
+
+			for (const [ key, value ] of Object.entries(props))
+				str += key + ':' + value + ';';
+
+			str += '}';
+		}
+
+		return str;
 	}
 
 	protected override render() {

@@ -10,7 +10,7 @@ import { serverUrl } from '../../app/backend-url.js';
 import type { DbResponse } from '../../app/response-model.js';
 import type { Module } from '../../features/code-module/module-model.js';
 import { sharedStyles } from '../../features/styles/shared-styles.js';
-import { FragmentTable } from './fragment-table.js';
+import { type Column, FragmentTable } from './fragment-table/fragment-table.js';
 
 FragmentTable.register();
 
@@ -30,94 +30,58 @@ interface Data {
 @customElement('m-studio-page')
 export class StudioPageCmp extends MimicElement {
 
-	protected columns: FragmentTable['columns'] = [
+	protected columns: Column<Data>[] = [
 		{
-			fraction: 1,
-			minWidth: 150,
-			headerRender() {
-				return html`ID`;
-			},
-			fieldRender: (data: Data) => {
-				return html`<span>${ data.id }</span>`;
-			},
+			label:        'ID',
+			field:        'id',
+			minWidth:     150,
+			defaultWidth: 250,
 		},
 		{
-			label:       'First name',
-			fraction:    1.67,
-			minWidth:    150,
-			fieldRender: (data: Data) => {
-				return html`<span>${ data.firstName }</span>`;
-			},
+			label:        'First name',
+			field:        'firstName',
+			minWidth:     150,
+			defaultWidth: 250,
 		},
 		{
-			label:    'Last name',
-			fraction: 1.67,
-			minWidth: 150,
-			headerRender() {
-				return html`${ this.label }`;
-			},
-			fieldRender: (data: Data) => {
-				return html`<span>${ data.lastName }</span>`;
-			},
+			label:        'Last name',
+			field:        'lastName',
+			minWidth:     150,
+			defaultWidth: 250,
 		},
 		{
-			label:    'Email',
-			fraction: 1.67,
-			minWidth: 150,
-			headerRender() {
-				return html`${ this.label }`;
-			},
-			fieldRender: (data: Data) => {
-				return html`<span>${ data.email }</span>`;
-			},
+			label:        'Email',
+			field:        'email',
+			minWidth:     150,
+			defaultWidth: 250,
 		},
 		{
-			label:    'Street',
-			fraction: 3.33,
-			minWidth: 150,
-			headerRender() {
-				return html`${ this.label }`;
-			},
-			fieldRender: (data: Data) => {
-				return html`<span>${ data.street }</span>`;
-			},
+			label:        'Street',
+			field:        'street',
+			minWidth:     150,
+			defaultWidth: 250,
 		},
 		{
-			label:    'Country',
-			fraction: 1.67,
-			minWidth: 150,
-			headerRender() {
-				return html`${ this.label }`;
-			},
-			fieldRender: (data: Data) => {
-				return html`<span>${ data.country }</span>`;
-			},
+			label:        'Country',
+			field:        'country',
+			minWidth:     150,
+			defaultWidth: 250,
 		},
 		{
-			label:    'City',
-			fraction: 3.33,
-			minWidth: 150,
-			headerRender() {
-				return html`${ this.label }`;
-			},
-			fieldRender: (data: Data) => {
-				return html`<span>${ data.city }</span>`;
-			},
+			label:        'City',
+			field:        'city',
+			minWidth:     150,
+			defaultWidth: 250,
 		},
 		{
-			label:    'IBAN',
-			fraction: 1.67,
-			minWidth: 150,
-			headerRender() {
-				return html`${ this.label }`;
-			},
-			fieldRender: (data: Data) => {
-				return html`<span>${ data.IBAN }</span>`;
-			},
+			label:        'IBAN',
+			field:        'IBAN',
+			minWidth:     150,
+			defaultWidth: 250,
 		},
 	];
 
-	protected data: Data[] = range(500).map(() => ({
+	protected data: Data[] = range(100).map(() => ({
 		id:        faker.database.mongodbObjectId(),
 		firstName: faker.person.firstName(),
 		lastName:  faker.person.lastName(),
