@@ -1,20 +1,20 @@
-import { createPromiseResolver, paintCycle, sleep } from '@roenlie/mimic-core/async';
 import type { EventOf } from '@roenlie/mimic-core/dom';
 import { withDebounce } from '@roenlie/mimic-core/timing';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
-import { css, html, type TemplateResult } from 'lit';
-import { eventOptions, property, state } from 'lit/decorators.js';
-import { classMap } from 'lit/directives/class-map.js';
+import { css, html, nothing, type TemplateResult } from 'lit';
+import { property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { map } from 'lit/directives/map.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import { queryId } from '../../app/queryId.js';
 import { throttle } from '../../app/throttle.js';
 import { VirtualScrollbar } from '../../features/studio/virtual-scrollbar.cmp.js';
 import { getCssStyle } from './better-table.cmp.js';
+import { DynamicStyle } from './dynamic-style.cmp.js';
+import { intersect } from './intersect-directive.js';
 
+DynamicStyle.register();
 VirtualScrollbar.register();
 
 
@@ -22,20 +22,22 @@ export interface Column<T extends Record<string, any>> {
 	fraction?: number;
 	minWidth?: number;
 	width?: string;
-	label: string;
-	headerRender: (data: T[]) => TemplateResult<any>;
-	fieldRender: (data: T) => TemplateResult<any>;
+	headerRender?: (data: T[]) => TemplateResult<any>;
+	label?: string;
+	fieldRender?: (data: T) => TemplateResult<any>;
+	field?: string
 }
 
 
 @customElement('f-table1')
-export class FragmentTable1 extends MimicElement {
+export class FragmentTable extends MimicElement {
 
 	@property({ type: Array }) public columns: Column<any>[] = [];
 	@property({ type: Array }) public data: Record<string, any>[] = [];
 	@property({ type: Boolean }) public dynamic?: boolean;
 	@queryId('table') protected table?: HTMLTableElement;
-	@queryId('s-top-buffer') protected topBuffer?: HTMLElement;
+	@queryId('top-buffer') protected topBuffer?: HTMLElement;
+	@queryId('bot-buffer') protected botBuffer?: HTMLElement;
 	protected tablePromise = this.updateComplete.then(() => this.table);
 	protected topBufferPromise = this.updateComplete.then(() => this.topBuffer);
 
@@ -75,69 +77,63 @@ export class FragmentTable1 extends MimicElement {
 		this.botBufferRange = Math.max(0, remainingLength);
 	}
 
-	@state() protected dataRange: Record<string, any>[] = [];
+	@state({ hasChanged: () => true }) protected dataRange: Record<string, any>[] = [];
 	protected async updateDataRange() {
 		const dataStartIndex = Math.max(0, this.currentRow - this.rowOverflow);
 		// We add +1 so that it doesn't swap which rows are even and odd.
 		const dataEndIndex = Math.min(this.currentRow + this.visibleRows + this.rowOverflow + 1, this.data.length);
 
-		this.dataRange = this.data.slice(dataStartIndex, dataEndIndex);
-
-		await this.updateComplete;
-		const firstRow = this.shadowRoot?.getElementById('first-row');
-		const lastRow = this.shadowRoot?.getElementById('last-row');
-		if (!firstRow || !lastRow)
-			return;
-
-		if (this.interObs) {
-			this.interObs.disconnect();
-			this.interObs.observe(firstRow);
-			this.interObs.observe(lastRow);
+		this.dataRange.length = 0;
+		for (let i = dataStartIndex; i < dataEndIndex; i++) {
+			const item = this.data[i];
+			if (item)
+				this.dataRange.push(item);
 		}
 	}
 
-	protected interObs: IntersectionObserver;
-
-	public override connectedCallback(): void {
-		super.connectedCallback();
-	}
-
-	public override async afterConnectedCallback() {
-		this.interObs?.disconnect();
-		let initial = true;
-		this.interObs = new IntersectionObserver(async (entries) => {
-			if (initial)
-				return initial = false;
-
-			for (const entry of entries) {
-				if (entry.isIntersecting) {
-					if (entry.target.id === 'first-row' && this.topBufferRange === 0)
-						return;
-					if (entry.target.id === 'last-row' && this.botBufferRange === 0)
-						return;
-
-					const oldScrollTop = this.table!.scrollTop;
-
-					this.updateTopBufferRange();
-					this.updateBotBufferRange();
-					this.updateDataRange();
-					await paintCycle();
-
-					this.table!.scrollTop = oldScrollTop;
-				}
-			}
-		}, {
-			root: this.table,
-		});
-
-		await paintCycle();
+	protected updateDisplayedData() {
 		this.updateTopBufferRange();
 		this.updateBotBufferRange();
 		this.updateDataRange();
 	}
 
-	public override disconnectedCallback(): void {
+	protected interObs: Promise<IntersectionObserver>;
+
+	public override connectedCallback() {
+		super.connectedCallback();
+
+		this.interObs = (async () => {
+			await this.updateComplete;
+
+			return new IntersectionObserver((entries) => {
+				for (const entry of entries) {
+					if (!entry.isIntersecting)
+						continue;
+
+					if (entry.target.id === 'top-buffer' && this.topBufferRange === 0)
+						continue;
+					if (entry.target.id === 'bot-buffer' && this.botBufferRange === 0)
+						continue;
+
+					const oldScrollTop = this.table!.scrollTop;
+
+					this.updateDisplayedData();
+
+					requestAnimationFrame(() => this.table!.scrollTop = oldScrollTop);
+				}
+			}, {
+				root: this.table,
+			});
+		})();
+	}
+
+	public override afterConnectedCallback() {
+		requestAnimationFrame(() => this.updateDisplayedData());
+	}
+
+	public override disconnectedCallback() {
 		super.disconnectedCallback();
+		this.interObs?.disconnect();
 	}
 
 	protected getHeaderCell(index: number) {
@@ -208,61 +204,32 @@ export class FragmentTable1 extends MimicElement {
 		}
 	};
 
-	protected handleTableScroll = {
-		handleEvent: (() => {
-			const func = () => {
-				const tableRect = this.table!.getBoundingClientRect();
-				const centerX = (tableRect.width / 2) + tableRect.left;
-				const centerY = (tableRect.height / 2) + tableRect.top;
-				const element = this.shadowRoot?.elementFromPoint(centerX, centerY);
-				if (element?.id === 's-top-buffer' || element?.id === 's-bot-buffer') {
-					this.updateTopBufferRange();
-					this.updateBotBufferRange();
-					this.updateDataRange();
-				}
-			};
+	protected getDynamicStyling() {
+		const isEven = this.topBufferRange % 2 === 0;
 
-			return withDebounce(throttle(func, 25), func, 100);
-		})(),
-		passive: true,
-	};
+		return {
+			table: {
+				'--_top-buffer-height': (this.topBufferRange * this.rowHeight) + 'px',
+				'--_bot-buffer-height': (this.botBufferRange * this.rowHeight) + 'px',
+				'--_template-columns':  this.columns.map(({ fraction, width, minWidth }) =>
+					width ? width : `minmax(${ minWidth ?? 150 }px, ${ fraction ?? 1 }fr)`).join(' '),
+				[isEven ? '--_initial-even' : '--_initial-odd']: 'var(--_row-even-background)',
+			},
+		};
+	}
 
 	protected override render() {
 		return html`
-		<style>
-			tr {
-				grid-template-columns:${ this.columns.map(({ fraction, width, minWidth }) => {
-					return width ? width : `minmax(${ minWidth ?? 150 }px, ${ fraction ?? 1 }fr)`;
-				}).join(' ') };
-			}
-			tr.s-top-buffer {
-				all: unset;
-				height: ${ this.topBufferRange * this.rowHeight }px;
-			}
-			tr.s-bot-buffer {
-				all: unset;
-				height: ${ this.botBufferRange * this.rowHeight }px;
-			}
-			${ this.topBufferRange % 2 === 0 ? `
-			tbody tr:nth-of-type(even) {
-				background-color: var(--_row-even-background);
-			}
-			` : `
-			tbody tr:nth-of-type(odd) {
-				background-color: var(--_row-even-background);
-			}
-			` }
+		<dynamic-style
+			.styles=${ this.getDynamicStyling() }
+		></dynamic-style>
 
-		</style>
-
-		<table id="table"
-			@scroll=${ this.handleTableScroll }
-		>
+		<table id="table">
 			<thead>
 				<tr>
 					${ map(this.columns, (column, i) => html`
 					<th id=${ i }>
-						${ column.headerRender(this.data) }
+						${ column.headerRender?.(this.data) ?? column.label ?? nothing }
 						<span @mousedown=${ this.initResize } class="resize-handle"></span>
 					</th>
 					`) }
@@ -270,7 +237,7 @@ export class FragmentTable1 extends MimicElement {
 			</thead>
 
 			<tbody>
-				<tr id="s-top-buffer" class="s-top-buffer"></tr>
+				<tr id="top-buffer" ${ intersect(this.interObs) }></tr>
 
 				${ repeat(this.dataRange, data => data, (data, i) => html`
 				<tr
@@ -280,13 +247,22 @@ export class FragmentTable1 extends MimicElement {
 						: undefined)
 					}
 				>
-				${ map(Object.entries(data), (_, i) => html`
-					<td>${ this.columns[i]?.fieldRender(data) }</td>
-				`) }
+				${ map(Object.entries(data), (_, i) => {
+					const column = this.columns[i];
+					const field = column?.field;
+					if (!column)
+						return nothing;
+
+					return html`
+					<td>
+						${ column.fieldRender?.(data) ?? (field ? data[field] : nothing) }
+					</td>
+					`;
+				}) }
 				</tr>
 				`) }
 
-				<tr id="s-bot-buffer" class="s-bot-buffer"></tr>
+				<tr id="bot-buffer" ${ intersect(this.interObs) }></tr>
 			</tbody>
 		</table>
 
@@ -362,9 +338,18 @@ export class FragmentTable1 extends MimicElement {
 		}
 		tr {
 			display: grid;
+			grid-template-columns: var(--_template-columns);
  			height: var(--_row-height);
 			content-visibility: auto; /* Used for performance */
   			contain-intrinsic-size: var(--_row-height); /* Used for performance */
+		}
+		tr#top-buffer {
+			all: unset;
+			height: var(--_top-buffer-height);
+		}
+		tr#bot-buffer {
+			all: unset;
+			height: var(--_bot-buffer-height);
 		}
 		th, td {
 			display: flex;
@@ -392,6 +377,12 @@ export class FragmentTable1 extends MimicElement {
 		tbody tr {
 			background-color: var(--_row-background);
 			border-bottom: var(--_row-bottom-border);
+		}
+		tbody tr:nth-of-type(odd) {
+			background-color: var(--_initial-odd);
+		}
+		tbody tr:nth-of-type(even) {
+			background-color: var(--_initial-even);
 		}
 		`,
 		css` /* Resize handle */

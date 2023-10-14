@@ -282,7 +282,7 @@ export class StudioActionBar extends MimicElement {
 				placement="end"
 				direction="vertical"
 				.reference=${ this.updateComplete
-					.then(() => this.renderRoot.querySelector('s-popout')) }
+					.then(() => this.renderRoot.querySelector<HTMLElement>('s-popout')!) }
 			></m-virtual-scrollbar>
 		</s-popout>
 		`;

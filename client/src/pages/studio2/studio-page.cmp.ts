@@ -10,9 +10,9 @@ import { serverUrl } from '../../app/backend-url.js';
 import type { DbResponse } from '../../app/response-model.js';
 import type { Module } from '../../features/code-module/module-model.js';
 import { sharedStyles } from '../../features/styles/shared-styles.js';
-import { FragmentTable1 } from './fragment-table.js';
+import { FragmentTable } from './fragment-table.js';
 
-FragmentTable1.register();
+FragmentTable.register();
 
 
 interface Data {
@@ -30,25 +30,21 @@ interface Data {
 @customElement('m-studio-page')
 export class StudioPageCmp extends MimicElement {
 
-	protected columns: FragmentTable1['columns'] = [
+	protected columns: FragmentTable['columns'] = [
 		{
-			label:    'ID',
 			fraction: 1,
 			minWidth: 150,
 			headerRender() {
-				return html`${ this.label }`;
+				return html`ID`;
 			},
 			fieldRender: (data: Data) => {
 				return html`<span>${ data.id }</span>`;
 			},
 		},
 		{
-			label:    'First name',
-			fraction: 1.67,
-			minWidth: 150,
-			headerRender() {
-				return html`${ this.label }`;
-			},
+			label:       'First name',
+			fraction:    1.67,
+			minWidth:    150,
 			fieldRender: (data: Data) => {
 				return html`<span>${ data.firstName }</span>`;
 			},
