@@ -3,7 +3,7 @@ import { html } from 'lit';
 import { property } from 'lit/decorators.js';
 
 
-type StyleObject = Record<string, Record<string, string | number>>;
+export type StyleObject = Record<string, Record<string, string | number>>;
 
 
 @customElement('dynamic-style')
@@ -18,7 +18,7 @@ export class DynamicStyle extends MimicElement {
 
 	protected override willUpdate(props: Map<PropertyKey, unknown>) {
 		super.willUpdate(props);
-		if (props.has('styles'))
+		if (props.get('styles'))
 			this.#styleString = this.transformStyles(this.styles);
 	}
 

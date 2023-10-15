@@ -35,30 +35,7 @@ export class VirtualScrollbar extends MimicElement {
 	protected unlistenHorizontalScroll?: () => void;
 
 	protected readonly resizeObs = new ResizeObserver(([ entry ]) => {
-		if (!entry)
-			return;
-
-		const reference = this.resolvedRef;
-		const wrapper = this.wrapperEl;
-		const scrollbar = this.scrollbarEl;
-		if (!reference || !wrapper || !scrollbar)
-			return;
-
-		if (this.direction === 'vertical') {
-			// Think this is not needed.
-			//wrapper.style.height = (reference?.clientHeight ?? 0) + 'px';
-			const scrollHeight = reference?.scrollHeight ?? 0;
-			const diff = reference.offsetHeight - reference.clientHeight + 1;
-			scrollbar.style.height = Math.max(0, scrollHeight - diff) + 'px';
-		}
-
-		if (this.direction === 'horizontal') {
-			// Think this is not needed.
-			//wrapper.style.width = (reference?.clientWidth ?? 0) + 'px';
-			const scrollWidth = reference?.scrollWidth ?? 0;
-			const diff = reference.offsetWidth - reference.clientWidth + 1;
-			scrollbar.style.width = Math.max(0, scrollWidth - diff) + 'px';
-		}
+		entry && this.updateHeight();
 	});
 
 	public override disconnectedCallback() {
@@ -210,6 +187,30 @@ export class VirtualScrollbar extends MimicElement {
 		const x = (reference?.scrollLeft ?? 0) + 'px';
 		const y = (reference?.scrollTop ?? 0) + 'px';
 		bar.style.translate = x + ' ' + y;
+	}
+
+	public updateHeight() {
+		const reference = this.resolvedRef;
+		const wrapper = this.wrapperEl;
+		const scrollbar = this.scrollbarEl;
+		if (!reference || !wrapper || !scrollbar)
+			return;
+
+		if (this.direction === 'vertical') {
+			// Think this is not needed.
+			//wrapper.style.height = (reference?.clientHeight ?? 0) + 'px';
+			const scrollHeight = reference?.scrollHeight ?? 0;
+			const diff = reference.offsetHeight - reference.clientHeight + 1;
+			scrollbar.style.height = Math.max(0, scrollHeight - diff) + 'px';
+		}
+
+		if (this.direction === 'horizontal') {
+			// Think this is not needed.
+			//wrapper.style.width = (reference?.clientWidth ?? 0) + 'px';
+			const scrollWidth = reference?.scrollWidth ?? 0;
+			const diff = reference.offsetWidth - reference.clientWidth + 1;
+			scrollbar.style.width = Math.max(0, scrollWidth - diff) + 'px';
+		}
 	}
 
 	protected override render() {

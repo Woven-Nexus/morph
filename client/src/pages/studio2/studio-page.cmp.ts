@@ -1,5 +1,3 @@
-import './better-table.cmp.js';
-
 import { faker } from '@faker-js/faker';
 import { range } from '@roenlie/mimic-core/array';
 import { maybe } from '@roenlie/mimic-core/async';
@@ -10,7 +8,7 @@ import { serverUrl } from '../../app/backend-url.js';
 import type { DbResponse } from '../../app/response-model.js';
 import type { Module } from '../../features/code-module/module-model.js';
 import { sharedStyles } from '../../features/styles/shared-styles.js';
-import { type Column, FragmentTable } from './fragment-table/fragment-table.js';
+import { type Column, FragmentTable, type Options } from './fragment-table/fragment-table.js';
 
 FragmentTable.register();
 
@@ -81,7 +79,7 @@ export class StudioPageCmp extends MimicElement {
 		},
 	];
 
-	protected data: Data[] = range(100).map(() => ({
+	protected data: Data[] = range(1000).map(() => ({
 		id:        faker.database.mongodbObjectId(),
 		firstName: faker.person.firstName(),
 		lastName:  faker.person.lastName(),
@@ -91,6 +89,10 @@ export class StudioPageCmp extends MimicElement {
 		city:      faker.location.city(),
 		IBAN:      faker.finance.iban(),
 	}));
+
+	protected options: Options = {
+		checkbox: true,
+	};
 
 	public override async connectedCallback() {
 		super.connectedCallback();
@@ -105,10 +107,26 @@ export class StudioPageCmp extends MimicElement {
 
 	protected override render() {
 		return html`
-		<f-table1
+		<f-table
 			.columns=${ this.columns }
 			.data=${ this.data }
-		></f-table1>
+			.options=${ this.options }
+			@header-click=${ (ev: CustomEvent<HTMLTableRowElement>) => {
+				console.log(ev.type, ev.detail);
+			} }
+			@row-click=${ (ev: CustomEvent<HTMLTableRowElement>) => {
+				console.log(ev.type, ev.detail);
+			} }
+			@cell-click=${ (ev: CustomEvent<HTMLTableCellElement>) => {
+				console.log(ev.type, ev.detail);
+			} }
+			@row-check=${ (ev: CustomEvent<HTMLInputElement>) => {
+				console.log(ev.type, ev.detail);
+			} }
+			@row-check-all=${ (ev: CustomEvent<HTMLInputElement>) => {
+				console.log(ev.type, ev.detail);
+			} }
+		></f-table>
 		`;
 	}
 
@@ -120,12 +138,13 @@ export class StudioPageCmp extends MimicElement {
 			overflow: auto;
 			margin: 24px;
 		}
-		f-table1 {
+		f-table {
 			--header-color:        var(--on-background);
 			--header-background:   var(--shadow1);
 			--header-bottom-border:2px solid var(--background-strong);
 			--row-even-background: var(--surface1);
 			--row-bottom-border:   2px solid var(--background-strong);
+			--row-background-hover:var(--shadow1);
 			--table-color:         var(--on-background);
 			--table-background:    var(--surface);
 			--table-bottom-border: 2px solid var(--shadow1);

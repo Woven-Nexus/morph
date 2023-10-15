@@ -2,27 +2,28 @@ import { readPath } from '@roenlie/mimic-core/structs';
 import { throttle, withDebounce } from '@roenlie/mimic-core/timing';
 import { css, html, nothing, type ReactiveController } from 'lit';
 import { map } from 'lit/directives/map.js';
+import { createRef, type Ref, ref } from 'lit/directives/ref.js';
+import { when } from 'lit/directives/when.js';
 
-import { getCssStyle } from '../better-table.cmp.js';
-import { intersect } from '../intersect-directive.js';
 import type { FragmentTable } from './fragment-table.js';
+import { intersect } from './intersect-directive.js';
 
 
 export class RowRenderController implements ReactiveController {
 
-	protected hasRendered = false;
 	public readonly rowOverflow = 10;
 	public topBufferRange = 0;
 	public botBufferRange = 0;
 	public dataRange: Record<string, any>[] = [];
 	public interObs: Promise<IntersectionObserver>;
+	public firstRowFirstCell: Ref<HTMLTableCellElement> = createRef();
 
 	protected get table() {
 		return this.host.shadowRoot?.getElementById('table');
 	}
 
 	public get rowHeight() {
-		return parseInt(getCssStyle(this.host, [ '--_row-height' ])['--_row-height']);
+		return parseInt(getComputedStyle(this.host).getPropertyValue('--_row-height'));
 	}
 
 	public get visibleRows() {
@@ -73,21 +74,13 @@ export class RowRenderController implements ReactiveController {
 	}
 
 	public hostAfterConnected() {
-		this.table!.addEventListener('scroll', this.handleTableScroll, { passive: true });
-		requestAnimationFrame(() => this.updateDisplayedData());
+		this.table?.addEventListener('scroll', this.handleTableScroll, { passive: true });
+		this.updateDisplayedData();
 	}
 
 	public hostDisconnected() {
-		this.table!.removeEventListener('scroll', this.handleTableScroll);
-		this.hasRendered = false;
+		this.table?.removeEventListener('scroll', this.handleTableScroll);
 		this.interObs.then(obs => obs?.disconnect());
-	}
-
-	public hostUpdated() {
-		if (!this.hasRendered) {
-			this.hasRendered = true;
-			this.hostAfterConnected();
-		}
 	}
 
 	protected updateTopBufferRange() {
@@ -168,59 +161,67 @@ export class RowRenderController implements ReactiveController {
 	public Rows() {
 		return html`
 		<tr id="top-buffer" ${ intersect(this.interObs) }></tr>
-		${ map(this.dataRange, (data, i) => this.renderRow(data, i)) }
+		${ map(this.dataRange, (data, i) => this.Row(data, i)) }
 		<tr id="bot-buffer" ${ intersect(this.interObs) }></tr>
 		`;
 	}
 
-	protected renderRow(data: Record<string, any>, index: number) {
+	protected Row(data: Record<string, any>, index: number) {
 		return html`
-		<tr id=${ 'row-' + index }>
-		${ map(Object.entries(data), (_, i) => {
-			const column = this.host.columns[i];
-			if (!column)
-				return nothing;
+		<tr id=${ 'row-' + index } part="tbody-tr">
+			<td ${ ref(this.firstRowFirstCell) }>
+				${ when(this.host.options?.checkbox, () => html`
+				<input data-row-index=${ index } type="checkbox" />
+				`) }
+			</td>
+			${ map(Object.entries(data), (_, i) => {
+				const column = this.host.columns[i];
+				if (!column)
+					return nothing;
 
-			let template: unknown = nothing;
-			if (column.fieldRender)
-				template = column.fieldRender?.(data);
-			else if (column.field)
-				template = html`<span>${ readPath(data, column.field) }</span>`;
+				let template: unknown = nothing;
+				if (column.fieldRender)
+					template = column.fieldRender?.(data);
+				else if (column.field)
+					template = html`<span>${ readPath(data, column.field) }</span>`;
 
-			return html`<td>${ template }</td>`;
-		}) }
-		<td></td>
+				return html`<td part="td">${ template }</td>`;
+			}) }
+			<td></td>
 		</tr>
 		`;
 	}
 
 	public static styles = css`
-	tr {
-		display: grid;
-		grid-template-columns: var(--_template-columns);
-		height: var(--_row-height);
-		content-visibility: auto; /* Used for performance */
-		contain-intrinsic-size: var(--_row-height); /* Used for performance */
-	}
-	tr#top-buffer {
-		all: unset;
-		height: var(--_top-buffer-height);
-	}
-	tr#bot-buffer {
-		all: unset;
-		height: var(--_bot-buffer-height);
-	}
+		tr {
+			display: grid;
+			grid-template-columns: var(--_template-columns);
+			height: var(--_row-height);
+			content-visibility: auto; /* Used for performance */
+			contain-intrinsic-size: var(--_row-height); /* Used for performance */
+		}
+		tr#top-buffer {
+			all: unset;
+			height: var(--_top-buffer-height);
+		}
+		tr#bot-buffer {
+			all: unset;
+			height: var(--_bot-buffer-height);
+		}
 
-	tbody tr {
-		background-color: var(--_row-background);
-		border-bottom: var(--_row-bottom-border);
-	}
-	tbody tr:nth-of-type(odd) {
-		background-color: var(--_initial-odd);
-	}
-	tbody tr:nth-of-type(even) {
-		background-color: var(--_initial-even);
-	}
+		tbody tr {
+			background-color: var(--_row-background);
+			border-bottom: var(--_row-bottom-border);
+		}
+		tbody tr:nth-of-type(odd) {
+			background-color: var(--_initial-odd);
+		}
+		tbody tr:nth-of-type(even) {
+			background-color: var(--_initial-even);
+		}
+		tbody tr:hover {
+			background-color: var(--_row-background-hover);
+		}
 	`;
 
 }

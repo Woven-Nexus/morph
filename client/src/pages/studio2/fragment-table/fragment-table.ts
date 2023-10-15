@@ -1,23 +1,28 @@
-import type { EventOf } from '@roenlie/mimic-core/dom';
 import type { PathOf } from '@roenlie/mimic-core/types';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
-import { css, html, nothing, type TemplateResult } from 'lit';
+import { css, html, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { map } from 'lit/directives/map.js';
 
 import { queryId } from '../../../app/queryId.js';
 import { VirtualScrollbar } from '../../../features/studio/virtual-scrollbar.cmp.js';
-import { DynamicStyle } from '../dynamic-style.cmp.js';
+import { DynamicStyle, type StyleObject } from '../dynamic-style.cmp.js';
+import { HeaderRenderController } from './header-render-controller.js';
 import { RowRenderController } from './row-render-controller.js';
 
 DynamicStyle.register();
 VirtualScrollbar.register();
 
 
+export interface Options {
+	checkbox?: boolean;
+}
+
+
 export interface Column<T extends Record<string, any>> {
 	width?: number;
 	minWidth?: number;
 	defaultWidth?: number;
+	resizeable?: boolean;
 	label?: string;
 	field?: PathOf<T>;
 	headerRender?: (data: T[]) => TemplateResult<any>;
@@ -25,146 +30,102 @@ export interface Column<T extends Record<string, any>> {
 }
 
 
-@customElement('f-table1')
+@customElement('f-table')
 export class FragmentTable extends MimicElement {
 
 	@property({ type: Array }) public columns: Column<any>[] = [];
 	@property({ type: Array }) public data: Record<string, any>[] = [];
+	@property({ type: Object }) public options?: Options;
+	@property({ type: Object }) public styles?: StyleObject;
 	@property({ type: Boolean }) public dynamic?: boolean;
 	@queryId('table') protected table?: HTMLTableElement;
 	@queryId('top-buffer') protected topBuffer?: HTMLElement;
-	@queryId('bot-buffer') protected botBuffer?: HTMLElement;
 	protected tablePromise: Promise<HTMLTableElement | undefined>;
 	protected topBufferPromise: Promise<HTMLElement | undefined>;
 	protected focusRow: number | undefined = undefined;
 	protected focusedCell: number | undefined = undefined;
-	protected columnIdBeingResized?: string;
-	protected readonly rowRenderingCtrl = new RowRenderController(this);
+	protected eventOptions = { bubbles: true, cancelable: true, composed: true };
+	public readonly headerRenderer = new HeaderRenderController(this);
+	public readonly rowRenderer = new RowRenderController(this);
 
 	public override connectedCallback() {
 		super.connectedCallback();
 
+		this.classList.toggle('initializing', true);
 		this.tablePromise = this.updateComplete.then(() => this.table);
 		this.topBufferPromise = this.updateComplete.then(() => this.topBuffer);
 	}
 
-	protected getHeaderCell(index: number) {
-		return this.shadowRoot!.getElementById(String(index));
+	public override afterConnectedCallback() {
+		setTimeout(() => {
+			this.headerRenderer.hostAfterConnected();
+			this.rowRenderer.hostAfterConnected();
+
+			this.updateComplete.then(() => {
+				this.renderRoot
+					.querySelectorAll<VirtualScrollbar>('m-virtual-scrollbar')
+					.forEach(el => el.updateHeight());
+
+				this.classList.toggle('initializing', false);
+			});
+		});
 	}
 
-	protected getRowCell(rowIndex: number, columnIndex: number) {
+	protected handleHeadClick(ev: PointerEvent) {
+		const path = ev.composedPath();
+		const cell = path.find((el): el is HTMLTableCellElement =>
+			el instanceof HTMLTableCellElement);
 
+		const baseOptions = { bubbles: true, cancelable: true, composed: true };
+		const cellEvent = new CustomEvent('header-click', { ...baseOptions, detail: cell });
+
+		cell?.dispatchEvent(cellEvent);
 	}
 
-	protected initResize(ev: EventOf<HTMLElement>) {
-		ev.preventDefault();
+	protected handleBodyClick(ev: PointerEvent) {
+		const path = ev.composedPath();
+		const row = path.find((el): el is HTMLTableRowElement => el instanceof HTMLTableRowElement);
+		const cell = path.find((el): el is HTMLTableCellElement => el instanceof HTMLTableCellElement);
 
-		const columnId = ev.target.parentElement?.id;
-		this.columnIdBeingResized = columnId;
-		if (!columnId)
-			return;
+		const rowEvent = new CustomEvent('row-click', { ...this.eventOptions, detail: row });
+		const cellEvent = new CustomEvent('cell-click', { ...this.eventOptions, detail: cell });
 
-		window.addEventListener('mousemove', this.onMouseMove);
-		window.addEventListener('mouseup', this.onMouseUp);
-
-		const columnEl = this.shadowRoot!.getElementById(columnId);
-		columnEl?.classList.add('header--being-resized');
+		row?.dispatchEvent(rowEvent);
+		cell?.dispatchEvent(cellEvent);
 	}
 
-	protected onMouseMove = (() => {
-		let event: MouseEvent;
-		const func = () => {
-			if (this.columnIdBeingResized === undefined)
-				return;
+	protected handleHeadChange(ev: Event) {
+		const path = ev.composedPath();
+		const checkbox = path.find(el => el instanceof HTMLInputElement && el.type === 'checkbox');
 
-			const columnEl = this.getHeaderCell(parseInt(this.columnIdBeingResized));
-			if (!columnEl)
-				return;
-
-			// Calculate the desired width
-			const columnRect = columnEl.getBoundingClientRect();
-			const horizontalScrollOffset = this.scrollLeft;
-			const width = (horizontalScrollOffset + event.clientX) - columnRect.x;
-
-			const columnIndex = parseInt(this.columnIdBeingResized);
-
-			// Find the column and set the size
-			const column = this.columns[columnIndex];
-			if (column)
-				column.width = Math.max(column.minWidth ?? 150, width); // Enforce the minimum
-
-
-			if (!this.dynamic) {
-				// For the other headers which don't have a set width, fix it to their computed width
-				for (let i = 0; i < this.columns.length; i++) {
-					const column = this.columns[i]!;
-					if (!column.width) {
-						const columnEl = this.getHeaderCell(i)!;
-						column.width = columnEl.clientWidth;
-					}
-				}
-			}
-
-			this.requestUpdate();
-		};
-
-		return (ev: MouseEvent) => {
-			event = ev;
-			requestAnimationFrame(func);
-		};
-	})();
-
-	protected onMouseUp = () => {
-		window.removeEventListener('mousemove', this.onMouseMove);
-		window.removeEventListener('mouseup', this.onMouseUp);
-
-		if (this.columnIdBeingResized) {
-			const columnEl = this.shadowRoot?.getElementById(this.columnIdBeingResized);
-			columnEl?.classList.remove('header--being-resized');
-			this.columnIdBeingResized = undefined;
+		if (checkbox) {
+			const ev = new CustomEvent('row-check-all', { ...this.eventOptions, detail: checkbox });
+			checkbox.dispatchEvent(ev);
 		}
-	};
-
-	protected getDynamicStyling() {
-		return {
-			table: {
-				'--_template-columns': this.columns.map(
-					({ width, minWidth, defaultWidth }) => width ? width + 'px'
-						: `minmax(${ minWidth ?? 150 }px, ${ defaultWidth ?? 150 }px)`,
-				).join(' ') + ' 25px',
-			},
-		};
 	}
 
-	protected renderHeader() {
-		return html`
-		<tr>
-			${ map(this.columns, (column, i) => html`
-			<th id=${ i }>
-				${ column.headerRender?.(this.data) ?? column.label ?? nothing }
-				<span @mousedown=${ this.initResize } class="resize-handle"></span>
-			</th>
-			`) }
-			<th></th>
-		</tr>
-		`;
+	protected handleBodyChange(ev: Event) {
+		const path = ev.composedPath();
+		const checkbox = path.find(el => el instanceof HTMLInputElement && el.type === 'checkbox');
+
+		if (checkbox) {
+			const ev = new CustomEvent('row-check', { ...this.eventOptions, detail: checkbox });
+			checkbox.dispatchEvent(ev);
+		}
 	}
 
 	protected override render() {
 		return html`
-		${ this.rowRenderingCtrl.DynamicStyles() }
+		<dynamic-style .styles=${ this.styles }></dynamic-style>
+		${ this.headerRenderer.DynamicStyles() }
+		${ this.rowRenderer.DynamicStyles() }
 
-		<dynamic-style
-			.styles=${ this.getDynamicStyling() }
-		></dynamic-style>
-
-		<table id="table">
-			<thead>
-				${ this.renderHeader() }
+		<table id="table" part="table">
+			<thead @click=${ this.handleHeadClick } @change=${ this.handleHeadChange }>
+				${ this.headerRenderer.Header() }
 			</thead>
-
-			<tbody>
-				${ this.rowRenderingCtrl.Rows() }
+			<tbody @click=${ this.handleBodyClick } @change=${ this.handleBodyChange }>
+				${ this.rowRenderer.Rows() }
 			</tbody>
 		</table>
 
@@ -174,6 +135,7 @@ export class FragmentTable extends MimicElement {
 			.reference=${ this.tablePromise }
 			.widthResizeRef=${ this.topBufferPromise }
 		></m-virtual-scrollbar>
+
 		<m-virtual-scrollbar
 			placement="end"
 			direction="vertical"
@@ -194,6 +156,9 @@ export class FragmentTable extends MimicElement {
 		m-virtual-scrollbar[direction="vertical"]::part(wrapper) {
 			top: 50px;
 		}
+		:host(.initializing) {
+			visibility: hidden;
+		}
 		:host {
 			--_header-color:         var(--header-color, #ffffff);
 			--_header-background:    var(--header-background, #009879);
@@ -202,6 +167,7 @@ export class FragmentTable extends MimicElement {
 			--_row-background:       var(--row-background);
 			--_row-even-background:  var(--row-even-background, #f3f3f3);
 			--_row-bottom-border:    var(--row-bottom-border, 1px solid #dddddd);
+			--_row-background-hover: var(--row-background-hover, #dddddd);
 			--_table-color:          var(--table-color, black);
 			--_table-background:     var(--table-background, white);
 			--_table-bottom-border:  var(--table-bottom-border, 2px solid #009879);
@@ -241,28 +207,8 @@ export class FragmentTable extends MimicElement {
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
-
-		thead tr {
-			position: sticky;
-			top: 0;
-			z-index: 1;
-			color: var(--_header-color);
-			background-color: var(--_header-background);
-			border-bottom: var(--_header-bottom-border);
-		}
-		thead th {
-			position: relative;
-			text-align: left;
-			font-weight: normal;
-			font-size: 1.1rem;
-		}
-		thead th:last-child {
-			border-right: 0;
-		}
-		thead tr th {
-			text-align: left;
-		}
 		`,
+		HeaderRenderController.styles,
 		RowRenderController.styles,
 		css` /* Resize handle */
 		.resize-handle {
@@ -281,6 +227,52 @@ export class FragmentTable extends MimicElement {
 		}
 		th:hover .resize-handle {
 			opacity: 0.3;
+		}
+		`,
+		css` /* Input checkbox styling */
+		input[type="checkbox"] {
+			/* Add if not using autoprefixer */
+			-webkit-appearance: none;
+			/* Remove most all native input styles */
+			appearance: none;
+			/* For iOS < 15 */
+			background-color: transparent;
+			/* Not removed via appearance */
+			margin: 0;
+
+			font: inherit;
+			color: currentColor;
+			width: 1.15em;
+			height: 1.15em;
+			border: 0.15em solid currentColor;
+			border-radius: 0.15em;
+			transform: translateY(-0.075em);
+
+			display: grid;
+			place-content: center;
+		}
+		input[type="checkbox"]::before {
+			content: "";
+			width: 0.65em;
+			height: 0.65em;
+			clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+			transform: scale(0);
+			transform-origin: center;
+			transition: 120ms transform ease-out;
+			box-shadow: inset 1em 1em currentColor;
+			/* Windows High Contrast Mode */
+			background-color: CanvasText;
+		}
+		input[type="checkbox"]:checked::before {
+			transform: scale(1);
+		}
+		input[type="checkbox"]:focus-visible {
+			outline: max(2px, 0.15em) solid currentColor;
+			outline-offset: max(2px, 0.15em);
+		}
+		input[type="checkbox"]:disabled {
+			opacity: 50%;
+			cursor: not-allowed;
 		}
 		`,
 	];
