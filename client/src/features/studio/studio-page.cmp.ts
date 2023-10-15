@@ -15,7 +15,7 @@ export class StudioPageCmp extends MimicElement {
 
 	@provide('store') protected store = new StudioStore();
 
-	protected override render(): unknown {
+	protected override render() {
 		return html`
 		<m-editor-panel></m-editor-panel>
 		`;

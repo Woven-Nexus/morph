@@ -18,7 +18,8 @@ export class DynamicStyle extends MimicElement {
 
 	protected override willUpdate(props: Map<PropertyKey, unknown>) {
 		super.willUpdate(props);
-		if (props.get('styles'))
+
+		if (props.has('styles') && this.styles)
 			this.#styleString = this.transformStyles(this.styles);
 	}
 

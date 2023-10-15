@@ -16,23 +16,23 @@ ul, li {
 	display: block;
 	box-sizing: border-box;
 }
-*::-webkit-scrollbar {
-	width: var(--scrollbar-width, 0.6rem);
-	height: var(--scrollbar-height, 0.6rem);
+:host::-webkit-scrollbar, *::-webkit-scrollbar {
+	width: var(--scrollbar-width, 8px);
+	height: var(--scrollbar-height, 8px);
 }
 
-*::-webkit-scrollbar-track {
+:host::-webkit-scrollbar-track, *::-webkit-scrollbar-track {
 	background: var(--scrollbar-track, transparent);
 }
 
-*::-webkit-scrollbar-thumb {
+:host::-webkit-scrollbar-thumb, *::-webkit-scrollbar-thumb {
 	background: var(--scrollbar-thumb-bg, rgba(255,255,255, 0.2));
 	border-radius: var(--scrollbar-thumb-border-radius, 0.2rem);
 	-webkit-background-clip: padding-box;
 	background-clip: padding-box;
 }
 
-*::-webkit-scrollbar-corner {
+:host::-webkit-scrollbar-corner, *::-webkit-scrollbar-corner {
 	background: var(--scrollbar-corner, rgba(0, 0, 0, 0));
 }
 `;

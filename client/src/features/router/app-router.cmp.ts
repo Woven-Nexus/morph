@@ -29,6 +29,17 @@ export class AppRouterCmp extends MimicElement {
 					),
 				},
 				{
+					path:     '/betrayal',
+					children: [
+						{
+							path:   '/game',
+							action: this.routeComponent(
+								() => import('../../pages/betrayal/game/game-page.cmp.js').then(m => m.BetrayalGamePage),
+							),
+						},
+					],
+				},
+				{
 					path:   '/demo',
 					action: this.routeComponent(
 						() => import('../demo/demo-page.cmp.js').then(m => m.Demopage),
