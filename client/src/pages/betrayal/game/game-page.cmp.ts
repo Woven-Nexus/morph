@@ -1,9 +1,13 @@
-import { sleep } from '@roenlie/mimic-core/async';
+import { range } from '@roenlie/mimic-core/array';
+import { domId } from '@roenlie/mimic-core/dom';
 import { debounce } from '@roenlie/mimic-core/timing';
+import { oneOf } from '@roenlie/mimic-core/validation';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { map } from 'lit/directives/map.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import { roundToNearest } from '../../../app/round-to-nearest.js';
 import { scrollElementTo } from '../../../app/scroll-element-to.js';
@@ -13,18 +17,36 @@ import { DynamicStyle } from '../../studio2/dynamic-style.cmp.js';
 DynamicStyle.register();
 
 
+interface Tile {
+	id: string;
+	row: number;
+	column: number;
+	rotate: number;
+	connection: ('top' | 'bottom' | 'left' | 'right')[];
+}
+
+
 @customElement('m-betrayal-game')
 export class BetrayalGamePage extends MimicElement {
 
 	@state() protected tileSize = '200px';
 	@state() protected boardSize = 100;
 	@state() protected showHoverOutline = true;
-
 	@state() protected hoverGridRow = 0;
 	@state() protected hoverGridColumn = 0;
+	@state() protected bottomFloorTiles: Tile[] = [];
+	@state() protected firstFloorTiles: Tile[] = [
+		//
+		{
+			id:         domId(5),
+			column:     49,
+			row:        49,
+			rotate:     0,
+			connection: [ 'left', 'top', 'right' ],
+		},
+	];
 
-	@state() protected hoverGridTop = '0px';
-	@state() protected hoverGridLeft = '0px';
+	@state() protected secondFloorTiles: Tile[] = [];
 	@query('main') protected mainEl?: HTMLElement;
 
 	protected get dynamicStyles() {
@@ -58,11 +80,15 @@ export class BetrayalGamePage extends MimicElement {
 		this.removeEventListener('mousemove', this.handleHoverOutline);
 	}
 
-	protected handleZoomWheel = (ev: WheelEvent) => {
+	protected handleZoomWheel = async (ev: WheelEvent) => {
 		if (!ev.ctrlKey)
 			return;
 
 		ev.preventDefault();
+
+		const topScroll = this.scrollHeight;
+		const leftScroll = this.scrollWidth;
+
 		if (ev.deltaY < 0)
 			this.tileSize = roundToNearest((parseInt(this.tileSize) * 1.1), 5) + 'px';
 		else
@@ -70,6 +96,11 @@ export class BetrayalGamePage extends MimicElement {
 
 		this.showHoverOutline = false;
 		this.debounceShowHoverOutline();
+
+		await this.updateComplete;
+
+		this.scrollTop -= (topScroll - this.scrollHeight) / 2;
+		this.scrollLeft -= (leftScroll - this.scrollWidth) / 2;
 	};
 
 	protected handleHoverOutline = (ev: MouseEvent) => {
@@ -88,7 +119,8 @@ export class BetrayalGamePage extends MimicElement {
 		this.hoverGridColumn = columnIndex;
 	};
 
-	protected handleGameDragToMove = () => {
+	protected handleGameDragToMove = (ev: MouseEvent) => {
+		ev.preventDefault();
 		const previousXY: [number | undefined, number | undefined] = [ undefined, undefined ];
 		let xDiff = 0;
 		let yDiff = 0;
@@ -111,7 +143,7 @@ export class BetrayalGamePage extends MimicElement {
 			scrollElementTo(this, {
 				x:        this.scrollLeft - (xDiff * 10),
 				y:        this.scrollTop - (yDiff * 10),
-				duration: 500,
+				duration: 300,
 			});
 
 			window.removeEventListener('mousemove', mousemove);
@@ -133,6 +165,61 @@ export class BetrayalGamePage extends MimicElement {
 		<dynamic-style .styles=${ this.dynamicStyles }></dynamic-style>
 		<main @mousedown=${ this.handleGameDragToMove }>
 			<s-hover-tile class=${ classMap({ hide: !this.showHoverOutline }) }></s-hover-tile>
+			${ map(this.firstFloorTiles, tile => html`
+			<s-tile style=${ styleMap({
+				gridRow:    tile.row + '/' + (tile.row + 1),
+				gridColumn: tile.column + '/' + (tile.column + 1),
+				transform:  'rotate(' + tile.rotate + 'deg)',
+			}) }>
+				${ map(tile.connection, con => html`
+				<s-door
+					@click=${ () => {
+						console.log('go in the door!');
+
+						const dir = [ 'left', 'top', 'right', 'bottom' ];
+						const shuffle = tile.rotate === 0 ? 0
+							: tile.rotate === 90 ? 1
+							: tile.rotate === 180 ? 2
+							: tile.rotate === 270 ? 3
+							: 0;
+
+						range(shuffle).forEach(() => {
+							const item = dir.pop()!;
+							dir.unshift(item);
+						});
+
+						const indexOfCon = dir.indexOf(con);
+
+						const checkRow = [ 0, -1, 0, 1 ];
+						const checkColumn = [ -1, 0, 1, 0 ];
+
+						console.log('Check for column at', checkColumn[indexOfCon], 'Check for row at', checkRow[indexOfCon]);
+					} }
+					style=${ styleMap(
+						con === 'top' ? {
+							gridRow:    '1/3',
+							gridColumn: '4/5',
+						} : con === 'bottom' ? {
+							gridRow:    '6/8',
+							gridColumn: '4/5',
+						} : con === 'left' ? {
+							gridRow:    '4/5',
+							gridColumn: '1/3',
+						} : con === 'right' ? {
+							gridRow:    '4/5',
+							gridColumn: '6/8',
+						} : {},
+					) }
+				></s-door>
+				`) }
+				<s-rotate
+					@click=${ () => {
+						tile.rotate = (tile.rotate + 90) % 360;
+						this.requestUpdate();
+					} }
+				></s-rotate>
+			</s-tile>
+			`) }
 		</main>
 		`;
 	}
@@ -147,8 +234,8 @@ export class BetrayalGamePage extends MimicElement {
 
 			touch-action: none;
 			-webkit-overflow-scrolling: none;
-			/*overflow: hidden;*/
 			overscroll-behavior: none;
+			/*overflow: hidden;*/
 		}
 		main {
 			background-image:  linear-gradient(var(--_grid-color) 1px, transparent 1px),
@@ -166,7 +253,7 @@ export class BetrayalGamePage extends MimicElement {
 			position: absolute;
 			display: block;
 
-			outline: 5px dashed hotpink;
+			/*outline: 5px dashed hotpink;*/
 
 			top: var(--_hover-grid-top);
 			left: var(--_hover-grid-left);
@@ -176,6 +263,24 @@ export class BetrayalGamePage extends MimicElement {
 		}
 		s-hover-tile.hide {
 			visibility: hidden;
+		}
+		s-tile {
+			display: block;
+			background-color: forestgreen;
+			display: grid;
+			grid-template-rows: 5% 5% 25% 1fr 25% 5% 5%;
+			grid-template-columns: 5% 5% 25% 1fr 25% 5% 5%;
+		}
+		s-door {
+			background-color: hotpink;
+		}
+		s-door:hover {
+			background-color: red;
+		}
+		s-rotate {
+			grid-row: 4/5;
+			grid-column: 4/5;
+			background-color: blue;
 		}
 		`,
 	];
