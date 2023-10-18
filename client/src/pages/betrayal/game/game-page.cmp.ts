@@ -1,13 +1,13 @@
 import { range } from '@roenlie/mimic-core/array';
 import { domId } from '@roenlie/mimic-core/dom';
 import { debounce } from '@roenlie/mimic-core/timing';
-import { oneOf } from '@roenlie/mimic-core/validation';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { map } from 'lit/directives/map.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import { when } from 'lit/directives/when.js';
 
 import { roundToNearest } from '../../../app/round-to-nearest.js';
 import { scrollElementTo } from '../../../app/scroll-element-to.js';
@@ -23,6 +23,8 @@ interface Tile {
 	column: number;
 	rotate: number;
 	connection: ('top' | 'bottom' | 'left' | 'right')[];
+	locked: boolean;
+	floor: 0 | 1 | 2;
 }
 
 
@@ -34,19 +36,58 @@ export class BetrayalGamePage extends MimicElement {
 	@state() protected showHoverOutline = true;
 	@state() protected hoverGridRow = 0;
 	@state() protected hoverGridColumn = 0;
-	@state() protected bottomFloorTiles: Tile[] = [];
+	@state() protected bottomFloorTiles: Tile[] = [
+		{
+			id:         domId(5),
+			column:     19,
+			row:        49,
+			rotate:     0,
+			connection: [ 'left', 'top', 'right', 'bottom' ],
+			locked:     true,
+			floor:      0,
+		},
+	];
+
 	@state() protected firstFloorTiles: Tile[] = [
-		//
 		{
 			id:         domId(5),
 			column:     49,
 			row:        49,
 			rotate:     0,
 			connection: [ 'left', 'top', 'right' ],
+			locked:     true,
+			floor:      1,
 		},
 	];
 
-	@state() protected secondFloorTiles: Tile[] = [];
+	@state() protected secondFloorTiles: Tile[] = [
+		{
+			id:         domId(5),
+			column:     79,
+			row:        49,
+			rotate:     0,
+			connection: [ 'left', 'top', 'right' ],
+			locked:     true,
+			floor:      2,
+		},
+	];
+
+	protected availableTiles: Tile[] = range(100).map(() => ({
+		column:     0,
+		row:        0,
+		id:         domId(5),
+		locked:     false,
+		rotate:     0,
+		connection: (() => {
+			const arr = [ 'left', 'top', 'right', 'bottom' ] as
+				('top' | 'bottom' | 'left' | 'right')[];
+			arr.length = Math.floor(Math.random() * 4) + 1;
+
+			return arr;
+		})(),
+		floor: 1,
+	}));
+
 	@query('main') protected mainEl?: HTMLElement;
 
 	protected get dynamicStyles() {
@@ -160,66 +201,96 @@ export class BetrayalGamePage extends MimicElement {
 
 	protected debounceShowHoverOutline = debounce(() => this.showHoverOutline = true, 500);
 
+	protected Tile(tile: Tile) {
+		return html`
+		<s-tile style=${ styleMap({
+			gridRow:    tile.row + '/' + (tile.row + 1),
+			gridColumn: tile.column + '/' + (tile.column + 1),
+			transform:  'rotate(' + tile.rotate + 'deg)',
+		}) }>
+			${ map(tile.connection, con => html`
+			<s-door
+				@click=${ () => {
+					console.log('go in the door!');
+
+					const dir = [ 'left', 'top', 'right', 'bottom' ];
+					const shuffle = tile.rotate === 0 ? 0
+						: tile.rotate === 90 ? 1
+						: tile.rotate === 180 ? 2
+						: tile.rotate === 270 ? 3
+						: 0;
+
+					range(shuffle).forEach(() => {
+						const item = dir.pop()!;
+						dir.unshift(item);
+					});
+
+					const indexOfCon = dir.indexOf(con);
+
+					const checkRow = [ 0, -1, 0, 1 ];
+					const checkColumn = [ -1, 0, 1, 0 ];
+
+					const newColumnStart = tile.column + checkColumn[indexOfCon]!;
+					const newRowStart = tile.row + checkRow[indexOfCon]!;
+
+					const doesTileExist = this.firstFloorTiles
+						.some(tile => tile.column === newColumnStart && tile.row === newRowStart);
+
+					if (!doesTileExist) {
+						const newTile = this.availableTiles.pop();
+						if (newTile) {
+							newTile.row = newRowStart;
+							newTile.column = newColumnStart;
+							newTile.floor = tile.floor;
+							this.firstFloorTiles.push(newTile);
+							this.firstFloorTiles = [ ...this.firstFloorTiles ];
+						}
+					}
+				} }
+				style=${ styleMap(
+					con === 'top' ? {
+						gridRow:    '1/3',
+						gridColumn: '4/5',
+					} : con === 'bottom' ? {
+						gridRow:    '6/8',
+						gridColumn: '4/5',
+					} : con === 'left' ? {
+						gridRow:    '4/5',
+						gridColumn: '1/3',
+					} : con === 'right' ? {
+						gridRow:    '4/5',
+						gridColumn: '6/8',
+					} : {},
+				) }
+			></s-door>
+			`) }
+			${ when(!tile.locked, () => html`
+			<s-rotate
+				@click=${ () => {
+					tile.rotate = (tile.rotate + 90) % 360;
+
+					this.requestUpdate();
+				} }
+			></s-rotate>
+			`) }
+		</s-tile>
+		`;
+	}
+
+
 	protected override render() {
 		return html`
 		<dynamic-style .styles=${ this.dynamicStyles }></dynamic-style>
 		<main @mousedown=${ this.handleGameDragToMove }>
 			<s-hover-tile class=${ classMap({ hide: !this.showHoverOutline }) }></s-hover-tile>
-			${ map(this.firstFloorTiles, tile => html`
-			<s-tile style=${ styleMap({
-				gridRow:    tile.row + '/' + (tile.row + 1),
-				gridColumn: tile.column + '/' + (tile.column + 1),
-				transform:  'rotate(' + tile.rotate + 'deg)',
-			}) }>
-				${ map(tile.connection, con => html`
-				<s-door
-					@click=${ () => {
-						console.log('go in the door!');
-
-						const dir = [ 'left', 'top', 'right', 'bottom' ];
-						const shuffle = tile.rotate === 0 ? 0
-							: tile.rotate === 90 ? 1
-							: tile.rotate === 180 ? 2
-							: tile.rotate === 270 ? 3
-							: 0;
-
-						range(shuffle).forEach(() => {
-							const item = dir.pop()!;
-							dir.unshift(item);
-						});
-
-						const indexOfCon = dir.indexOf(con);
-
-						const checkRow = [ 0, -1, 0, 1 ];
-						const checkColumn = [ -1, 0, 1, 0 ];
-
-						console.log('Check for column at', checkColumn[indexOfCon], 'Check for row at', checkRow[indexOfCon]);
-					} }
-					style=${ styleMap(
-						con === 'top' ? {
-							gridRow:    '1/3',
-							gridColumn: '4/5',
-						} : con === 'bottom' ? {
-							gridRow:    '6/8',
-							gridColumn: '4/5',
-						} : con === 'left' ? {
-							gridRow:    '4/5',
-							gridColumn: '1/3',
-						} : con === 'right' ? {
-							gridRow:    '4/5',
-							gridColumn: '6/8',
-						} : {},
-					) }
-				></s-door>
-				`) }
-				<s-rotate
-					@click=${ () => {
-						tile.rotate = (tile.rotate + 90) % 360;
-						this.requestUpdate();
-					} }
-				></s-rotate>
-			</s-tile>
-			`) }
+			${ map(
+				[
+				...this.firstFloorTiles,
+				...this.bottomFloorTiles,
+				...this.secondFloorTiles,
+				],
+				tile => this.Tile(tile),
+			) }
 		</main>
 		`;
 	}
@@ -254,10 +325,8 @@ export class BetrayalGamePage extends MimicElement {
 			display: block;
 
 			/*outline: 5px dashed hotpink;*/
-
 			top: var(--_hover-grid-top);
 			left: var(--_hover-grid-left);
-
 			height: var(--_tile-size);
 			width: var(--_tile-size);
 		}
