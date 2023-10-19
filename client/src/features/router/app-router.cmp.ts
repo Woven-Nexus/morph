@@ -45,6 +45,12 @@ export class AppRouterCmp extends MimicElement {
 						() => import('../demo/demo-page.cmp.js').then(m => m.Demopage),
 					),
 				},
+				{
+					path:   '/panel-test',
+					action: this.routeComponent(
+						() => import('../../pages/panel-test/panel-test-page.cmp.js').then(m => m.PanelTestPage),
+					),
+				},
 			],
 		},
 	];
