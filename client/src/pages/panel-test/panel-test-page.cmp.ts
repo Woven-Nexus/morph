@@ -106,14 +106,13 @@ export class PanelTestPage extends MimicElement {
 			if (rightPanel && rightRect && offsetRight !== undefined) {
 				const rightWidth = rightRect.right - ev.clientX - offsetRight!;
 				const newWidth = Math.max(Math.min(rightPanel.maxWidth, rightWidth), rightPanel.minWidth);
-
 				if (newWidth === rightPanel.maxWidth)
 					return;
 
-
-				if (newWidth === rightPanel.minWidth) {
+				if (newWidth <= rightPanel.minWidth) {
 					console.log('hit minimum width on right panel');
-					// Get the new offset for cursor to the next panel to the resized.
+
+					// Find which panel to perform resizing on.
 					let panelIncr = 0;
 					let nextPanel: Panel | undefined;
 					do {
@@ -121,17 +120,23 @@ export class PanelTestPage extends MimicElement {
 						nextPanel = this.panels[this.panels.indexOf(rightPanel) + panelIncr];
 					} while (nextPanel && nextPanel?.width === nextPanel?.minWidth);
 
+					// Exit if there are no further right panels.
 					if (!nextPanel)
 						return;
 
+					// Find the panel by its id, and exit if it does not exist,
 					const nextPanelEl = this.shadowRoot?.getElementById(nextPanel?.id);
 					if (!nextPanelEl)
 						return;
 
+					// Use the current skipped panels combined with and x amount of resize spacer
+					// widths, plus the previous right offset, to calculate the new offset.
 					const nextPanelRect = nextPanelEl?.getBoundingClientRect();
 					const offset = offsetRight + rightPanel.width + resizeSpacerWidth;
 
+					// Find size to resize panel to, using same equation as previously.
 					const nextRightWidth = nextPanelRect.right - (ev.clientX + offset);
+					// Make sure the size does not exceed min/max.
 					nextPanel.width = Math.max(Math.min(nextPanel.maxWidth, nextRightWidth), nextPanel.minWidth);
 					this.requestUpdate();
 
