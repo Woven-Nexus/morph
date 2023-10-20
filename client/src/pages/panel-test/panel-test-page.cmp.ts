@@ -6,6 +6,7 @@ import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 
 import { sharedStyles } from '../../features/styles/shared-styles.js';
 import { DynamicStyle } from '../studio2/dynamic-style.cmp.js';
+import { PanelResizer } from './panel-resizer.js';
 
 DynamicStyle.register();
 
@@ -22,142 +23,53 @@ interface Panel {
 export class PanelTestPage extends MimicElement {
 
 	protected elRefs = new Map<string, Ref>();
-
 	protected panels: Panel[] = [
 		{
 			id:       domId(),
-			maxWidth: 400,
-			minWidth: 50,
+			maxWidth: 1000,
+			//minWidth: Math.round(Math.random() * 100),
+			minWidth: 100,
 			width:    200,
 		},
 		{
 			id:       domId(),
-			maxWidth: 400,
-			minWidth: 50,
+			maxWidth: 1000,
+			//minWidth: Math.round(Math.random() * 100),
+			minWidth: 100,
 			width:    200,
 		},
 		{
 			id:       domId(),
-			maxWidth: 400,
-			minWidth: 50,
+			maxWidth: 1000,
+			//minWidth: Math.round(Math.random() * 100),
+			minWidth: 100,
+			width:    200,
+		},
+		{
+			id:       domId(),
+			maxWidth: 1000,
+			//minWidth: Math.round(Math.random() * 100),
+			minWidth: 100,
+			width:    200,
+		},
+		{
+			id:       domId(),
+			maxWidth: 1000,
+			//minWidth: Math.round(Math.random() * 100),
+			minWidth: 100,
 			width:    200,
 		},
 	];
 
+	protected panelResizer = new PanelResizer<Panel>(
+		this.panels,
+		panel => panel?.id ?? '',
+		(id: string) => this.shadowRoot!.getElementById(id),
+		() => this.requestUpdate(),
+	);
+
 	public override afterConnectedCallback(): void {
 		requestAnimationFrame(() => this.requestUpdate());
-	}
-
-	protected resizeMousedown(ev: MouseEvent) {
-		ev.preventDefault();
-
-		const target = ev.target as HTMLElement;
-
-		const leftPanelId = target.dataset['leftPanelId']!;
-		const rightPanelId = target.dataset['rightPanelId']!;
-
-		const leftPanelEl = this.shadowRoot!.getElementById(leftPanelId);
-		const rightPanelEl = this.shadowRoot!.getElementById(rightPanelId);
-
-		const leftPanel = this.panels.find(p => p.id === leftPanelId);
-		const rightPanel = this.panels.find(p => p.id === rightPanelId);
-
-		let offsetLeft: number | undefined;
-		let offsetRight: number | undefined;
-		const resizeSpacerWidth = 20;
-
-		if (leftPanelEl) {
-			const leftRect = leftPanelEl.getBoundingClientRect();
-			offsetLeft = ev.clientX - leftRect.right;
-		}
-
-		if (rightPanelEl) {
-			const rightRect = rightPanelEl?.getBoundingClientRect();
-			offsetRight = rightRect.left - ev.clientX;
-		}
-
-		const mousemove = (ev: MouseEvent) => {
-			const leftRect = leftPanelEl?.getBoundingClientRect();
-			const rightRect = rightPanelEl?.getBoundingClientRect();
-			let rerender = false;
-
-			let leftPanelWidthDiff = 0;
-			const rightPanelWidthDiff = 0;
-
-			if (leftPanel && leftRect && offsetLeft !== undefined) {
-				const leftWidth = ev.clientX - leftRect.left - offsetLeft;
-				const newWidth = Math.max(Math.min(leftPanel.maxWidth, leftWidth), leftPanel.minWidth);
-				leftPanelWidthDiff = leftPanel.width - newWidth;
-
-				if (newWidth === leftPanel.maxWidth)
-					return;
-
-				if (newWidth === leftPanel.minWidth) {
-					//
-					console.log('hit minimum width on left panel');
-
-					return;
-				}
-
-				leftPanel.width = newWidth;
-				rerender = true;
-			}
-
-			if (rightPanel && rightRect && offsetRight !== undefined) {
-				const rightWidth = rightRect.right - ev.clientX - offsetRight!;
-				const newWidth = Math.max(Math.min(rightPanel.maxWidth, rightWidth), rightPanel.minWidth);
-				if (newWidth === rightPanel.maxWidth)
-					return;
-
-				if (newWidth <= rightPanel.minWidth) {
-					console.log('hit minimum width on right panel');
-
-					// Find which panel to perform resizing on.
-					let panelIncr = 0;
-					let nextPanel: Panel | undefined;
-					do {
-						panelIncr ++;
-						nextPanel = this.panels[this.panels.indexOf(rightPanel) + panelIncr];
-					} while (nextPanel && nextPanel?.width === nextPanel?.minWidth);
-
-					// Exit if there are no further right panels.
-					if (!nextPanel)
-						return;
-
-					// Find the panel by its id, and exit if it does not exist,
-					const nextPanelEl = this.shadowRoot?.getElementById(nextPanel?.id);
-					if (!nextPanelEl)
-						return;
-
-					// Use the current skipped panels combined with and x amount of resize spacer
-					// widths, plus the previous right offset, to calculate the new offset.
-					const nextPanelRect = nextPanelEl?.getBoundingClientRect();
-					const offset = offsetRight + rightPanel.width + resizeSpacerWidth;
-
-					// Find size to resize panel to, using same equation as previously.
-					const nextRightWidth = nextPanelRect.right - (ev.clientX + offset);
-					// Make sure the size does not exceed min/max.
-					nextPanel.width = Math.max(Math.min(nextPanel.maxWidth, nextRightWidth), nextPanel.minWidth);
-					this.requestUpdate();
-
-					return;
-				}
-
-				rightPanel.width = newWidth;
-				rerender = true;
-			}
-
-			if (rerender)
-				this.requestUpdate();
-		};
-
-		const mouseup = () => {
-			window.removeEventListener('mousemove', mousemove);
-			window.removeEventListener('mouseup', mouseup);
-		};
-
-		window.addEventListener('mousemove', mousemove);
-		window.addEventListener('mouseup', mouseup);
 	}
 
 	protected get dynamicStyles() {
@@ -177,7 +89,7 @@ export class PanelTestPage extends MimicElement {
 			.styles=${ this.dynamicStyles }
 		></dynamic-style>
 
-		${ map(this.panels, (panel, i) => {
+		${ map(this.panels, panel => {
 			const elRef = this.elRefs.get(panel.id)
 				?? (() => this.elRefs.set(panel.id, createRef()).get(panel.id)!)();
 
@@ -186,12 +98,22 @@ export class PanelTestPage extends MimicElement {
 				id=${ panel.id }
 				${ ref(elRef) }
 			>
-				${ elRef.value?.getBoundingClientRect().width }
+				<div>
+					rect width: ${ Math.round(elRef.value?.getBoundingClientRect().width ?? 0) }
+				</div>
+				<div>
+					max width: ${ panel.maxWidth }
+				</div>
+				<div>
+					min width: ${ panel.minWidth }
+				</div>
+				<div>
+					width: ${ panel.width }
+				</div>
 			</s-panel>
 			<s-resize
-				data-left-panel-id=${ panel.id }
-				data-right-panel-id=${ this.panels[i + 1]?.id ?? '' }
-				@mousedown=${ this.resizeMousedown }
+				data-panel-id=${ panel.id }
+				@mousedown=${ this.panelResizer.mousedown }
 			></s-resize>
 			`;
 		}) }
@@ -202,6 +124,7 @@ export class PanelTestPage extends MimicElement {
 		sharedStyles,
 		css`
 		:host {
+			overflow: hidden;
 			display: grid;
 			grid-auto-flow: column;
 			grid-auto-columns: max-content;
@@ -210,9 +133,13 @@ export class PanelTestPage extends MimicElement {
 		s-panel {
 			display: grid;
 			background-color: rgb(50 50 50);
-			padding: 12px;
+			/*padding: 12px;*/
+		}
+		s-panel > div {
+			white-space: nowrap;
 		}
 		s-resize {
+			overflow: hidden;
 			display: grid;
 			background-color: rgb(50 100 100);
 			width: 20px;

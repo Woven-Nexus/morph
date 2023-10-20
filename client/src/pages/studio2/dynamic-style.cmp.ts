@@ -32,7 +32,7 @@ export class DynamicStyle extends MimicElement {
 			for (const [ key, value ] of Object.entries(props))
 				str += key + ':' + value + ';';
 
-			str += '}';
+			str += '}\n';
 		}
 
 		return str;
