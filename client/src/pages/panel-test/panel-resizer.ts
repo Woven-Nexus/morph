@@ -37,12 +37,10 @@ export class PanelResizer<T extends Panel> {
 	};
 
 	protected mousemove = (ev: MouseEvent) => {
-		const distance = ev.clientX - this.previousX;
+		const absDistance = Math.abs(ev.clientX - this.previousX);
 		const direction = ev.clientX > this.previousX ? 'right' : 'left';
-		if (distance === 0)
+		if (absDistance === 0)
 			return;
-
-		const absDistance = Math.abs(distance);
 
 		if (direction === 'left') {
 			let overflow = false;
@@ -81,8 +79,7 @@ export class PanelResizer<T extends Panel> {
 			if (this.rightPanel)
 				this.rightPanel.width = rightWidth;
 		}
-
-		if (direction === 'right') {
+		else if (direction === 'right') {
 			let overflow = false;
 			let leftModifier = 0;
 			let leftWidth = 0;
@@ -120,8 +117,8 @@ export class PanelResizer<T extends Panel> {
 				this.leftPanel.width = leftWidth;
 		}
 
-		this.requestUpdate();
 		this.previousX = ev.clientX;
+		this.requestUpdate();
 	};
 
 	protected mouseup = () => {
