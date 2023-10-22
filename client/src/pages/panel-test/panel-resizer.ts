@@ -9,17 +9,9 @@ interface Panel {
 
 export class PanelResizer<T extends Panel> {
 
-	protected offsetLeft = 0;
-	protected offsetRight = 0;
-	protected spacerWidth = 0;
 	protected leftPanel?: T;
-	protected leftPanelId: string;
-	protected rightPanelId: string;
 	protected rightPanel?: T;
-	protected leftPanelEl?: HTMLElement;
-	protected rightPanelEl?: HTMLElement;
-	protected targetLeftPanel?: HTMLElement;
-	protected targetRightPanel?: HTMLElement;
+	protected previousX = 0;
 
 	constructor(
 		protected panels: T[],
@@ -30,115 +22,106 @@ export class PanelResizer<T extends Panel> {
 
 	public mousedown = (ev: MouseEvent) => {
 		ev.preventDefault();
+		this.previousX = ev.clientX;
 
 		const target = ev.target as HTMLElement;
-		this.spacerWidth = target.getBoundingClientRect().width;
 
 		const leftPanelId = target.dataset['panelId']!;
 		this.leftPanel = this.panels.find(p => this.identifier(p) === leftPanelId);
-		this.leftPanelId = this.identifier(this.leftPanel);
 
 		const leftPanelIndex = this.panels.findIndex(p => this.identifier(p) === leftPanelId)!;
 		this.rightPanel = this.panels[leftPanelIndex + 1];
-		this.rightPanelId = this.identifier(this.rightPanel);
-
-		this.leftPanelEl = this.getElementById(leftPanelId) ?? undefined;
-		if (this.leftPanelEl)
-			this.offsetLeft = ev.clientX - this.leftPanelEl.getBoundingClientRect().right;
-
-		this.rightPanelEl = this.getElementById(this.rightPanelId) ?? undefined;
-		if (this.rightPanelEl)
-			this.offsetRight = this.rightPanelEl.getBoundingClientRect().left - ev.clientX;
 
 		window.addEventListener('mousemove', this.mousemove);
 		window.addEventListener('mouseup', this.mouseup);
 	};
 
 	protected mousemove = (ev: MouseEvent) => {
-		const originalWidth = this.panels.reduce((acc, cur) => acc += cur.width, 0);
-		const newLeftWidth = this.getSuggestedLeftWidth(ev.clientX);
-		const newRightWidth = this.getSuggestedRightWidth(ev.clientX);
-
-		// Terminate resize if left or right exceeds maximum width.
-		if ((newLeftWidth ?? 0) > (this.leftPanel?.maxWidth ?? Infinity) ||
-			(newRightWidth ?? 0) > (this.rightPanel?.maxWidth ?? Infinity))
+		const distance = ev.clientX - this.previousX;
+		const direction = ev.clientX > this.previousX ? 'right' : 'left';
+		if (distance === 0)
 			return;
 
-		if (newLeftWidth !== undefined && this.leftPanel) {
-			if (newLeftWidth <= this.leftPanel.minWidth) {
-				this.leftPanel.width = this.leftPanel.minWidth;
+		const absDistance = Math.abs(distance);
 
-				const target = this.findLeftTarget(this.leftPanel);
-				if (!target)
+		if (direction === 'left') {
+			let overflow = false;
+			let rightModifier = 0;
+			let leftWidth = 0;
+			let rightWidth = 0;
+			let leftTarget: T | undefined;
+
+			if (this.rightPanel && this.rightPanel.width >= this.rightPanel.maxWidth)
+				return;
+
+			if (this.leftPanel) {
+				leftTarget = this.findLeftTarget(this.leftPanel);
+				if (!leftTarget)
 					return;
 
-				const { panel, panelEl, panelRect, offset } = target;
+				const distance = !this.rightPanel ? absDistance * 2 : absDistance;
+				const expectedWidth = leftTarget.width - distance;
+				const actualWidth = this.validateWidth(leftTarget, expectedWidth);
 
-				//console.log(panelEl);
-
-				const nextLeftWidth = Math.round(ev.clientX - panelRect.left - offset);
-				panel.width = this.validateWidth(panel, nextLeftWidth);
-
-				const newTotalWidth = this.panels.reduce((acc, cur) => acc += cur.width, 0);
-				if (this.rightPanel && newTotalWidth !== originalWidth) {
-					const diff = newTotalWidth - originalWidth;
-					const nextPanelBefore = panel.width;
-					panel.width = this.validateWidth(panel, panel.width - diff);
-					console.log('why!?', panel.width);
-
-
-					const nextPanelDiff = panel.width - nextPanelBefore;
-					const remainingDiff = diff - nextPanelDiff;
-
-					this.rightPanel.width = this.validateWidth(this.rightPanel, this.rightPanel.width - remainingDiff);
-				}
-
-				return this.requestUpdate();
+				rightModifier = expectedWidth - actualWidth;
+				leftWidth = actualWidth;
 			}
-			else {
-				this.leftPanel.width = newLeftWidth;
+
+			if (this.rightPanel) {
+				const expectedWidth = this.rightPanel.width + absDistance + rightModifier;
+				const actualWidth = this.validateWidth(this.rightPanel, expectedWidth);
+				overflow = !!(expectedWidth - actualWidth);
+				rightWidth = actualWidth;
 			}
+
+			if (overflow)
+				return;
+			if (leftTarget)
+				leftTarget.width = leftWidth;
+			if (this.rightPanel)
+				this.rightPanel.width = rightWidth;
 		}
 
-		if (newRightWidth !== undefined && this.rightPanel) {
-			if (newRightWidth <= this.rightPanel.minWidth) {
-				this.rightPanel.width = this.rightPanel.minWidth;
+		if (direction === 'right') {
+			let overflow = false;
+			let leftModifier = 0;
+			let leftWidth = 0;
+			let rightWidth = 0;
+			let rightTarget: T | undefined;
 
-				// Find which panel to perform resizing on.
-				const target = this.findRightTarget(this.rightPanel);
-				if (!target)
+			if (this.leftPanel && this.leftPanel.width >= this.leftPanel.maxWidth)
+				return;
+
+			if (this.rightPanel) {
+				rightTarget = this.findRightTarget(this.rightPanel);
+				if (!rightTarget)
 					return;
 
-				const { panel, panelRect, offset } = target;
+				const expectedWidth = rightTarget.width - absDistance;
+				const actualWidth = this.validateWidth(rightTarget, expectedWidth);
 
-				// Find size to resize panel to, using same equation as previously.
-				const nextRightWidth = Math.round(panelRect.right - (ev.clientX + offset));
-
-				// Make sure the size does not exceed min/max.
-				panel.width = this.validateWidth(panel, nextRightWidth);
-
-				// Check if new combined width exceeds old combined with.
-				// If it does, remove the extra from the right side.
-				const newTotalWidth = this.panels.reduce((acc, cur) => acc += cur.width, 0);
-				if (this.leftPanel && newTotalWidth !== originalWidth) {
-					const diff = newTotalWidth - originalWidth;
-
-					const nextPanelBefore = panel.width;
-					panel.width = this.validateWidth(panel, panel.width - diff);
-					const nextPanelDiff = panel.width - nextPanelBefore;
-					const remainingDiff = diff - nextPanelDiff;
-
-					this.leftPanel.width -= remainingDiff;
-				}
-
-				return this.requestUpdate();
+				leftModifier = expectedWidth - actualWidth;
+				rightWidth = actualWidth;
 			}
-			else {
-				this.rightPanel.width = newRightWidth;
+
+			if (this.leftPanel) {
+				const distance = !this.rightPanel ? absDistance * 2 : absDistance;
+				const expectedWidth = this.leftPanel.width + distance + leftModifier;
+				const actualWidth = this.validateWidth(this.leftPanel, expectedWidth);
+				overflow = !!(expectedWidth - actualWidth);
+				leftWidth = actualWidth;
 			}
+
+			if (overflow)
+				return;
+			if (rightTarget)
+				rightTarget.width = rightWidth;
+			if (this.leftPanel)
+				this.leftPanel.width = leftWidth;
 		}
 
 		this.requestUpdate();
+		this.previousX = ev.clientX;
 	};
 
 	protected mouseup = () => {
@@ -146,36 +129,13 @@ export class PanelResizer<T extends Panel> {
 		window.removeEventListener('mouseup', this.mouseup);
 	};
 
-	protected getSuggestedLeftWidth(cursorX: number) {
-		if (!this.leftPanelEl || !this.leftPanel)
-			return;
-
-		const leftRect = this.leftPanelEl.getBoundingClientRect();
-		const leftWidth = Math.round(cursorX - leftRect.left - this.offsetLeft);
-		const newLeftWidth = Math.max(Math.min(this.leftPanel.maxWidth, leftWidth), this.leftPanel.minWidth);
-
-		console.log({ leftWidth });
-
-
-		return newLeftWidth;
-	}
-
-	protected getSuggestedRightWidth(cursorX: number) {
-		if (!this.rightPanelEl || !this.rightPanel)
-			return;
-
-		const rightRect = this.rightPanelEl.getBoundingClientRect();
-		const rightWidth = Math.round(rightRect.right - cursorX - this.offsetRight);
-		const newRightWidth = Math.max(Math.min(this.rightPanel.maxWidth, rightWidth), this.rightPanel.minWidth);
-
-		return newRightWidth;
-	}
-
 	protected findLeftTarget(initialPanel: T) {
 		const stack: T[] = [];
-
-		for (let i = this.panels.indexOf(initialPanel); i > 0; i--) {
+		for (let i = this.panels.indexOf(initialPanel); i >= -1; i--) {
 			const panel = this.panels[i]!;
+			if (!panel)
+				return;
+
 			if (panel.width <= panel.minWidth) {
 				stack.push(panel);
 				continue;
@@ -189,22 +149,16 @@ export class PanelResizer<T extends Panel> {
 		if (!panel)
 			return;
 
-		const panelId = this.identifier(panel);
-		const panelEl = this.getElementById(panelId)!;
-		const panelRect = panelEl.getBoundingClientRect();
-
-		const offset = this.offsetRight + (
-			stack.reduce((acc, cur) => acc += cur.width, 0)
-			+ stack.length * this.spacerWidth
-		);
-
-		return { panel, stack, panelId, panelEl, panelRect, offset };
+		return panel;
 	}
 
 	protected findRightTarget(initialPanel: T) {
 		const stack: T[] = [];
-		for (let i = this.panels.indexOf(initialPanel); i < this.panels.length; i++) {
+		for (let i = this.panels.indexOf(initialPanel); i < this.panels.length + 1; i++) {
 			const panel = this.panels[i]!;
+			if (!panel)
+				return;
+
 			if (panel.width <= panel.minWidth) {
 				stack.push(panel);
 				continue;
@@ -218,16 +172,7 @@ export class PanelResizer<T extends Panel> {
 		if (!panel)
 			return;
 
-		const panelId = this.identifier(panel);
-		const panelEl = this.getElementById(panelId)!;
-		const panelRect = panelEl.getBoundingClientRect();
-
-		const offset = this.offsetRight + (
-			stack.reduce((acc, cur) => acc += cur.width, 0)
-			+ stack.length * this.spacerWidth
-		);
-
-		return { panel, stack, panelId, panelEl, panelRect, offset };
+		return panel;
 	}
 
 	protected validateWidth(panel: T, width: number) {
