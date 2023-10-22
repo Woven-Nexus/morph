@@ -17,6 +17,7 @@ export class PanelResizer<T extends Panel> {
 		protected elements: () => (NodeListOf<HTMLElement> | HTMLElement[]),
 		protected identifier: (panel?: T) => string,
 		protected requestUpdate: () => void,
+		protected totalWidth?: () => number,
 	) { }
 
 	public mousedown = (ev: MouseEvent) => {
@@ -122,7 +123,47 @@ export class PanelResizer<T extends Panel> {
 
 		this.previousX = ev.clientX;
 		this.requestUpdate();
+
+		this.constrainTotalWidth();
+		this.onResize?.();
 	};
+
+	public constrainTotalWidth() {
+		if (this.totalWidth !== undefined) {
+			const currentWidth = this.panels.reduce((acc, cur) => acc += cur.width, 0);
+			const totalWidth = this.totalWidth();
+
+			// If there is a minimum total width required, spread the extra missing width from Left to right
+			if (currentWidth < totalWidth) {
+				let remainingWidth = totalWidth - currentWidth;
+				for (const panel of this.panels) {
+					if (remainingWidth <= 0)
+						break;
+
+					const before = panel.width;
+					panel.width = this.validateWidth(panel, panel.width + remainingWidth);
+					const diff = panel.width - before;
+					remainingWidth -= diff;
+				}
+			}
+			// If there is a maximum width required, remove the extra width from right to left.
+			if (currentWidth > totalWidth) {
+				let excessWidth = currentWidth - totalWidth;
+
+				for (const panel of [ ...this.panels ].reverse()) {
+					if (excessWidth <= 0)
+						break;
+
+					const before = panel.width;
+					panel.width = this.validateWidth(panel, panel.width - excessWidth);
+					const diff = before - panel.width;
+					excessWidth -= diff;
+				}
+			}
+		}
+	}
+
+	public onResize?(): void;
 
 	protected findLeftTarget(initialPanel: T) {
 		const elements = this.elements();
