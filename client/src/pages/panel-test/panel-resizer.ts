@@ -1,6 +1,4 @@
-import { roundToNearest } from '../../app/round-to-nearest.js';
-
-interface Panel {
+export interface Panel {
 	minWidth: number;
 	maxWidth: number;
 	width: number;
@@ -9,14 +7,15 @@ interface Panel {
 
 export class PanelResizer<T extends Panel> {
 
+	protected controller: AbortController;
 	protected leftPanel?: T;
 	protected rightPanel?: T;
 	protected previousX = 0;
 
 	constructor(
 		protected panels: T[],
+		protected elements: () => (NodeListOf<HTMLElement> | HTMLElement[]),
 		protected identifier: (panel?: T) => string,
-		protected getElementById: (id: string) => (HTMLElement | null),
 		protected requestUpdate: () => void,
 	) { }
 
@@ -25,15 +24,19 @@ export class PanelResizer<T extends Panel> {
 		this.previousX = ev.clientX;
 
 		const target = ev.target as HTMLElement;
+		const leftPanelId = target.dataset['leftPanelId'] ?? '';
+		const rightPanelId = target.dataset['rightPanelId'] ?? '';
 
-		const leftPanelId = target.dataset['panelId']!;
 		this.leftPanel = this.panels.find(p => this.identifier(p) === leftPanelId);
+		this.rightPanel = this.panels.find(p => this.identifier(p) === rightPanelId);
 
-		const leftPanelIndex = this.panels.findIndex(p => this.identifier(p) === leftPanelId)!;
-		this.rightPanel = this.panels[leftPanelIndex + 1];
+		this.controller = new AbortController();
+		window.addEventListener('mousemove', this.mousemove, { signal: this.controller.signal });
+		window.addEventListener('mouseup', this.mouseup, { signal: this.controller.signal });
+	};
 
-		window.addEventListener('mousemove', this.mousemove);
-		window.addEventListener('mouseup', this.mouseup);
+	protected mouseup = () => {
+		this.controller.abort();
 	};
 
 	protected mousemove = (ev: MouseEvent) => {
@@ -121,59 +124,54 @@ export class PanelResizer<T extends Panel> {
 		this.requestUpdate();
 	};
 
-	protected mouseup = () => {
-		window.removeEventListener('mousemove', this.mousemove);
-		window.removeEventListener('mouseup', this.mouseup);
-	};
-
 	protected findLeftTarget(initialPanel: T) {
-		const stack: T[] = [];
-		for (let i = this.panels.indexOf(initialPanel); i >= -1; i--) {
-			const panel = this.panels[i]!;
-			if (!panel)
-				return;
+		const elements = this.elements();
+		const initialIndex = this.findInitialIndex(initialPanel);
 
-			if (panel.width <= panel.minWidth) {
-				stack.push(panel);
-				continue;
-			}
-
-			stack.push(panel);
-			break;
+		let panel: T | undefined;
+		for (let i = initialIndex; i >= -1; i--) {
+			const element = elements[i];
+			panel = this.panels.find(p => this.identifier(p) === element?.id);
+			if (!panel || panel.width > panel.minWidth)
+				break;
 		}
-
-		const panel = stack.pop();
-		if (!panel)
-			return;
 
 		return panel;
 	}
 
 	protected findRightTarget(initialPanel: T) {
-		const stack: T[] = [];
-		for (let i = this.panels.indexOf(initialPanel); i < this.panels.length + 1; i++) {
-			const panel = this.panels[i]!;
-			if (!panel)
-				return;
+		const elements = this.elements();
+		const initialIndex = this.findInitialIndex(initialPanel);
 
-			if (panel.width <= panel.minWidth) {
-				stack.push(panel);
-				continue;
-			}
-
-			stack.push(panel);
-			break;
+		let panel: T | undefined;
+		for (let i = initialIndex; i < elements.length + 1; i++) {
+			const element = elements[i];
+			panel = this.panels.find(p => this.identifier(p) === element?.id);
+			if (!panel || panel.width > panel.minWidth)
+				break;
 		}
-
-		const panel = stack.pop();
-		if (!panel)
-			return;
 
 		return panel;
 	}
 
 	protected validateWidth(panel: T, width: number) {
 		return Math.max(Math.min(panel.maxWidth, width), panel.minWidth);
+	}
+
+	protected findInitialIndex(panel: T) {
+		const elements = this.elements();
+		const panelId = this.identifier(panel);
+
+		let initialIndex = -1;
+		for (let i = 0; i < elements.length; i++) {
+			const element = elements[i]!;
+			if (element.id === panelId) {
+				initialIndex = i;
+				break;
+			}
+		}
+
+		return initialIndex;
 	}
 
 }

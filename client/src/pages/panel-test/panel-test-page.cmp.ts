@@ -1,6 +1,7 @@
 import { domId } from '@roenlie/mimic-core/dom';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
+import { queryAll } from 'lit/decorators.js';
 import { map } from 'lit/directives/map.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 
@@ -66,10 +67,12 @@ export class PanelTestPage extends MimicElement {
 		},
 	];
 
+	@queryAll('s-panel') protected panelEls: NodeListOf<HTMLElement>;
+
 	protected panelResizer = new PanelResizer<Panel>(
 		this.panels,
+		() => this.panelEls,
 		panel => panel?.id ?? '',
-		(id: string) => this.shadowRoot!.getElementById(id),
 		() => this.requestUpdate(),
 	);
 
@@ -94,7 +97,7 @@ export class PanelTestPage extends MimicElement {
 			.styles=${ this.dynamicStyles }
 		></dynamic-style>
 
-		${ map(this.panels, panel => {
+		${ map(this.panels, (panel, i) => {
 			const elRef = this.elRefs.get(panel.id)
 				?? (() => this.elRefs.set(panel.id, createRef()).get(panel.id)!)();
 
@@ -117,7 +120,8 @@ export class PanelTestPage extends MimicElement {
 				</div>
 			</s-panel>
 			<s-resize
-				data-panel-id=${ panel.id }
+				data-left-panel-id=${ panel.id }
+				data-right-panel-id=${ this.panels[i + 1]?.id }
 				@mousedown=${ this.panelResizer.mousedown }
 			></s-resize>
 			`;
