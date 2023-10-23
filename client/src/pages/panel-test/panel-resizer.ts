@@ -121,44 +121,47 @@ export class PanelResizer<T extends Panel> {
 				this.leftPanel.width = leftWidth;
 		}
 
-		this.previousX = ev.clientX;
-		this.requestUpdate();
-
 		this.constrainTotalWidth();
 		this.onResize?.();
+
+		this.previousX = ev.clientX;
+		this.requestUpdate();
 	};
 
 	public constrainTotalWidth() {
-		if (this.totalWidth !== undefined) {
-			const currentWidth = this.panels.reduce((acc, cur) => acc += cur.width, 0);
-			const totalWidth = this.totalWidth();
+		if (this.totalWidth === undefined)
+			return;
 
-			// If there is a minimum total width required, spread the extra missing width from Left to right
-			if (currentWidth < totalWidth) {
-				let remainingWidth = totalWidth - currentWidth;
-				for (const panel of this.panels) {
-					if (remainingWidth <= 0)
-						break;
+		const currentWidth = this.panels.reduce((acc, cur) => acc += cur.width, 0);
+		const totalWidth = this.totalWidth();
 
-					const before = panel.width;
-					panel.width = this.validateWidth(panel, panel.width + remainingWidth);
-					const diff = panel.width - before;
-					remainingWidth -= diff;
-				}
+		// If there is a minimum total width required, spread the extra missing width from Left to right
+		if (currentWidth < totalWidth) {
+			let remainingWidth = totalWidth - currentWidth;
+
+			for (const panel of this.panels) {
+				if (remainingWidth <= 0)
+					break;
+
+				const before = panel.width;
+				panel.width = this.validateWidth(panel, panel.width + remainingWidth);
+				const diff = panel.width - before;
+				remainingWidth -= diff;
 			}
-			// If there is a maximum width required, remove the extra width from right to left.
-			if (currentWidth > totalWidth) {
-				let excessWidth = currentWidth - totalWidth;
+		}
 
-				for (const panel of [ ...this.panels ].reverse()) {
-					if (excessWidth <= 0)
-						break;
+		// If there is a maximum width required, remove the extra width from right to left.
+		if (currentWidth > totalWidth) {
+			let excessWidth = currentWidth - totalWidth;
 
-					const before = panel.width;
-					panel.width = this.validateWidth(panel, panel.width - excessWidth);
-					const diff = before - panel.width;
-					excessWidth -= diff;
-				}
+			for (const panel of this.panels.toReversed()) {
+				if (excessWidth <= 0)
+					break;
+
+				const before = panel.width;
+				panel.width = this.validateWidth(panel, panel.width - excessWidth);
+				const diff = before - panel.width;
+				excessWidth -= diff;
 			}
 		}
 	}
