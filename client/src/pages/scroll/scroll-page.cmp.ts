@@ -1,7 +1,7 @@
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 
-import { VirtualScrollbar } from '../studio/virtual-scrollbar.cmp.js';
+import { VirtualScrollbar } from '../../features/components/virtual-scrollbar/virtual-scrollbar.cmp.js';
 
 VirtualScrollbar.register();
 

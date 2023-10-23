@@ -6,8 +6,8 @@ import { map } from 'lit/directives/map.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { when } from 'lit/directives/when.js';
 
+import { DynamicStyle } from '../../features/components/dynamic-style/dynamic-style.cmp.js';
 import { sharedStyles } from '../../features/styles/shared-styles.js';
-import { DynamicStyle } from '../studio2/dynamic-style.cmp.js';
 import { PanelResizer } from './panel-resizer.js';
 
 DynamicStyle.register();

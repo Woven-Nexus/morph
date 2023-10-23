@@ -1,7 +1,7 @@
 {
-	"name": "@roenlie/lit-htmx-client",
+	"name": "@roenlie/morph-client",
 	"version": "0.0.1",
-	"description": "Extensions and utilities for the LIT framework.",
+	"description": "Morph Client",
 	"author": {
 		"name": "Kristoffer Roen-Lie",
 		"url": "https://github.com/RoenLie"
@@ -19,8 +19,9 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"@faker-js/faker": "^8.1.0",
+		"@faker-js/faker": "^8.2.0",
 		"@floating-ui/dom": "^1.5.3",
+		"@lit-labs/preact-signals": "^1.0.0",
 		"@roenlie/lit-context": "^1.0.10",
 		"@roenlie/lit-state-store": "^0.0.19",
 		"@roenlie/mimic-core": "^0.0.51",
@@ -29,6 +30,7 @@
 		"@vaadin/router": "^1.7.5",
 		"lit": "^3.0.0",
 		"monaco-editor": "^0.44.0",
-		"unocss": "^0.56.5"
+		"socket.io-client": "^4.7.2",
+		"unocss": "^0.57.0"
 	}
 }

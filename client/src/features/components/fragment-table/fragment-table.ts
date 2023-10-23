@@ -4,8 +4,8 @@ import { css, html, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { queryId } from '../../../app/queryId.js';
-import { VirtualScrollbar } from '../../../features/studio/virtual-scrollbar.cmp.js';
-import { DynamicStyle, type StyleObject } from '../dynamic-style.cmp.js';
+import { DynamicStyle, type StyleObject } from '../dynamic-style/dynamic-style.cmp.js';
+import { VirtualScrollbar } from '../virtual-scrollbar/virtual-scrollbar.cmp.js';
 import { HeaderRenderController } from './header-render-controller.js';
 import { RowRenderController } from './row-render-controller.js';
 

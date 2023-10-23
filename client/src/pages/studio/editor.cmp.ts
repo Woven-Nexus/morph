@@ -5,9 +5,9 @@ import { property } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { editor } from 'monaco-editor';
 
-import type { Module } from '../code-module/module-model.js';
-import { MonacoEditorCmp } from '../monaco/monaco-editor.cmp.js';
-import { sharedStyles } from '../styles/shared-styles.js';
+import type { Module } from '../../features/code-module/module-model.js';
+import { MonacoEditorCmp } from '../../features/components/monaco/monaco-editor.cmp.js';
+import { sharedStyles } from '../../features/styles/shared-styles.js';
 import { EditorTabs } from './editor-tabs.js';
 import type { StudioStore } from './studio-store.js';
 
@@ -53,7 +53,7 @@ export class EditorCmp extends MimicElement {
 
 	public override connectedCallback() {
 		super.connectedCallback();
-		import('../monaco/monaco-editor.cmp.js').then(m => m.MonacoEditorCmp.register());
+		import('../../features/components/monaco/monaco-editor.cmp.js').then(m => m.MonacoEditorCmp.register());
 
 		this.store.value.connect(this, 'activeModuleId', 'editorTabs', 'activeEditorTab');
 		this.store.value.listen(this, 'activeEditorTab', this.handle.activeEditorTab);

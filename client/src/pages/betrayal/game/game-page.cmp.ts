@@ -1,6 +1,6 @@
+import { SignalWatcher } from '@lit-labs/preact-signals';
 import { range } from '@roenlie/mimic-core/array';
 import { domId } from '@roenlie/mimic-core/dom';
-import { debounce } from '@roenlie/mimic-core/timing';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { query, state } from 'lit/decorators.js';
@@ -8,11 +8,12 @@ import { classMap } from 'lit/directives/class-map.js';
 import { map } from 'lit/directives/map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { when } from 'lit/directives/when.js';
+import { Socket } from 'socket.io-client';
 
-import { roundToNearest } from '../../../app/round-to-nearest.js';
-import { scrollElementTo } from '../../../app/scroll-element-to.js';
+import { DynamicStyle } from '../../../features/components/dynamic-style/dynamic-style.cmp.js';
+import { manager } from '../../../features/socketio/manager.js';
 import { sharedStyles } from '../../../features/styles/shared-styles.js';
-import { DynamicStyle } from '../../studio2/dynamic-style.cmp.js';
+import { BoardConfig } from './board-config.ts.js';
 
 DynamicStyle.register();
 
@@ -25,181 +26,105 @@ interface Tile {
 	connection: ('top' | 'bottom' | 'left' | 'right')[];
 	locked: boolean;
 	floor: 0 | 1 | 2;
+	img: string;
+}
+
+interface TileDTO {
+	connection: ('top' | 'bottom' | 'left' | 'right')[];
+	floor: (0 | 1 | 2)[];
+	name: string;
+	img: string;
 }
 
 
+@SignalWatcher
 @customElement('m-betrayal-game')
 export class BetrayalGamePage extends MimicElement {
 
-	@state() protected tileSize = '200px';
-	@state() protected boardSize = 100;
-	@state() protected showHoverOutline = true;
-	@state() protected hoverGridRow = 0;
-	@state() protected hoverGridColumn = 0;
-	@state() protected bottomFloorTiles: Tile[] = [
-		{
-			id:         domId(5),
-			column:     19,
-			row:        49,
-			rotate:     0,
-			connection: [ 'left', 'top', 'right', 'bottom' ],
-			locked:     true,
-			floor:      0,
-		},
-	];
-
-	@state() protected firstFloorTiles: Tile[] = [
-		{
-			id:         domId(5),
-			column:     49,
-			row:        49,
-			rotate:     0,
-			connection: [ 'left', 'top', 'right' ],
-			locked:     true,
-			floor:      1,
-		},
-	];
-
-	@state() protected secondFloorTiles: Tile[] = [
-		{
-			id:         domId(5),
-			column:     79,
-			row:        49,
-			rotate:     0,
-			connection: [ 'left', 'top', 'right' ],
-			locked:     true,
-			floor:      2,
-		},
-	];
-
-	protected availableTiles: Tile[] = range(100).map(() => ({
-		column:     0,
-		row:        0,
-		id:         domId(5),
-		locked:     false,
-		rotate:     0,
-		connection: (() => {
-			const arr = [ 'left', 'top', 'right', 'bottom' ] as
-				('top' | 'bottom' | 'left' | 'right')[];
-			arr.length = Math.floor(Math.random() * 4) + 1;
-
-			return arr;
-		})(),
-		floor: 1,
-	}));
-
 	@query('main') protected mainEl?: HTMLElement;
+	@state() protected floor: [Tile[], Tile[], Tile[]] = [
+		[],
+		[],
+		[],
+	];
 
-	protected get dynamicStyles() {
-		return {
-			'main': {
-				'--_game-size':       this.boardSize,
-				'--_tile-size':       this.tileSize,
-				'--_hover-grid-top':  this.hoverGridRow * parseInt(this.tileSize) + 'px',
-				'--_hover-grid-left': this.hoverGridColumn * parseInt(this.tileSize) + 'px',
-			},
-		};
-	}
+	@state() protected bottomFloorTiles: Tile[] = [];
+	@state() protected firstFloorTiles: Tile[] = [];
+	@state() protected secondFloorTiles: Tile[] = [];
+	protected socket: Socket;
+	protected readonly boardConfig = new BoardConfig();
 
 	public override connectedCallback() {
 		super.connectedCallback();
 
-		this.addEventListener('wheel', this.handleZoomWheel);
-		this.addEventListener('mousemove', this.handleHoverOutline);
-	}
+		this.socket = manager.socket('/betrayal');
+		//this.socket.emit('available-tile-amount', '', (response: any) => {
+		//	console.log(response); // "got it"
+		//});
 
-	public override afterConnectedCallback() {
-		setTimeout(() => {
-			this.scrollTop = (this.scrollHeight - this.offsetHeight) / 2;
-			this.scrollLeft = (this.scrollWidth - this.offsetWidth) / 2;
+		this.socket.emit('get-tile', '', (tile: TileDTO) => {
+			this.floor[1].push({
+				column:     50,
+				row:        50,
+				connection: tile.connection,
+				floor:      1,
+				id:         domId(),
+				img:        tile.img,
+				locked:     false,
+				rotate:     0,
+			});
+			this.firstFloorTiles = [ ...this.firstFloorTiles ];
 		});
+
+		setTimeout(() => this.boardConfig.connect(this, this.mainEl!));
 	}
 
 	public override disconnectedCallback() {
 		super.disconnectedCallback();
-		this.removeEventListener('wheel', this.handleZoomWheel);
-		this.removeEventListener('mousemove', this.handleHoverOutline);
+		this.socket.disconnect();
 	}
 
-	protected handleZoomWheel = async (ev: WheelEvent) => {
-		if (!ev.ctrlKey)
-			return;
+	protected doorLocation(con: 'top' | 'bottom' | 'left' | 'right') {
+		return con === 'top' ? {
+			gridRow:    '1/3',
+			gridColumn: '4/5',
+		} : con === 'bottom' ? {
+			gridRow:    '6/8',
+			gridColumn: '4/5',
+		} : con === 'left' ? {
+			gridRow:    '4/5',
+			gridColumn: '1/3',
+		} : con === 'right' ? {
+			gridRow:    '4/5',
+			gridColumn: '6/8',
+		} : {};
+	}
 
-		ev.preventDefault();
+	protected isDoorConnected(tile: Tile, door: Tile['connection'][number]) {
+		const dir = [ 'left', 'top', 'right', 'bottom' ];
+		const shuffle = tile.rotate === 0 ? 0
+			: tile.rotate === 90 ? 1
+				: tile.rotate === 180 ? 2
+					: tile.rotate === 270 ? 3
+						: 0;
 
-		const topScroll = this.scrollHeight;
-		const leftScroll = this.scrollWidth;
+		range(shuffle).forEach(() => {
+			const item = dir.pop()!;
+			dir.unshift(item);
+		});
 
-		if (ev.deltaY < 0)
-			this.tileSize = roundToNearest((parseInt(this.tileSize) * 1.1), 5) + 'px';
-		else
-			this.tileSize = roundToNearest((parseInt(this.tileSize) * 0.9), 5) + 'px';
+		const indexOfCon = dir.indexOf(door);
+		const checkRow = [ 0, -1, 0, 1 ];
+		const checkColumn = [ -1, 0, 1, 0 ];
 
-		this.showHoverOutline = false;
-		this.debounceShowHoverOutline();
+		const columnStart = tile.column + checkColumn[indexOfCon]!;
+		const rowStart = tile.row + checkRow[indexOfCon]!;
 
-		await this.updateComplete;
+		const doesTileExist = this.floor[tile.floor]
+			.some(tile => tile.column === columnStart && tile.row === rowStart);
 
-		this.scrollTop -= (topScroll - this.scrollHeight) / 2;
-		this.scrollLeft -= (leftScroll - this.scrollWidth) / 2;
-	};
-
-	protected handleHoverOutline = (ev: MouseEvent) => {
-		const mainRect = this.mainEl?.getBoundingClientRect();
-		if (!mainRect)
-			return;
-
-		const x = ev.clientX - mainRect.x;
-		const y = ev.clientY - mainRect.y;
-
-		const tileSize = parseInt(this.tileSize);
-		const rowIndex = Math.floor(y / tileSize);
-		const columnIndex = Math.floor(x / tileSize);
-
-		this.hoverGridRow = rowIndex;
-		this.hoverGridColumn = columnIndex;
-	};
-
-	protected handleGameDragToMove = (ev: MouseEvent) => {
-		ev.preventDefault();
-		const previousXY: [number | undefined, number | undefined] = [ undefined, undefined ];
-		let xDiff = 0;
-		let yDiff = 0;
-
-		const mousemove = (ev: MouseEvent) => {
-			if (ev.buttons < 1)
-				return mouseup();
-
-			xDiff = previousXY[0] ? ev.clientX - previousXY[0] : 0;
-			yDiff = previousXY[1] ? ev.clientY - previousXY[1] : 0;
-
-			previousXY[0] = ev.clientX;
-			previousXY[1] = ev.clientY;
-
-			this.scrollLeft -= xDiff;
-			this.scrollTop -= yDiff;
-		};
-
-		const mouseup = () => {
-			scrollElementTo(this, {
-				x:        this.scrollLeft - (xDiff * 10),
-				y:        this.scrollTop - (yDiff * 10),
-				duration: 300,
-			});
-
-			window.removeEventListener('mousemove', mousemove);
-			window.removeEventListener('mouseup', mouseup);
-			previousXY[0] = undefined;
-			previousXY[1] = undefined;
-			xDiff = 0;
-			yDiff = 0;
-		};
-
-		window.addEventListener('mousemove', mousemove);
-		window.addEventListener('mouseup', mouseup);
-	};
-
-	protected debounceShowHoverOutline = debounce(() => this.showHoverOutline = true, 500);
+		return { doesTileExist, columnStart, rowStart };
+	}
 
 	protected Tile(tile: Tile) {
 		return html`
@@ -208,60 +133,37 @@ export class BetrayalGamePage extends MimicElement {
 			gridColumn: tile.column + '/' + (tile.column + 1),
 			transform:  'rotate(' + tile.rotate + 'deg)',
 		}) }>
+			<img src=${ tile.img }></img>
 			${ map(tile.connection, con => html`
 			<s-door
 				@click=${ () => {
-					console.log('go in the door!');
+					const { doesTileExist, rowStart, columnStart } = this.isDoorConnected(tile, con);
+					if (doesTileExist)
+						return;
 
-					const dir = [ 'left', 'top', 'right', 'bottom' ];
-					const shuffle = tile.rotate === 0 ? 0
-						: tile.rotate === 90 ? 1
-						: tile.rotate === 180 ? 2
-						: tile.rotate === 270 ? 3
-						: 0;
+					this.socket.emit('get-tile', '', (res?: TileDTO) => {
+						if (!res)
+							return;
 
-					range(shuffle).forEach(() => {
-						const item = dir.pop()!;
-						dir.unshift(item);
+						tile.locked = true;
+						this.floor[tile.floor].push({
+							row:        rowStart,
+							column:     columnStart,
+							floor:      tile.floor,
+							connection: res.connection,
+							id:         domId(),
+							img:        res.img,
+							locked:     false,
+							rotate:     0,
+						});
+
+						this.floor = [ ...this.floor ];
 					});
-
-					const indexOfCon = dir.indexOf(con);
-
-					const checkRow = [ 0, -1, 0, 1 ];
-					const checkColumn = [ -1, 0, 1, 0 ];
-
-					const newColumnStart = tile.column + checkColumn[indexOfCon]!;
-					const newRowStart = tile.row + checkRow[indexOfCon]!;
-
-					const doesTileExist = this.firstFloorTiles
-						.some(tile => tile.column === newColumnStart && tile.row === newRowStart);
-
-					if (!doesTileExist) {
-						const newTile = this.availableTiles.pop();
-						if (newTile) {
-							newTile.row = newRowStart;
-							newTile.column = newColumnStart;
-							newTile.floor = tile.floor;
-							this.firstFloorTiles.push(newTile);
-							this.firstFloorTiles = [ ...this.firstFloorTiles ];
-						}
-					}
 				} }
-				style=${ styleMap(
-					con === 'top' ? {
-						gridRow:    '1/3',
-						gridColumn: '4/5',
-					} : con === 'bottom' ? {
-						gridRow:    '6/8',
-						gridColumn: '4/5',
-					} : con === 'left' ? {
-						gridRow:    '4/5',
-						gridColumn: '1/3',
-					} : con === 'right' ? {
-						gridRow:    '4/5',
-						gridColumn: '6/8',
-					} : {},
-				) }
+				style=${ styleMap({
+					...this.doorLocation(con),
+					display: this.isDoorConnected(tile, con).doesTileExist && tile.locked ? 'none' : 'initial',
+				}) }
 			></s-door>
 			`) }
 			${ when(!tile.locked, () => html`
@@ -277,21 +179,19 @@ export class BetrayalGamePage extends MimicElement {
 		`;
 	}
 
-
 	protected override render() {
 		return html`
-		<dynamic-style .styles=${ this.dynamicStyles }></dynamic-style>
-		<main @mousedown=${ this.handleGameDragToMove }>
-			<s-hover-tile class=${ classMap({ hide: !this.showHoverOutline }) }></s-hover-tile>
+		<dynamic-style .styles=${ this.boardConfig.styles }></dynamic-style>
+		<main>
+			<s-hover-tile class=${ classMap({ hide: !this.boardConfig.showHoverOutline.value }) }></s-hover-tile>
 			${ map(
-				[
-				...this.firstFloorTiles,
-				...this.bottomFloorTiles,
-				...this.secondFloorTiles,
-				],
+				this.floor.flat(2),
 				tile => this.Tile(tile),
 			) }
 		</main>
+
+		<s-tile-stack>
+		</s-tile-stack>
 		`;
 	}
 
@@ -340,6 +240,13 @@ export class BetrayalGamePage extends MimicElement {
 			grid-template-rows: 5% 5% 25% 1fr 25% 5% 5%;
 			grid-template-columns: 5% 5% 25% 1fr 25% 5% 5%;
 		}
+		s-tile img {
+			height: var(--_tile-size);
+			width: var(--_tile-size);
+			grid-row: 1/8;
+			grid-column: 1/8;
+			object-fit: fill;
+		}
 		s-door {
 			background-color: hotpink;
 		}
@@ -350,6 +257,17 @@ export class BetrayalGamePage extends MimicElement {
 			grid-row: 4/5;
 			grid-column: 4/5;
 			background-color: blue;
+		}
+		`,
+		css`
+		s-tile-stack {
+			position: fixed;
+			top: 25px;
+			right: 25px;
+
+			height: 200px;
+			width: 100px;
+			background-color: hotpink;
 		}
 		`,
 	];

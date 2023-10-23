@@ -11,10 +11,10 @@ import { when } from 'lit/directives/when.js';
 
 import { serverUrl } from '../../app/backend-url.js';
 import type { DbResponse } from '../../app/response-model.js';
-import type { Module } from '../code-module/module-model.js';
-import type { ModuleNamespace, NamespaceDefinition } from '../code-module/namespace-model.js';
-import { sharedStyles } from '../styles/shared-styles.js';
-import { DragHandleCmp } from './drag-handle.cmp.js';
+import type { Module } from '../../features/code-module/module-model.js';
+import type { ModuleNamespace, NamespaceDefinition } from '../../features/code-module/namespace-model.js';
+import { DragHandleCmp } from '../../features/components/drag-handle/drag-handle.cmp.js';
+import { sharedStyles } from '../../features/styles/shared-styles.js';
 import { EditorCmp, type EditorTab } from './editor.cmp.js';
 import styles from './editor-panel.ccss';
 import { ModuleNavSelector } from './module-nav-selector.cmp.js';

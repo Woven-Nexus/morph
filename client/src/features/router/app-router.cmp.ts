@@ -19,13 +19,13 @@ export class AppRouterCmp extends MimicElement {
 				{
 					path:   '/studio',
 					action: this.routeComponent(
-						() => import('../studio/studio-page.cmp.js').then(m => m.StudioPageCmp),
+						() => import('../../pages/studio/studio-page.cmp.js').then(m => m.StudioPageCmp),
 					),
 				},
 				{
-					path:   '/studio2',
+					path:   '/table',
 					action: this.routeComponent(
-						() => import('../../pages/studio2/studio-page.cmp.js').then(m => m.StudioPageCmp),
+						() => import('../../pages/table/table-page.cmp.js').then(m => m.TablePageCmp),
 					),
 				},
 				{
@@ -40,9 +40,9 @@ export class AppRouterCmp extends MimicElement {
 					],
 				},
 				{
-					path:   '/demo',
+					path:   '/scroll',
 					action: this.routeComponent(
-						() => import('../demo/demo-page.cmp.js').then(m => m.Demopage),
+						() => import('../../pages/scroll/scroll-page.cmp.js').then(m => m.Demopage),
 					),
 				},
 				{

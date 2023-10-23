@@ -9,7 +9,7 @@ import { map } from 'lit/directives/map.js';
 
 import { serverUrl } from '../../app/backend-url.js';
 import { type DbResponse } from '../../app/response-model.js';
-import type { StudioStore } from '../studio/studio-store.js';
+import type { StudioStore } from '../../pages/studio/studio-store.js';
 import type { NamespaceDefinition } from './namespace-model.js';
 
 

@@ -1,8 +1,8 @@
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 
-import { sharedStyles } from '../styles/shared-styles.js';
-import { DragHandleCmp } from './drag-handle.cmp.js';
+import { DragHandleCmp } from '../../features/components/drag-handle/drag-handle.cmp.js';
+import { sharedStyles } from '../../features/styles/shared-styles.js';
 import { ModuleNavSelector } from './module-nav-selector.cmp.js';
 
 DragHandleCmp.register();

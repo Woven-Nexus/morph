@@ -1,6 +1,6 @@
 import { StateStore } from '@roenlie/lit-state-store';
 
-import type { ModuleNamespace, NamespaceDefinition } from '../code-module/namespace-model.js';
+import type { ModuleNamespace, NamespaceDefinition } from '../../features/code-module/namespace-model.js';
 import type { EditorTab } from './editor.cmp.js';
 
 

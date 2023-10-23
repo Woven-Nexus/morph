@@ -1,13 +1,12 @@
 import express, { type Router } from 'express';
 
-import { app } from '../../app.js';
 import { createResponse } from '../../utilities/create-response.js';
-import { Filter, Query } from '../db-utils/query.js';
-import dImport from './dynamic-import.js';
+import { Query } from '../db-utils/query.js';
 import type { Module } from './modules-table.js';
-import { sandbox } from './sandbox.js';
+
 
 const router: Router = express.Router();
+export default router;
 
 //app.get('/code1', (req, res) => {
 //	res.send(`
@@ -131,6 +130,3 @@ router.get(`/:namespace/:id`, async (req, res) => {
 		'No code module with id: ' + params.id,
 	));
 });
-
-
-export default router;

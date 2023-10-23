@@ -5,7 +5,7 @@ import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { map } from 'lit/directives/map.js';
 
-import { sharedStyles } from '../styles/shared-styles.js';
+import { sharedStyles } from '../../features/styles/shared-styles.js';
 
 
 @customElement('m-module-nav-selector')

@@ -6,9 +6,9 @@ import { css, html } from 'lit';
 import { eventOptions, property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
-import { getPath } from '../../app/get-path.js';
-import { queryId } from '../../app/queryId.js';
-import { sharedStyles } from '../styles/shared-styles.js';
+import { getPath } from '../../../app/get-path.js';
+import { queryId } from '../../../app/queryId.js';
+import { sharedStyles } from '../../styles/shared-styles.js';
 
 export type Placement = 'start' | 'end';
 export type Direction = 'vertical' | 'horizontal';

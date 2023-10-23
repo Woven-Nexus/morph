@@ -7,8 +7,8 @@ import { css, html } from 'lit';
 import { serverUrl } from '../../app/backend-url.js';
 import type { DbResponse } from '../../app/response-model.js';
 import type { Module } from '../../features/code-module/module-model.js';
+import { type Column, FragmentTable, type Options } from '../../features/components/fragment-table/fragment-table.js';
 import { sharedStyles } from '../../features/styles/shared-styles.js';
-import { type Column, FragmentTable, type Options } from './fragment-table/fragment-table.js';
 
 FragmentTable.register();
 
@@ -25,8 +25,8 @@ interface Data {
 }
 
 
-@customElement('m-studio-page')
-export class StudioPageCmp extends MimicElement {
+@customElement('m-table-page')
+export class TablePageCmp extends MimicElement {
 
 	protected columns: Column<Data>[] = [
 		{

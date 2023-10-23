@@ -5,8 +5,8 @@ import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { map } from 'lit/directives/map.js';
 
-import { sharedStyles } from '../styles/shared-styles.js';
-import { VirtualScrollbar } from './virtual-scrollbar.cmp.js';
+import { VirtualScrollbar } from '../../features/components/virtual-scrollbar/virtual-scrollbar.cmp.js';
+import { sharedStyles } from '../../features/styles/shared-styles.js';
 
 VirtualScrollbar.register();
 

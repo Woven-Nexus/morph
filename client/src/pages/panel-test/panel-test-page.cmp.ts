@@ -3,15 +3,16 @@ import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { queryAll } from 'lit/decorators.js';
 import { map } from 'lit/directives/map.js';
-import { type Ref } from 'lit/directives/ref.js';
 
+import { DragHandleCmp } from '../../features/components/drag-handle/drag-handle.cmp.js';
+import { DynamicStyle } from '../../features/components/dynamic-style/dynamic-style.cmp.js';
 import { sharedStyles } from '../../features/styles/shared-styles.js';
-import { DynamicStyle } from '../studio2/dynamic-style.cmp.js';
 import { TestPanelCmp } from './panel.cmp.js';
 import { PanelResizer } from './panel-resizer.js';
 
 DynamicStyle.register();
 TestPanelCmp.register();
+DragHandleCmp.register();
 
 
 interface Panel {

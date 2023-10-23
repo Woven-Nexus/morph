@@ -2,7 +2,7 @@ import { provide } from '@roenlie/lit-context';
 import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 
-import { StudioStore } from '../studio/studio-store.js';
+import { StudioStore } from '../../pages/studio/studio-store.js';
 import { NavbarCmp } from './navbar.cmp.js';
 
 NavbarCmp.register();
