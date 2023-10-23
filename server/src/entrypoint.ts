@@ -1,5 +1,8 @@
+import { join, resolve } from 'node:path';
+
 import { randomUUID } from 'crypto';
 import dotenv from 'dotenv';
+import express from 'express';
 
 import { app, io, server } from './app.js';
 import { allTiles } from './features/betrayal/all-tiles.js';
@@ -7,8 +10,10 @@ import { type GameState, gameState } from './features/betrayal/gamestate.js';
 import betrayal from './features/betrayal/get-tile.js';
 import codemodules from './features/code-modules/code-module-routes.js';
 
+
 app.use('/api/code-modules', codemodules);
 app.use('/api/betrayal', betrayal);
+app.use('/assets/betrayal/tiles', express.static(join(resolve(), 'src/features/betrayal/assets/tiles')));
 
 dotenv.config();
 const port = process.env['PORT'];

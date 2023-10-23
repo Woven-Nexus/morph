@@ -10,7 +10,7 @@ import { scrollElementTo } from '../../../app/scroll-element-to.js';
 export class BoardConfig {
 
 	public tileSize = signal(200);
-	public boardSize = signal(100);
+	public boardSize = signal(30);
 	public showHoverOutline = signal(false);
 	public hoverGridRow = signal(0);
 	public hoverGridColumn = signal(0);

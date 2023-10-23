@@ -64,8 +64,8 @@ export class BetrayalGamePage extends MimicElement {
 
 		this.socket.emit('get-tile', '', (tile: TileDTO) => {
 			this.floor[1].push({
-				column:     50,
-				row:        50,
+				column:     15,
+				row:        15,
 				connection: tile.connection,
 				floor:      1,
 				id:         domId(),
