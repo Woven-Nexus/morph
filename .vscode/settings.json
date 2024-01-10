@@ -3,7 +3,7 @@
 	"editor.guides.bracketPairs": "active",
 	"editor.formatOnSave": true,
 	"editor.codeActionsOnSave": {
-		"source.fixAll.eslint": true
+		"source.fixAll.eslint": "explicit"
 	},
 	"editor.detectIndentation": false,
 	"editor.insertSpaces": false,
@@ -51,9 +51,19 @@
 		{
 			"splitTerminals": [
 				{
+					"name": "root",
+					"commands": [
+						"clear"
+					]
+				}
+			]
+		},
+		{
+			"splitTerminals": [
+				{
 					"name": "client",
 					"commands": [
-						"cd client"
+						"cd packages/client"
 					]
 				}
 			]
@@ -63,7 +73,7 @@
 				{
 					"name": "server",
 					"commands": [
-						"cd server"
+						"cd packages/server"
 					]
 				}
 			]
