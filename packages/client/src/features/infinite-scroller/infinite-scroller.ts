@@ -1,5 +1,6 @@
-import { AegisElement } from '@roenlie/lit-aegis';
-import { css, type CSSResultGroup, html, ReactiveElement, render } from 'lit';
+import { AegisElement, queryAll, queryId } from '@roenlie/lit-aegis';
+import { withDebounce } from '@roenlie/mimic-core/timing';
+import { css, type CSSResultGroup, html, render } from 'lit';
 
 import { Debouncer } from './debouncer.js';
 import { isFirefox } from './is-firefox.js';
@@ -26,13 +27,9 @@ interface ItemWrapperElement extends HTMLDivElement {
 
 export abstract class InfiniteScroller extends AegisElement {
 
-	protected static template = html`
-	<div id="scroller">
-	  <div class="buffer"></div>
-	  <div class="buffer"></div>
-	  <div id="fullHeight"></div>
-	</div>
-	`;
+	@queryId('scroller', true) protected scrollerQry: HTMLElement;
+	@queryId('fullHeight', true) protected fullHeightQry: HTMLElement;
+	@queryAll('.buffer') protected bufferQry: NodeListOf<BufferElement>;
 
 	/**
 	 * Count of individual items in each buffer.
@@ -42,18 +39,14 @@ export abstract class InfiniteScroller extends AegisElement {
 	 */
 	public bufferSize = 20;
 
-
-	/**
-	 * @description Block negative index of infinite scroller
-	 */
+	/** Block negative index of infinite scroller */
 	public blockNegativeIndex = false;
 
 	/**
 	 * The amount of initial scroll top.
 	 * Needed in order for the user to be able to scroll backwards.
 	 */
-	protected initialScroll = 3000;
-	//protected initialScroll = 500000;
+	protected initialScroll = 50000;
 
 	/** The index/position mapped at _initialScroll point. */
 	protected initialIndex = 0;
@@ -68,8 +61,6 @@ export abstract class InfiniteScroller extends AegisElement {
 	protected debouncerUpdateClones: Debouncer;
 	protected debouncerScrollFinish: Debouncer;
 	protected activated = false;
-	protected scrollerQry: HTMLElement;
-	protected fullHeightQry: HTMLElement;
 
 	public get active(): boolean {
 		return this.activated;
@@ -134,23 +125,12 @@ export abstract class InfiniteScroller extends AegisElement {
 		}
 	}
 
-	protected override createRenderRoot(): HTMLElement | DocumentFragment {
-		const root = super.createRenderRoot();
-		render(InfiniteScroller.template, root as ShadowRoot);
-
-		return root;
-	}
-
 	protected override firstUpdated(props: Map<PropertyKey, unknown>) {
 		super.firstUpdated(props);
 
-		this.buffers = [ ...this.shadowRoot!.querySelectorAll('.buffer') ] as [BufferElement, BufferElement];
-
-		this.fullHeightQry = this.shadowRoot!.getElementById('fullHeight')!;
+		this.buffers = [ ...this.bufferQry ] as typeof this.buffers;
 		this.fullHeightQry.style.height = `${ this.initialScroll * 2 }px`;
-
-		this.scrollerQry = this.shadowRoot!.getElementById('scroller')!;
-		this.scrollerQry.addEventListener('scroll', () => this.handleScroll(), { passive: true });
+		this.scrollerQry.addEventListener('scroll', this.handleScroll.bind(this), { passive: true });
 
 		// Firefox interprets elements with overflow:auto as focusable
 		// https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
@@ -200,13 +180,27 @@ export abstract class InfiniteScroller extends AegisElement {
 		this.buffers.reverse();
 	}
 
+	protected blockScroll = withDebounce(
+		() => { this.scrollerQry.style.setProperty('overflow', 'hidden'); },
+		() => { this.scrollerQry.style.removeProperty('overflow'); },
+		100,
+	);
+
 	protected handleScroll() {
 		if (this.scrollDisabled)
 			return;
 
 		if (this.blockNegativeIndex) {
-			if (this.firstIndex <= (-this.bufferSize) && this.scrollerQry.scrollTop < this.initialScroll)
-				this.scrollerQry.scrollTop = this.initialScroll;
+			//const belowRealZeroIndex = this.firstIndex <= (-this.bufferSize);
+			const belowRealZeroIndex = this.position < 0;
+			const scrollBelowInitial = this.scrollerQry.scrollTop < this.initialScroll;
+
+			if (belowRealZeroIndex && scrollBelowInitial) {
+				this.position = 0;
+				this.blockScroll();
+
+				return;
+			}
 		}
 
 		const scrollTop = this.scrollerQry.scrollTop;
@@ -238,10 +232,10 @@ export abstract class InfiniteScroller extends AegisElement {
 		this.debouncerScrollFinish = Debouncer.debounce(
 			this.debouncerScrollFinish, timeOut.after(200), () => {
 				const scrollerRect = this.scrollerQry.getBoundingClientRect();
+				const firstBufferVisible = this.isVisible(this.buffers[0], scrollerRect);
+				const secondBufferVisible = this.isVisible(this.buffers[1], scrollerRect);
 
-				if (!this.isVisible(this.buffers[0], scrollerRect) &&
-					!this.isVisible(this.buffers[1], scrollerRect)
-				)
+				if (!firstBufferVisible && !secondBufferVisible)
 					this.position = this.position; // eslint-disable-line no-self-assign
 			},
 		);
@@ -317,7 +311,10 @@ export abstract class InfiniteScroller extends AegisElement {
 		if (this.blockNegativeIndex && this.firstIndex < -this.bufferSize)
 			this.firstIndex = -this.bufferSize;
 
-		const scrollerRect = viewPortOnly ? this.scrollerQry.getBoundingClientRect() : undefined;
+		const scrollerRect = viewPortOnly ?
+			this.scrollerQry.getBoundingClientRect()
+			: undefined;
+
 		for (let i = 0; i < this.buffers.length; i++) {
 			const buffer = this.buffers[i]!;
 			if (buffer.updated)
@@ -343,6 +340,17 @@ export abstract class InfiniteScroller extends AegisElement {
 		return rect.bottom > container.top && rect.top < container.bottom;
 	}
 
+	protected override render(): unknown {
+		return html`
+		<div id="scroller">
+			<div class="buffer"></div>
+			<div class="buffer"></div>
+			<div id="fullHeight"></div>
+		</div>
+		`;
+	}
+
+
 	public static override styles: CSSResultGroup = css`
 		:host {
 			--_infinite-scroller-item-height: 100px;
@@ -358,22 +366,20 @@ export abstract class InfiniteScroller extends AegisElement {
 			height: 100%;
 			overflow: auto;
 			outline: none;
-			margin-right: -40px;
 			-webkit-overflow-scrolling: touch;
 			overflow-x: hidden;
 		}
 		#scroller.notouchscroll {
 			-webkit-overflow-scrolling: auto;
 		}
-		#scroller::-webkit-scrollbar {
+		/*#scroller::-webkit-scrollbar {
 			display: none;
-		}
+		}*/
 		.buffer {
 			box-sizing: border-box;
 			position: absolute;
 			top: var(--_infinite-scroller-buffer-offset);
 			width: var(--_infinite-scroller-buffer-width);
-			padding-right: 40px;
 			animation: fadein 0.2s;
 		}
 		@keyframes fadein {

@@ -8,6 +8,7 @@ import { InfiniteScroller } from '../../features/infinite-scroller/infinite-scro
 @customElement('m-handover-row-scroller', true)
 export class HandoverRowScrollerCmp extends InfiniteScroller {
 
+	public override bufferSize = 10;
 	public override blockNegativeIndex = true;
 
 	protected override createElement(): HTMLElement {
