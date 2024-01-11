@@ -36,5 +36,8 @@
 	},
 	"devDependencies": {
 		"vite-plugin-import-css-sheet": "^1.0.3"
+	},
+	"vaadin": {
+		"disableUsageStatistics": true
 	}
 }

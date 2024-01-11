@@ -8,7 +8,4 @@ AppRouterCmp.register();
 const router = document.createElement(AppRouterCmp.tagName) as AppRouterCmp;
 router.routes = routes;
 
-console.log(routes);
-
-
 render(router, document.body);

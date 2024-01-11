@@ -5,6 +5,7 @@
 		"baseUrl": ".",
 		"types": [
 			"vite/client",
+			"vite-plugin-import-css-sheet/client"
 		]
 	},
 }
