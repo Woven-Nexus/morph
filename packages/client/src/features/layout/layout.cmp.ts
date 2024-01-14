@@ -24,7 +24,6 @@ export class AppLayoutCmp extends MimicElement {
 			overflow: hidden;
 			display: grid;
 			grid-template-columns: auto 1fr;
-			gap: 20px;
 			background-color: var(--background);
 			color: var(--on-background);
 		}

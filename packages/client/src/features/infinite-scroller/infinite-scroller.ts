@@ -39,9 +39,6 @@ export abstract class InfiniteScroller extends AegisElement {
 	 */
 	public bufferSize = 20;
 
-	/** Block negative index of infinite scroller */
-	public blockNegativeIndex = false;
-
 	/**
 	 * The amount of initial scroll top.
 	 * Needed in order for the user to be able to scroll backwards.
@@ -51,8 +48,11 @@ export abstract class InfiniteScroller extends AegisElement {
 	/** The index/position mapped at _initialScroll point. */
 	protected initialIndex = 0;
 
+	/** lowest index list will scroll to. */
+	protected minIndex?: number;
+
 	/** highest index list will scroll to. */
-	protected maxIndex = 100;
+	protected maxIndex?: number;
 
 	protected itemHeightVal: number;
 	protected preventScrollEvent: boolean;
@@ -193,18 +193,16 @@ export abstract class InfiniteScroller extends AegisElement {
 		if (this.scrollDisabled)
 			return;
 
-		if (this.blockNegativeIndex) {
-			const belowRealZeroIndex = this.position < 0;
-			const scrollBelowInitial = this.scrollerQry.scrollTop < this.initialScroll;
-
-			if (belowRealZeroIndex && scrollBelowInitial) {
-				this.position = 0;
+		if (this.minIndex !== undefined) {
+			if (this.position < this.minIndex) {
+				this.position = this.minIndex;
 
 				return this.blockScroll();
 			}
+		}
 
-			const aboveMaxIndex = this.position > this.maxIndex;
-			if (aboveMaxIndex) {
+		if (this.maxIndex) {
+			if (this.position > this.maxIndex) {
 				this.position = this.maxIndex;
 
 				return this.blockScroll();
@@ -316,9 +314,6 @@ export abstract class InfiniteScroller extends AegisElement {
 	protected updateClones(viewPortOnly?: boolean) {
 		this.firstIndex = ~~((this.buffers[0].translateY - this.initialScroll) / this.itemHeight) + this.initialIndex;
 
-		if (this.blockNegativeIndex && this.firstIndex < -this.bufferSize)
-			this.firstIndex = -this.bufferSize;
-
 		const scrollerRect = viewPortOnly ?
 			this.scrollerQry.getBoundingClientRect()
 			: undefined;
@@ -365,9 +360,8 @@ export abstract class InfiniteScroller extends AegisElement {
 			--_infinite-scroller-buffer-width: 100%;
 			--_infinite-scroller-buffer-offset: 0;
 
-			display: block;
 			overflow: hidden;
-			height: 500px;
+			display: block;
 		}
 		#scroller {
 			position: relative;
@@ -380,9 +374,9 @@ export abstract class InfiniteScroller extends AegisElement {
 		#scroller.notouchscroll {
 			-webkit-overflow-scrolling: auto;
 		}
-		/*#scroller::-webkit-scrollbar {
+		#scroller::-webkit-scrollbar {
 			display: none;
-		}*/
+		}
 		.buffer {
 			box-sizing: border-box;
 			position: absolute;
