@@ -9,6 +9,7 @@
 }
 
 s-nav-container {
+	z-index: 1;
 	position: absolute;
 	display: grid;
 	grid-template-rows: max-content 1fr;

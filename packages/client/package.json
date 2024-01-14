@@ -16,7 +16,7 @@
 	},
 	"scripts": {
 		"dev": "vite",
-		"build": "vite build",
+		"build": "rimraf dist && vite build",
 		"preview": "vite preview"
 	},
 	"dependencies": {
@@ -35,6 +35,7 @@
 		"socket.io-client": "^4.7.3"
 	},
 	"devDependencies": {
+		"@roenlie/vite-plugin-html-modules": "workspace:^",
 		"vite-plugin-import-css-sheet": "^1.0.3"
 	},
 	"vaadin": {
