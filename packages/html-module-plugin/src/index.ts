@@ -1,11 +1,10 @@
-import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { basename } from 'node:path';
 
 import { isElementNode, isParentNode } from '@parse5/tools';
 import { type DefaultTreeAdapterMap, parse } from 'parse5';
 import type { Plugin } from 'vite';
 
-type Node = DefaultTreeAdapterMap['node'];
 
 interface Options {
 	exportIds?: boolean;
@@ -16,13 +15,13 @@ interface Options {
  * Transforms HTML files to support the HTML modules proposal, which enables
  * importing HTML into JavaScript modules.
  *
- * This plugin enables HTML module support in Rollup by transforming HTML files
+ * This plugin enables HTML module support in Vite by transforming HTML files
  * that are imported with a `{type: 'html'}` attribute into JavaScript modules
  * that export DOM nodes.
  */
 export const htmlModules = (options?: Options): Plugin => {
 	const virtualModules = new Map<string, string>();
-	const filetypes = [ '.ts', '.mts', '.js', '.mjs' ] as const;
+	const validImporter = [ '.ts', '.mts', '.js', '.mjs' ] as const;
 	const illegalChars: Record<string, string> = {
 		'\\': '\\\\', // Preserve any escape sequences in the source:
 		'`':  '\\`',  // Escape backticks:
@@ -46,18 +45,17 @@ export const htmlModules = (options?: Options): Plugin => {
 		async resolveId(source, importer) {
 			if (!source.endsWith('.html'))
 				return;
-			if (!importer)
+			if (!validImporter.some(ext => importer?.endsWith(ext)))
 				return;
 
 			const resolvedId = await this.resolve(source, importer);
-			importer = importer?.split('?')[0];
+			importer = importer!.split('?')[0]!;
 
-			if (resolvedId && filetypes.some(str => importer?.endsWith(str))) {
-				const importerContent = await readFile(importer!, { encoding: 'utf8' });
-				const regxp = importAssertRegex(source, 'html');
+			if (resolvedId) {
+				const importerContent = await readFile(importer, { encoding: 'utf8' });
 
-				if (regxp.test(importerContent)) {
-					const modId = '\0virtual:' + randomUUID().replaceAll('-', '');
+				if (importAssertRegex(source, 'html').test(importerContent)) {
+					const modId = '\0virtual:' + basename(source) + '.js';
 					virtualModules.set(modId, resolvedId.id);
 
 					return modId;
@@ -65,37 +63,46 @@ export const htmlModules = (options?: Options): Plugin => {
 			}
 		},
 		async load(id) {
-			if (!virtualModules.has(id))
+			const realId = virtualModules.get(id);
+			if (!realId)
 				return;
 
-			const realId = virtualModules.get(id)!;
 			this.addWatchFile(realId);
 
 			const code = await readFile(realId, { encoding: 'utf8' });
 
-			let elementExports = '';
+			const elementExports: string[] = [];
 
 			if (options?.exportIds ?? false) {
 				const ast = parse(code);
 
 				// Walk the parse5 AST to find all elements with id attributes.
 				const exportedIds = new Set<string>();
-				const walk = (node: Node) => {
+
+				(function traverse(node: DefaultTreeAdapterMap['node']) {
 					if (isElementNode(node)) {
 						const idAttr = node.attrs.find((attr: any) => attr.name === 'id');
 						if (idAttr !== undefined)
 							exportedIds.add(idAttr.value);
 					}
-					if (isParentNode(node))
-						node.childNodes.forEach(walk);
-				};
-				walk(ast);
 
-				elementExports = [ ...exportedIds ]
-					.map((id, index) => isValidExportName(id)
-						? `export const ${ id } = doc.querySelector('#${ id }');`
-						: `const export${ index } = doc.querySelector('#${ id }');\nexport {export${ index } as '${ id }'};`)
-					.join('\n');
+					if (isParentNode(node)) {
+						for (const childNode of node.childNodes)
+							traverse(childNode);
+					}
+				})(ast);
+
+				const idArr = [ ...exportedIds ];
+				for (let i = 0; i < idArr.length; i++) {
+					const id = idArr[i]!;
+
+					elementExports.push(
+						isValidExportName(id)
+							? `export const ${ id } = doc.querySelector('#${ id }');\n`
+							: `const export${ i } = doc.querySelector('#${ id }');\n`
+							+ `export { export${ i } as '${ id }' };\n`,
+					);
+				}
 			}
 
 			// Escape the HTML source so that it can be used in a template literal.
@@ -105,7 +112,7 @@ export const htmlModules = (options?: Options): Plugin => {
 			+ 'const parser = new DOMParser();\n'
 			+ `const doc = parser.parseFromString(${ escapedCode }, 'text/html');\n`
 			+ `export default doc;\n`
-			+ `${ elementExports }`;
+			+ elementExports.join('');
 		},
 	};
 };

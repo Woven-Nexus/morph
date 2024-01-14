@@ -1,5 +1,3 @@
-import './repeat.cmp.js';
-
 import { AegisElement, customElement, query, state } from '@roenlie/lit-aegis';
 import { MMIcon } from '@roenlie/mimic-elements/icon';
 import { type CSSResultGroup, html } from 'lit';
@@ -17,12 +15,6 @@ export class NavbarCmp extends AegisElement {
 
 	@query('s-nav-container') protected container: HTMLElement;
 	@state() protected expanded = false;
-
-	protected link: {value?: {label: string, iconSrc: string}} = { value: undefined };
-	protected links = [
-		{ label: 'Handover', iconSrc: 'https://icons.getbootstrap.com/assets/icons/building.svg' },
-		{ label: 'Something', iconSrc: 'https://icons.getbootstrap.com/assets/icons/app.svg' },
-	];
 
 	protected override render(): unknown {
 		return html`
@@ -46,22 +38,30 @@ export class NavbarCmp extends AegisElement {
 			</button>
 
 			<ul>
-				<x-repeat .from=${ this.links } .as=${ this.link }>
-					<template>
-						<li>
-							<span>
-								<span>
-									{{label}}
-								</span>
-							</span>
-							<span>
-								<mm-icon
-									url="{{iconSrc}}"
-								></mm-icon>
-							</span>
-						</li>
-					</template>
-				</x-repeat>
+				<li>
+					<span>
+						<span>
+							Handover
+						</span>
+					</span>
+					<span>
+						<mm-icon
+							url="https://icons.getbootstrap.com/assets/icons/building.svg"
+						></mm-icon>
+					</span>
+				</li>
+				<li>
+					<span>
+						<span>
+							Something
+						</span>
+					</span>
+					<span>
+						<mm-icon
+							url="https://icons.getbootstrap.com/assets/icons/app.svg"
+						></mm-icon>
+					</span>
+				</li>
 			</ul>
 
 		</s-nav-container>

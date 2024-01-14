@@ -51,6 +51,9 @@ export abstract class InfiniteScroller extends AegisElement {
 	/** The index/position mapped at _initialScroll point. */
 	protected initialIndex = 0;
 
+	/** highest index list will scroll to. */
+	protected maxIndex = 100;
+
 	protected itemHeightVal: number;
 	protected preventScrollEvent: boolean;
 	protected buffers: [BufferElement, BufferElement];
@@ -191,15 +194,20 @@ export abstract class InfiniteScroller extends AegisElement {
 			return;
 
 		if (this.blockNegativeIndex) {
-			//const belowRealZeroIndex = this.firstIndex <= (-this.bufferSize);
 			const belowRealZeroIndex = this.position < 0;
 			const scrollBelowInitial = this.scrollerQry.scrollTop < this.initialScroll;
 
 			if (belowRealZeroIndex && scrollBelowInitial) {
 				this.position = 0;
-				this.blockScroll();
 
-				return;
+				return this.blockScroll();
+			}
+
+			const aboveMaxIndex = this.position > this.maxIndex;
+			if (aboveMaxIndex) {
+				this.position = this.maxIndex;
+
+				return this.blockScroll();
 			}
 		}
 

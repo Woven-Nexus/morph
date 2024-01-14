@@ -9,6 +9,7 @@ import { InfiniteScroller } from '../../features/infinite-scroller/infinite-scro
 export class HandoverRowScrollerCmp extends InfiniteScroller {
 
 	public override bufferSize = 10;
+	protected override maxIndex = 50;
 	public override blockNegativeIndex = true;
 
 	protected override createElement(): HTMLElement {
@@ -17,7 +18,7 @@ export class HandoverRowScrollerCmp extends InfiniteScroller {
 
 	protected override updateElement(element: HandoverRowCmp, index: number): void {
 		element.value = '' + index;
-		if (index < 0) {
+		if (index < 0 || index > this.maxIndex) {
 			//
 			element.style.setProperty('visibility', 'hidden');
 		}
