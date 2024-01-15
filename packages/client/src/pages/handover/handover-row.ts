@@ -31,12 +31,6 @@ export class HandoverListCmp extends AegisElement {
 	m-handover-row-scroller {
 		display: grid;
 	}
-	m-handover-row-scroller > div {
-		display: grid;
-	}
-	m-handover-row-scroller > div:nth-child(odd) {
-		background-color: lime;
-	}
 	`;
 
 }
@@ -45,9 +39,9 @@ export class HandoverListCmp extends AegisElement {
 @customElement('m-handover-row-scroller', true)
 export class HandoverRowScrollerCmp extends InfiniteScroller {
 
-	public override bufferSize = 10;
+	public override bufferSize = 20;
 	protected override minIndex = 0;
-	protected override maxIndex = 50;
+	protected override maxIndex = 100;
 
 	protected override createElement(): HTMLElement {
 		return document.createElement('m-handover-row');
@@ -86,6 +80,7 @@ export class HandoverRowCmp extends AegisElement {
 		css`
 		:host {
 			display: grid;
+			border-bottom: 2px solid grey;
 		}
 		`,
 	];
