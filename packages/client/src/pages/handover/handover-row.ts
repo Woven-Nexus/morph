@@ -39,7 +39,7 @@ export class HandoverListCmp extends AegisElement {
 @customElement('m-handover-row-scroller', true)
 export class HandoverRowScrollerCmp extends InfiniteScroller {
 
-	public override bufferSize = 20;
+	//public override bufferSize = 20;
 	protected override minIndex = 0;
 	protected override maxIndex = 100;
 
@@ -48,11 +48,13 @@ export class HandoverRowScrollerCmp extends InfiniteScroller {
 	}
 
 	protected override updateElement(element: HandoverRowCmp, index: number): void {
-		element.value = '' + index;
-		if (index < this.minIndex || index > this.maxIndex)
+		if (index < this.minIndex || index > this.maxIndex) {
 			element.style.setProperty('visibility', 'hidden');
-		else
+		}
+		else {
 			element.style.setProperty('visibility', '');
+			element.value = '' + index;
+		}
 	}
 
 	public static override styles = [
