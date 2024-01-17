@@ -41,7 +41,7 @@ export class HandoverRowScrollerCmp extends InfiniteScroller {
 
 	//public override bufferSize = 20;
 	protected override minIndex = 0;
-	protected override maxIndex = 100;
+	protected override maxIndex = 700;
 
 	protected override createElement(): HTMLElement {
 		return document.createElement('m-handover-row');
