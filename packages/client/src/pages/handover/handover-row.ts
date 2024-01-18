@@ -39,9 +39,8 @@ export class HandoverListCmp extends AegisElement {
 @customElement('m-handover-row-scroller', true)
 export class HandoverRowScrollerCmp extends InfiniteScroller {
 
-	//public override bufferSize = 20;
 	protected override minIndex = 0;
-	protected override maxIndex = 700;
+	protected override maxIndex = 50;
 
 	protected override createElement(): HTMLElement {
 		return document.createElement('m-handover-row');

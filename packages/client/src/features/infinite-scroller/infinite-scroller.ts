@@ -1,6 +1,6 @@
 import { AegisElement, customElement, query, queryId } from '@roenlie/lit-aegis';
 import { debounce, withDebounce } from '@roenlie/mimic-core/timing';
-import { css, type CSSResultGroup, html, render } from 'lit';
+import { css, type CSSResultGroup, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { until } from 'lit/directives/until.js';
@@ -22,6 +22,9 @@ interface SlotElement extends HTMLSlotElement {
 interface ItemWrapperElement extends HTMLDivElement {
 	instance: HTMLElement & Record<PropertyKey, any>;
 }
+
+
+// TODO, Make the minimum buffer change depending on available space.
 
 
 export abstract class InfiniteScroller extends AegisElement {
@@ -115,9 +118,9 @@ export abstract class InfiniteScroller extends AegisElement {
 		return this.buffers[0].offsetTop;
 	}
 
-	#itemHeight: number;
+	#itemHeight = 0;
 	public get itemHeight(): number {
-		if (!this.#itemHeight) {
+		if (!this.#itemHeight && this.fullHeightQry) {
 			const itemHeight = getComputedStyle(this)
 				.getPropertyValue('--_infinite-scroller-item-height');
 
@@ -388,6 +391,32 @@ export abstract class InfiniteScroller extends AegisElement {
 		return rect.bottom > container.top && rect.top < container.bottom;
 	}
 
+	protected scrollerProps = (() => {
+		const obj = {};
+		Object.defineProperties(obj, {
+			totalHeight: {
+				get: () => this.totalHeight,
+			},
+			itemCount: {
+				get: () => ((this.maxIndex ?? 0) - (this.minIndex ?? 0)),
+			},
+			itemHeight: {
+				get: () => this.itemHeight,
+			},
+			position: {
+				get: () => this.position,
+				set: (v: number) => void (this.position = v),
+			},
+		});
+
+		return obj as {
+			readonly totalHeight: number;
+			readonly itemCount: number;
+			readonly itemHeight: number;
+			position: number
+		};
+	})();
+
 	protected override render(): unknown {
 		return html`
 		<div id="scroller">
@@ -399,11 +428,7 @@ export abstract class InfiniteScroller extends AegisElement {
 		${ until(this.updateComplete.then(() => when(this.useScrollbar, () => html`
 		<infinite-scroller-scrollbar
 			style=${ styleMap({ display: this.showScrollbar ? '' : 'none' }) }
-			.getTotalHeight=${ () => this.totalHeight }
-			.getItemCount  =${ () => ((this.maxIndex ?? 0) - (this.minIndex ?? 0)) }
-			.getItemHeight =${ () => this.itemHeight }
-			.getPosition   =${ () => this.position }
-			.setPosition   =${ (pos: number) => this.position = pos }
+			.connector=${ this.scrollerProps }
 		></infinite-scroller-scrollbar>
 		`))) }
 		`;
@@ -457,68 +482,84 @@ export abstract class InfiniteScroller extends AegisElement {
 @customElement('infinite-scroller-scrollbar', true)
 export class ScrollbarCmp extends AegisElement {
 
-	@property({ type: Object }) public getItemCount: () => number;
-	@property({ type: Object }) public getItemHeight: () => number;
-	@property({ type: Object }) public getTotalHeight: () => number;
-	@property({ type: Object }) public getPosition: () => number;
-	@property({ type: Object }) public setPosition: (value: number) => number;
-	@queryId('scroll', true) protected scrollQry: HTMLElement;
+	@property({ type: Object }) public connector: {
+		readonly totalHeight: number;
+		readonly itemCount: number;
+		readonly itemHeight: number;
+		position: number
+	};
 
-	protected set position(v: number) { this.setPosition(v); }
-	protected get position()          { return this.getPosition(); }
-	protected get itemCount()         { return this.getItemCount(); }
-	protected get itemHeight()        { return this.getItemHeight(); }
-	protected get totalHeight()       { return this.getTotalHeight(); }
-
+	@queryId('scroll', true) protected thumbQry: HTMLElement;
+	protected abortSig: AbortController;
 	protected get excessHeight() {
-		return (this.offsetHeight / this.itemHeight) * this.itemHeight;
+		return (this.offsetHeight / this.connector.itemHeight)
+			* this.connector.itemHeight;
+	}
+
+	public override connectedCallback(): void {
+		super.connectedCallback();
+
+		this.addEventListener(
+			'mousedown',
+			this.handleTrackMousedown,
+			{ signal: (this.abortSig = new AbortController()).signal },
+		);
+	}
+
+	public override disconnectedCallback(): void {
+		super.disconnectedCallback();
+		this.abortSig.abort();
 	}
 
 	public override afterConnectedCallback(): void {
-		super.connectedCallback();
 		this.updateScrollPosition();
 	}
 
-	public updateScrollPosition() {
+	public updateScrollPosition(): void {
 		const viewportHeight = this.offsetHeight;
-		const contentHeight = Math.max(viewportHeight, this.totalHeight);
+		const contentHeight = Math.max(viewportHeight, this.connector.totalHeight);
 
-		const viewableRatio = viewportHeight / contentHeight;    // 1/3 or 0.333333333n
-		const scrollBarArea = viewportHeight * 2 - (this.excessHeight + this.itemHeight); // 150px
+		const viewableRatio = viewportHeight / contentHeight; // 1/3 or 0.333333333n
+		const scrollBarArea = viewportHeight * 2
+			- (this.excessHeight + this.connector.itemHeight); // 150px
 		const thumbHeight = Math.max(scrollBarArea * viewableRatio, 20); // 50px
 
-		this.scrollQry.style.height = thumbHeight + 'px';
+		this.thumbQry.style.height = thumbHeight + 'px';
 
-		const top = Math.max(0, (viewportHeight - thumbHeight) / this.itemCount * this.position);
+		const top = Math.max(0, (viewportHeight - thumbHeight)
+			/ this.connector.itemCount * this.connector.position);
 
-		this.scrollQry.style.transform = `translate3d(0, ${ top }px, 0)`;
+		this.thumbQry.style.transform = `translate3d(0, ${ top }px, 0)`;
 	}
 
-	protected handleScrollMousedown(ev: MouseEvent) {
+	protected handleThumbMousedown(ev: MouseEvent): void {
 		ev.preventDefault();
+		ev.stopPropagation();
 
-		const rect = this.scrollQry.getBoundingClientRect();
+		const rect = this.thumbQry.getBoundingClientRect();
 		const offsetY = ev.y - rect.y;
 
 		const mousemove = (ev: MouseEvent) => {
-			const rect = this.scrollQry.getBoundingClientRect();
+			const rect = this.thumbQry.getBoundingClientRect();
 			const distance = ev.y - rect.y - offsetY;
 
-			const contentHeight = this.totalHeight;
+			const contentHeight = this.connector.totalHeight;
 			const viewportHeight = this.offsetHeight;
 
-			const viewableRatio = viewportHeight / contentHeight;    // 1/3 or 0.333333333n
-			const scrollBarArea = viewportHeight * 2 - (this.excessHeight); // 150px
-			const thumbHeight = scrollBarArea * viewableRatio;       // 50px
+			const viewableRatio = viewportHeight / contentHeight; // 1/3 or 0.333333333n
+			const scrollBarArea = viewportHeight * 2
+				- (this.excessHeight); // 150px
+			const thumbHeight = Math.max(scrollBarArea * viewableRatio, 20); // 50px
 
 			const scrollTrackSpace = contentHeight - viewportHeight; // (600 - 200) = 400
 			const scrollThumbSpace =  viewportHeight - thumbHeight;  // (200 - 50) = 150
-			const scrollJump = scrollTrackSpace / scrollThumbSpace;  // (400 / 150 ) = 2.666666666666667
+			const scrollJump = scrollTrackSpace / scrollThumbSpace;  // (400 / 150 ) = 2.6667
 
 			const jumpDistance = scrollJump * distance;
-			const positionChange = jumpDistance / this.itemHeight;
+			const positionChange = jumpDistance / this.connector.itemHeight;
 
-			this.position = Math.max(0, this.position + positionChange);
+			this.connector.position = Math.max(0,
+				this.connector.position + positionChange);
 		};
 
 		const mouseup = () => {
@@ -530,10 +571,22 @@ export class ScrollbarCmp extends AegisElement {
 		window.addEventListener('mouseup', mouseup);
 	}
 
+	protected handleTrackMousedown(ev: MouseEvent): void {
+		ev.preventDefault();
+
+		const hostRect = this.getBoundingClientRect();
+		const percent = calculatePercentage(ev.y, hostRect.top, hostRect.bottom);
+		const newPos = this.connector.itemCount / 100 * percent;
+
+		this.connector.position = Math.max(0, newPos);
+
+		requestAnimationFrame(() => this.handleThumbMousedown(ev));
+	}
+
 	protected override render(): unknown {
 		return html`
 		<s-scroll-thumb id="scroll"
-			@mousedown=${ this.handleScrollMousedown }
+			@mousedown=${ this.handleThumbMousedown }
 		></s-scroll-thumb>
 		`;
 	}
@@ -554,4 +607,9 @@ export class ScrollbarCmp extends AegisElement {
 }
 
 
-export const isFirefox = /Firefox/u.test(navigator.userAgent);
+const isFirefox = /Firefox/u.test(navigator.userAgent);
+
+
+const calculatePercentage = (current: number, min: number, max: number): number => {
+	return ((current - min) / (max - min)) * 100;
+};
