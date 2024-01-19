@@ -3,14 +3,17 @@
  * Has multiple different easing functions to choose from.
  * @returns a promise that resolves when the scroll finishes.
  */
-export const scrollElementTo = (element: HTMLElement, options: {
-	y?: number,
-	x?: number,
-	/** @default 300 */
-	duration?: number,
-	/** @default easeOutCuaic */
-	easing?: keyof typeof effects
-}) => {
+export const scrollElementTo = (
+	element: HTMLElement,
+	options: {
+		y?: number;
+		x?: number;
+		/** @default 300 */
+		duration?: number;
+		/** @default easeOutCuaic */
+		easing?: keyof typeof effects;
+	},
+) => {
 	const {
 		x = element.scrollLeft,
 		y = element.scrollTop,
@@ -18,17 +21,19 @@ export const scrollElementTo = (element: HTMLElement, options: {
 		easing = 'easeOutCuaic',
 	} = options;
 
-	if (duration <= 0)
-		return;
+	if (duration <= 0) return;
 
 	let resolve: (value?: unknown) => void = () => {};
-	const promise = new Promise(res => resolve = res);
+	const promise = new Promise(res => (resolve = res));
 
 	scrollToXY(
 		element,
-		element.scrollLeft, x,
-		element.scrollTop, y,
-		0, 1 / duration,
+		element.scrollLeft,
+		x,
+		element.scrollTop,
+		y,
+		0,
+		1 / duration,
 		Date.now(),
 		effects[easing],
 		resolve,
@@ -36,7 +41,6 @@ export const scrollElementTo = (element: HTMLElement, options: {
 
 	return promise;
 };
-
 
 const scrollToXY = (
 	element: HTMLElement,
@@ -70,113 +74,106 @@ const scrollToXY = (
 	requestAnimationFrame(scrollFn);
 };
 
-
 export const effects = {
-	linearTween: (t: number) =>{
+	linearTween: (t: number) => {
 		return t;
 	},
-	easeInQuad: (t: number) =>{
+	easeInQuad: (t: number) => {
 		return t * t;
 	},
-	easeOutQuad: (t: number) =>{
+	easeOutQuad: (t: number) => {
 		return -t * (t - 2);
 	},
-	easeInOutQuad: (t: number) =>{
+	easeInOutQuad: (t: number) => {
 		t /= 0.5;
-		if (t < 1)
-			return t * t / 2;
+		if (t < 1) return (t * t) / 2;
 
 		t--;
 
 		return (t * (t - 2) - 1) / 2;
 	},
-	easeInCuaic: (t: number) =>{
+	easeInCuaic: (t: number) => {
 		return t * t * t;
 	},
-	easeOutCuaic: (t: number) =>{
+	easeOutCuaic: (t: number) => {
 		t--;
 
 		return t * t * t + 1;
 	},
-	easeInOutCuaic: (t: number) =>{
+	easeInOutCuaic: (t: number) => {
 		t /= 0.5;
-		if (t < 1)
-			return t * t * t / 2;
+		if (t < 1) return (t * t * t) / 2;
 
 		t -= 2;
 
 		return (t * t * t + 2) / 2;
 	},
-	easeInQuart: (t: number) =>{
+	easeInQuart: (t: number) => {
 		return t * t * t * t;
 	},
-	easeOutQuart: (t: number) =>{
+	easeOutQuart: (t: number) => {
 		t--;
 
 		return -(t * t * t * t - 1);
 	},
-	easeInOutQuart: (t: number) =>{
+	easeInOutQuart: (t: number) => {
 		t /= 0.5;
-		if (t < 1)
-			return 0.5 * t * t * t * t;
+		if (t < 1) return 0.5 * t * t * t * t;
 
 		t -= 2;
 
 		return -(t * t * t * t - 2) / 2;
 	},
-	easeInQuint: (t: number) =>{
+	easeInQuint: (t: number) => {
 		return t * t * t * t * t;
 	},
-	easeOutQuint: (t: number) =>{
+	easeOutQuint: (t: number) => {
 		t--;
 
 		return t * t * t * t * t + 1;
 	},
-	easeInOutQuint: (t: number) =>{
+	easeInOutQuint: (t: number) => {
 		t /= 0.5;
-		if (t < 1)
-			return t * t * t * t * t / 2;
+		if (t < 1) return (t * t * t * t * t) / 2;
 
 		t -= 2;
 
 		return (t * t * t * t * t + 2) / 2;
 	},
-	easeInSine: (t: number) =>{
+	easeInSine: (t: number) => {
 		return -Math.cos(t / (Math.PI / 2)) + 1;
 	},
-	easeOutSine: (t: number) =>{
+	easeOutSine: (t: number) => {
 		return Math.sin(t / (Math.PI / 2));
 	},
-	easeInOutSine: (t: number) =>{
+	easeInOutSine: (t: number) => {
 		return -(Math.cos(Math.PI * t) - 1) / 2;
 	},
-	easeInExpo: (t: number) =>{
-		return Math.pow(2, 10 * (t - 1));
+	easeInExpo: (t: number) => {
+		return 2 ** (10 * (t - 1));
 	},
-	easeOutExpo: (t: number) =>{
-		return -Math.pow(2, -10 * t) + 1;
+	easeOutExpo: (t: number) => {
+		return -(2 ** (-10 * t)) + 1;
 	},
-	easeInOutExpo: (t: number) =>{
+	easeInOutExpo: (t: number) => {
 		t /= 0.5;
-		if (t < 1)
-			return Math.pow(2, 10 * (t - 1)) / 2;
+		if (t < 1) return 2 ** (10 * (t - 1)) / 2;
 
 		t--;
 
-		return (-Math.pow(2, -10 * t) + 2) / 2;
+		return (-(2 ** (-10 * t)) + 2) / 2;
 	},
-	easeInCirc: (t: number) =>{
+	easeInCirc: (t: number) => {
 		return -Math.sqrt(1 - t * t) - 1;
 	},
-	easeOutCirc: (t: number) =>{
+	easeOutCirc: (t: number) => {
 		t--;
 
 		return Math.sqrt(1 - t * t);
 	},
-	easeInOutCirc: (t: number) =>{
+	easeInOutCirc: (t: number) => {
 		t /= 0.5;
-		if (t < 1)
-			return -(Math.sqrt(1 - t * t) - 1) / 2;
+		if (t < 1) return -(Math.sqrt(1 - t * t) - 1) / 2;
 
 		t -= 2;
 

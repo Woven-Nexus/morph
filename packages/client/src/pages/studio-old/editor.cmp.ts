@@ -1,8 +1,8 @@
-import { consume, type ContextProp } from '@roenlie/lit-context';
-import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
+import { type ContextProp, consume } from '@roenlie/lit-context';
+import { MimicElement, customElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
-import { createRef, type Ref, ref } from 'lit/directives/ref.js';
+import { type Ref, createRef, ref } from 'lit/directives/ref.js';
 import { editor } from 'monaco-editor';
 
 import type { Module } from '../../features/code-module/module-model.js';
@@ -14,7 +14,6 @@ import type { StudioStore } from './studio-store.js';
 MonacoEditorCmp.register();
 EditorTabs.register();
 
-
 export interface EditorTab {
 	key: string;
 	module: Module;
@@ -22,20 +21,18 @@ export interface EditorTab {
 	state?: editor.ICodeEditorViewState;
 }
 
-
 @customElement('m-editor')
 export class EditorCmp extends MimicElement {
-
 	@property({ attribute: 'tab-placement', reflect: true })
-	public tabPlacement: 'none' |'top' | 'left' | 'right' = 'top';
+	public tabPlacement: 'none' | 'top' | 'left' | 'right' = 'top';
 
 	@consume('store') protected store: ContextProp<StudioStore>;
 	protected editorRef: Ref<MonacoEditorCmp> = createRef();
 
 	protected get tabs() {
-		return [ ...this.store.value.editorTabs ].map(([ , tab ]) => ({
-			key:   tab.key,
-			value: tab.module.namespace + '/' + tab.module.name,
+		return [...this.store.value.editorTabs].map(([, tab]) => ({
+			key: tab.key,
+			value: `${tab.module.namespace}/${tab.module.name}`,
 		}));
 	}
 
@@ -46,20 +43,36 @@ export class EditorCmp extends MimicElement {
 	protected handle = {
 		saveEditorState: this.saveEditorState.bind(this),
 		activeEditorTab: this.onActiveEditorTab.bind(this),
-		tabClick:        (ev: CustomEvent<string>) => {
+		tabClick: (ev: CustomEvent<string>) => {
 			this.store.value.activeModuleId = ev.detail;
 		},
 	};
 
 	public override connectedCallback() {
 		super.connectedCallback();
-		import('../../features/components/monaco/monaco-editor.cmp.js').then(m => m.MonacoEditorCmp.register());
+		import('../../features/components/monaco/monaco-editor.cmp.js').then(m =>
+			m.MonacoEditorCmp.register(),
+		);
 
-		this.store.value.connect(this, 'activeModuleId', 'editorTabs', 'activeEditorTab');
-		this.store.value.listen(this, 'activeEditorTab', this.handle.activeEditorTab);
-		this.store.value.listen(this, 'activeEditorTab', this.handle.saveEditorState, {
-			type: 'before',
-		});
+		this.store.value.connect(
+			this,
+			'activeModuleId',
+			'editorTabs',
+			'activeEditorTab',
+		);
+		this.store.value.listen(
+			this,
+			'activeEditorTab',
+			this.handle.activeEditorTab,
+		);
+		this.store.value.listen(
+			this,
+			'activeEditorTab',
+			this.handle.saveEditorState,
+			{
+				type: 'before',
+			},
+		);
 	}
 
 	public override afterConnectedCallback() {
@@ -74,8 +87,7 @@ export class EditorCmp extends MimicElement {
 	protected saveEditorState() {
 		const activeTab = this.store.value.activeEditorTab;
 		const editor = this.editorRef.value?.editor;
-		if (!activeTab || !editor)
-			return;
+		if (!activeTab || !editor) return;
 
 		activeTab.state = editor.saveViewState() ?? undefined;
 	}
@@ -83,18 +95,15 @@ export class EditorCmp extends MimicElement {
 	protected async onActiveEditorTab() {
 		const store = this.store.value;
 		const activeTab = store.activeEditorTab;
-		if (!activeTab)
-			return;
+		if (!activeTab) return;
 
 		await this.updateComplete;
 		const editorRef = this.editorRef.value;
-		if (!editorRef)
-			return;
+		if (!editorRef) return;
 
 		await editorRef.editorReady;
 		const editorInstance = editorRef?.editor;
-		if (!editorInstance)
-			return;
+		if (!editorInstance) return;
 
 		if (!activeTab.model)
 			activeTab.model = editor.createModel(activeTab.module.code, 'typescript');
@@ -117,14 +126,14 @@ export class EditorCmp extends MimicElement {
 
 		return html`
 		<m-editor-tabs
-			direction=${ direction }
-			placement=${ placement }
-			.tabs=${ this.tabs }
-			.activeTab=${ this.store.value.activeModuleId }
-			@m-tab-click=${ this.handle.tabClick }
+			direction=${direction}
+			placement=${placement}
+			.tabs=${this.tabs}
+			.activeTab=${this.store.value.activeModuleId}
+			@m-tab-click=${this.handle.tabClick}
 		></m-editor-tabs>
 
-		<monaco-editor ${ ref(this.editorRef) }
+		<monaco-editor ${ref(this.editorRef)}
 		></monaco-editor>
 		`;
 	}
@@ -166,5 +175,4 @@ export class EditorCmp extends MimicElement {
 		}
 		`,
 	];
-
 }

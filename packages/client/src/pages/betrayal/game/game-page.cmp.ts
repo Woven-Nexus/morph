@@ -17,7 +17,6 @@ import { BoardConfig } from './board-config.ts.js';
 
 DynamicStyle.register();
 
-
 interface Tile {
 	id: string;
 	row: number;
@@ -36,17 +35,11 @@ interface TileDTO {
 	img: string;
 }
 
-
 @SignalWatcher
 @customElement('m-betrayal-game')
 export class BetrayalGamePage extends MimicElement {
-
 	@query('main') protected mainEl?: HTMLElement;
-	@state() protected floor: [Tile[], Tile[], Tile[]] = [
-		[],
-		[],
-		[],
-	];
+	@state() protected floor: [Tile[], Tile[], Tile[]] = [[], [], []];
 
 	@state() protected bottomFloorTiles: Tile[] = [];
 	@state() protected firstFloorTiles: Tile[] = [];
@@ -64,16 +57,16 @@ export class BetrayalGamePage extends MimicElement {
 
 		this.socket.emit('get-tile', '', (tile: TileDTO) => {
 			this.floor[1].push({
-				column:     15,
-				row:        15,
+				column: 15,
+				row: 15,
 				connection: tile.connection,
-				floor:      1,
-				id:         domId(),
-				img:        tile.img,
-				locked:     false,
-				rotate:     0,
+				floor: 1,
+				id: domId(),
+				img: tile.img,
+				locked: false,
+				rotate: 0,
 			});
-			this.firstFloorTiles = [ ...this.firstFloorTiles ];
+			this.firstFloorTiles = [...this.firstFloorTiles];
 		});
 
 		setTimeout(() => this.boardConfig.connect(this, this.mainEl!));
@@ -85,28 +78,41 @@ export class BetrayalGamePage extends MimicElement {
 	}
 
 	protected doorLocation(con: 'top' | 'bottom' | 'left' | 'right') {
-		return con === 'top' ? {
-			gridRow:    '1/3',
-			gridColumn: '4/5',
-		} : con === 'bottom' ? {
-			gridRow:    '6/8',
-			gridColumn: '4/5',
-		} : con === 'left' ? {
-			gridRow:    '4/5',
-			gridColumn: '1/3',
-		} : con === 'right' ? {
-			gridRow:    '4/5',
-			gridColumn: '6/8',
-		} : {};
+		return con === 'top'
+			? {
+					gridRow: '1/3',
+					gridColumn: '4/5',
+			  }
+			: con === 'bottom'
+			  ? {
+						gridRow: '6/8',
+						gridColumn: '4/5',
+				  }
+			  : con === 'left'
+				  ? {
+							gridRow: '4/5',
+							gridColumn: '1/3',
+					  }
+				  : con === 'right'
+					  ? {
+								gridRow: '4/5',
+								gridColumn: '6/8',
+						  }
+					  : {};
 	}
 
 	protected isDoorConnected(tile: Tile, door: Tile['connection'][number]) {
-		const dir = [ 'left', 'top', 'right', 'bottom' ];
-		const shuffle = tile.rotate === 0 ? 0
-			: tile.rotate === 90 ? 1
-				: tile.rotate === 180 ? 2
-					: tile.rotate === 270 ? 3
-						: 0;
+		const dir = ['left', 'top', 'right', 'bottom'];
+		const shuffle =
+			tile.rotate === 0
+				? 0
+				: tile.rotate === 90
+				  ? 1
+				  : tile.rotate === 180
+					  ? 2
+					  : tile.rotate === 270
+						  ? 3
+						  : 0;
 
 		range(shuffle).forEach(() => {
 			const item = dir.pop()!;
@@ -114,80 +120,90 @@ export class BetrayalGamePage extends MimicElement {
 		});
 
 		const indexOfCon = dir.indexOf(door);
-		const checkRow = [ 0, -1, 0, 1 ];
-		const checkColumn = [ -1, 0, 1, 0 ];
+		const checkRow = [0, -1, 0, 1];
+		const checkColumn = [-1, 0, 1, 0];
 
 		const columnStart = tile.column + checkColumn[indexOfCon]!;
 		const rowStart = tile.row + checkRow[indexOfCon]!;
 
-		const doesTileExist = this.floor[tile.floor]
-			.some(tile => tile.column === columnStart && tile.row === rowStart);
+		const doesTileExist = this.floor[tile.floor].some(
+			tile => tile.column === columnStart && tile.row === rowStart,
+		);
 
 		return { doesTileExist, columnStart, rowStart };
 	}
 
 	protected Tile(tile: Tile) {
 		return html`
-		<s-tile style=${ styleMap({
-			gridRow:    tile.row + '/' + (tile.row + 1),
-			gridColumn: tile.column + '/' + (tile.column + 1),
-			transform:  'rotate(' + tile.rotate + 'deg)',
-		}) }>
-			<img src=${ tile.img }></img>
-			${ map(tile.connection, con => html`
+		<s-tile style=${styleMap({
+			gridRow: `${tile.row}/${tile.row + 1}`,
+			gridColumn: `${tile.column}/${tile.column + 1}`,
+			transform: `rotate(${tile.rotate}deg)`,
+		})}>
+			<img src=${tile.img}></img>
+			${map(
+				tile.connection,
+				con => html`
 			<s-door
-				@click=${ () => {
-					const { doesTileExist, rowStart, columnStart } = this.isDoorConnected(tile, con);
-					if (doesTileExist)
-						return;
+				@click=${() => {
+					const { doesTileExist, rowStart, columnStart } = this.isDoorConnected(
+						tile,
+						con,
+					);
+					if (doesTileExist) return;
 
 					this.socket.emit('get-tile', '', (res?: TileDTO) => {
-						if (!res)
-							return;
+						if (!res) return;
 
 						tile.locked = true;
 						this.floor[tile.floor].push({
-							row:        rowStart,
-							column:     columnStart,
-							floor:      tile.floor,
+							row: rowStart,
+							column: columnStart,
+							floor: tile.floor,
 							connection: res.connection,
-							id:         domId(),
-							img:        res.img,
-							locked:     false,
-							rotate:     0,
+							id: domId(),
+							img: res.img,
+							locked: false,
+							rotate: 0,
 						});
 
-						this.floor = [ ...this.floor ];
+						this.floor = [...this.floor];
 					});
-				} }
-				style=${ styleMap({
+				}}
+				style=${styleMap({
 					...this.doorLocation(con),
-					display: this.isDoorConnected(tile, con).doesTileExist && tile.locked ? 'none' : 'initial',
-				}) }
+					display:
+						this.isDoorConnected(tile, con).doesTileExist && tile.locked
+							? 'none'
+							: 'initial',
+				})}
 			></s-door>
-			`) }
-			${ when(!tile.locked, () => html`
+			`,
+			)}
+			${when(
+				!tile.locked,
+				() => html`
 			<s-rotate
-				@click=${ () => {
+				@click=${() => {
 					tile.rotate = (tile.rotate + 90) % 360;
 
 					this.requestUpdate();
-				} }
+				}}
 			></s-rotate>
-			`) }
+			`,
+			)}
 		</s-tile>
 		`;
 	}
 
 	protected override render() {
 		return html`
-		<dynamic-style .styles=${ this.boardConfig.styles }></dynamic-style>
+		<dynamic-style .styles=${this.boardConfig.styles}></dynamic-style>
 		<main>
-			<s-hover-tile class=${ classMap({ hide: !this.boardConfig.showHoverOutline.value }) }></s-hover-tile>
-			${ map(
-				this.floor.flat(2),
-				tile => this.Tile(tile),
-			) }
+			<s-hover-tile class=${classMap({
+				hide: !this.boardConfig.showHoverOutline.value,
+			})}></s-hover-tile>
+			${map(this.floor.flat(2), tile => this.Tile(tile))}
 		</main>
 
 		<s-tile-stack>
@@ -271,5 +287,4 @@ export class BetrayalGamePage extends MimicElement {
 		}
 		`,
 	];
-
 }

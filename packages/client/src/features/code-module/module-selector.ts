@@ -10,10 +10,8 @@ import { type DbResponse } from '../../app/response-model.js';
 import type { StudioStore } from '../../pages/studio-old/studio-store.js';
 import type { ModuleNamespace } from './namespace-model.js';
 
-
 @customElement('m-module-selector')
 export class ModuleSelectorCmp extends MimicElement {
-
 	@consume('store') protected store: ContextProp<StudioStore>;
 	@state() protected moduleList: ModuleNamespace[];
 
@@ -26,13 +24,15 @@ export class ModuleSelectorCmp extends MimicElement {
 
 	protected handleNamespace = async () => {
 		const store = this.store.value;
-		if (!store.activeNamespace)
-			return this.moduleList = [];
+		if (!store.activeNamespace) return (this.moduleList = []);
 
-		const url = new URL(serverUrl + `/api/code-modules/${ store.activeNamespace }`);
-		const [ result ] = await maybe<DbResponse<ModuleNamespace[]>>((await fetch(url)).json());
-		if (!result)
-			return;
+		const url = new URL(
+			`${serverUrl}/api/code-modules/${store.activeNamespace}`,
+		);
+		const [result] = await maybe<DbResponse<ModuleNamespace[]>>(
+			(await fetch(url)).json(),
+		);
+		if (!result) return;
 
 		this.moduleList = result.data;
 	};
@@ -40,13 +40,16 @@ export class ModuleSelectorCmp extends MimicElement {
 	protected override render(): unknown {
 		return html`
 		<ul>
-			${ map(this.moduleList, item => html`
+			${map(
+				this.moduleList,
+				item => html`
 			<li
-				@click=${ () => this.store.value.moduleId = item.module_id }
+				@click=${() => (this.store.value.moduleId = item.module_id)}
 			>
-				${ item.name }
+				${item.name}
 			</li>
-			`) }
+			`,
+			)}
 		</ul>
 		`;
 	}
@@ -66,5 +69,4 @@ export class ModuleSelectorCmp extends MimicElement {
 
 		`,
 	];
-
 }

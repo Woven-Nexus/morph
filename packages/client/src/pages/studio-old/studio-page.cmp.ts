@@ -9,10 +9,8 @@ import { StudioStore } from './studio-store.js';
 ModuleNavCmp.register();
 EditorPanel.register();
 
-
 @customElement('m-studio-page-old')
 export class StudioPageCmp extends MimicElement {
-
 	public static page = true;
 
 	@provide('store') protected store = new StudioStore();
@@ -34,5 +32,4 @@ export class StudioPageCmp extends MimicElement {
 		}
 		`,
 	];
-
 }

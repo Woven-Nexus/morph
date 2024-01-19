@@ -6,28 +6,29 @@ import type { LitElement, ReactiveController } from 'lit';
 import { roundToNearest } from '../../../app/round-to-nearest.js';
 import { scrollElementTo } from '../../../app/scroll-element-to.js';
 
-
 export class BoardConfig {
-
 	public tileSize = signal(200);
 	public boardSize = signal(30);
 	public showHoverOutline = signal(false);
 	public hoverGridRow = signal(0);
 	public hoverGridColumn = signal(0);
-	public abortController = new AbortController;
+	public abortController = new AbortController();
 	public boardHost: LitElement;
 	public board?: HTMLElement;
 
 	public get styles() {
-		if (!this.board)
-			return {};
+		if (!this.board) return {};
 
 		return {
 			[this.board.tagName.toLowerCase()]: {
-				'--_game-size':       this.boardSize.value,
-				'--_tile-size':       this.tileSize.value + 'px',
-				'--_hover-grid-top':  (this.hoverGridRow.value * this.tileSize.value) + 'px',
-				'--_hover-grid-left': (this.hoverGridColumn.value * this.tileSize.value) + 'px',
+				'--_game-size': this.boardSize.value,
+				'--_tile-size': `${this.tileSize.value}px`,
+				'--_hover-grid-top': `${
+					this.hoverGridRow.value * this.tileSize.value
+				}px`,
+				'--_hover-grid-left': `${
+					this.hoverGridColumn.value * this.tileSize.value
+				}px`,
 			},
 		};
 	}
@@ -49,25 +50,37 @@ export class BoardConfig {
 	};
 
 	protected async initialize() {
-		this.boardHost.addEventListener('wheel', this.handleZoomWheel, { signal: this.abortController.signal });
-		this.boardHost.addEventListener('mousemove', this.handleHoverOutline, { signal: this.abortController.signal });
-		this.board?.addEventListener('mousedown', this.handleGameDragToMove, { signal: this.abortController.signal });
+		this.boardHost.addEventListener('wheel', this.handleZoomWheel, {
+			signal: this.abortController.signal,
+		});
+		this.boardHost.addEventListener('mousemove', this.handleHoverOutline, {
+			signal: this.abortController.signal,
+		});
+		this.board?.addEventListener('mousedown', this.handleGameDragToMove, {
+			signal: this.abortController.signal,
+		});
 		this.boardHost.requestUpdate();
 
 		await this.boardHost.updateComplete;
-		this.boardHost.scrollTop = (this.boardHost.scrollHeight - this.boardHost.offsetHeight) / 2 - this.tileSize.value / 2;
-		this.boardHost.scrollLeft = (this.boardHost.scrollWidth - this.boardHost.offsetWidth) / 2 - this.tileSize.value / 2;
+		this.boardHost.scrollTop =
+			(this.boardHost.scrollHeight - this.boardHost.offsetHeight) / 2 -
+			this.tileSize.value / 2;
+		this.boardHost.scrollLeft =
+			(this.boardHost.scrollWidth - this.boardHost.offsetWidth) / 2 -
+			this.tileSize.value / 2;
 	}
 
 	protected handleGameDragToMove = (ev: MouseEvent) => {
 		ev.preventDefault();
-		const previousXY: [number | undefined, number | undefined] = [ undefined, undefined ];
+		const previousXY: [number | undefined, number | undefined] = [
+			undefined,
+			undefined,
+		];
 		let xDiff = 0;
 		let yDiff = 0;
 
 		const mousemove = (ev: MouseEvent) => {
-			if (ev.buttons < 1)
-				return mouseup();
+			if (ev.buttons < 1) return mouseup();
 
 			xDiff = previousXY[0] ? ev.clientX - previousXY[0] : 0;
 			yDiff = previousXY[1] ? ev.clientY - previousXY[1] : 0;
@@ -81,8 +94,8 @@ export class BoardConfig {
 
 		const mouseup = () => {
 			scrollElementTo(this.boardHost, {
-				x:        this.boardHost.scrollLeft - (xDiff * 10),
-				y:        this.boardHost.scrollTop - (yDiff * 10),
+				x: this.boardHost.scrollLeft - xDiff * 10,
+				y: this.boardHost.scrollTop - yDiff * 10,
 				duration: 300,
 			});
 
@@ -99,8 +112,7 @@ export class BoardConfig {
 	};
 
 	protected handleZoomWheel = async (ev: WheelEvent) => {
-		if (!ev.ctrlKey)
-			return;
+		if (!ev.ctrlKey) return;
 
 		ev.preventDefault();
 
@@ -109,8 +121,7 @@ export class BoardConfig {
 
 		if (ev.deltaY < 0)
 			this.tileSize.value = roundToNearest(this.tileSize.value * 1.1, 5);
-		else
-			this.tileSize.value = roundToNearest(this.tileSize.value * 0.9, 5);
+		else this.tileSize.value = roundToNearest(this.tileSize.value * 0.9, 5);
 
 		this.showHoverOutline.value = false;
 		this.debounceShowHoverOutline();
@@ -123,8 +134,7 @@ export class BoardConfig {
 
 	protected handleHoverOutline = (ev: MouseEvent) => {
 		const boardRect = this.board?.getBoundingClientRect();
-		if (!boardRect)
-			return;
+		if (!boardRect) return;
 
 		const x = ev.clientX - boardRect.x;
 		const y = ev.clientY - boardRect.y;
@@ -135,7 +145,8 @@ export class BoardConfig {
 		this.hoverGridColumn.value = columnIndex;
 	};
 
-	protected debounceShowHoverOutline = debounce(() => this.showHoverOutline.value = true, 500);
-
-
+	protected debounceShowHoverOutline = debounce(
+		() => (this.showHoverOutline.value = true),
+		500,
+	);
 }

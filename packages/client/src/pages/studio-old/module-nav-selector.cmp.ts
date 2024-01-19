@@ -1,5 +1,5 @@
-import { emitEvent, type EventOf } from '@roenlie/mimic-core/dom';
-import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
+import { type EventOf, emitEvent } from '@roenlie/mimic-core/dom';
+import { MimicElement, customElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -7,33 +7,34 @@ import { map } from 'lit/directives/map.js';
 
 import { sharedStyles } from '../../features/styles/shared-styles.js';
 
-
 @customElement('m-module-nav-selector')
 export class ModuleNavSelector extends MimicElement {
-
 	@property() public header = '';
 	@property() public activeItem = '';
-	@property({ type: Array }) protected items: { key: string; value: string; }[] = [];
+	@property({ type: Array }) protected items: { key: string; value: string }[] =
+		[];
 
 	protected override render(): unknown {
 		return html`
 		<header>
-			<span>${ this.header }</span>
+			<span>${this.header}</span>
 		</header>
 
 		<article>
-			<ul @click=${ (ev: EventOf<HTMLLIElement>) => {
-				if (!(ev.target instanceof HTMLLIElement))
-					return;
+			<ul @click=${(ev: EventOf<HTMLLIElement>) => {
+				if (!(ev.target instanceof HTMLLIElement)) return;
 
 				emitEvent(this, 'm-nav-select-key', { detail: ev.target.id });
-			} }>
-				${ map(this.items, item => html`
-				<li
-					id=${ item.key }
-					class=${ classMap({ active: this.activeItem == item.key }) }
-				>${ item.value }</li>
-				`) }
+			}}>
+				${map(
+					this.items,
+					item => html`
+					<li
+						id=${item.key}
+						class=${classMap({ active: this.activeItem === item.key })}
+					>${item.value}</li>
+					`,
+				)}
 			</ul>
 		</article>
 		`;
@@ -83,9 +84,7 @@ export class ModuleNavSelector extends MimicElement {
 		}
 		`,
 	];
-
 }
-
 
 declare global {
 	interface HTMLElementTagNameMap {

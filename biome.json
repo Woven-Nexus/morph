@@ -1,0 +1,39 @@
+{
+	"organizeImports": {
+		"enabled": true,
+		"include": [
+			"*.ts",
+			"*.js"
+		]
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"style": {
+				"noNonNullAssertion": "off"
+			}
+		},
+		"ignore": [
+			"*.json"
+		]
+	},
+	"formatter": {
+		"formatWithErrors": true
+	},
+	"javascript": {
+		"parser": {
+			"unsafeParameterDecoratorsEnabled": true
+		},
+		"formatter": {
+			"enabled": true,
+			"arrowParentheses": "asNeeded",
+			"quoteStyle": "single",
+			"bracketSpacing": true
+		}
+	},
+	"json": {
+		"formatter": {
+			"enabled": false
+		}
+	}
+}

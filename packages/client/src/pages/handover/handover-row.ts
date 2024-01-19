@@ -4,18 +4,15 @@ import { property } from 'lit/decorators.js';
 
 import { InfiniteScroller } from '../../features/infinite-scroller/infinite-scroller.js';
 
-
 @customElement('m-handover-list', true)
 export class HandoverListCmp extends AegisElement {
-
-
 	public override afterConnectedCallback(): void {
-		const scroller = this.shadowRoot!
-			.querySelector<HandoverRowScrollerCmp>('m-handover-row-scroller')!;
+		const scroller = this.shadowRoot!.querySelector<HandoverRowScrollerCmp>(
+			'm-handover-row-scroller',
+		)!;
 
 		scroller.active = true;
 	}
-
 
 	protected override render(): unknown {
 		return html`
@@ -32,13 +29,10 @@ export class HandoverListCmp extends AegisElement {
 		display: grid;
 	}
 	`;
-
 }
-
 
 @customElement('m-handover-row-scroller', true)
 export class HandoverRowScrollerCmp extends InfiniteScroller {
-
 	protected override minIndex = 0;
 	protected override maxIndex = 50;
 
@@ -46,44 +40,41 @@ export class HandoverRowScrollerCmp extends InfiniteScroller {
 		return document.createElement('m-handover-row');
 	}
 
-	protected override updateElement(element: HandoverRowCmp, index: number): void {
+	protected override updateElement(
+		element: HandoverRowCmp,
+		index: number,
+	): void {
 		if (index < this.minIndex || index > this.maxIndex) {
 			element.style.setProperty('visibility', 'hidden');
-		}
-		else {
+		} else {
 			element.style.setProperty('visibility', '');
-			element.value = '' + index;
+			element.value = String(index);
 		}
 	}
 
 	public static override styles = [
 		InfiniteScroller.styles,
 		css`
-
 		`,
 	];
-
 }
-
 
 @customElement('m-handover-row', true)
 export class HandoverRowCmp extends AegisElement {
-
 	@property() public value = '';
 
 	protected override render(): unknown {
 		return html`
-		WHAT IS THIS: ${ this.value }
-		`;
+	WHAT IS THIS: ${this.value}
+	`;
 	}
 
 	public static override styles = [
 		css`
-		:host {
-			display: grid;
-			border-bottom: 2px solid grey;
-		}
-		`,
+	:host {
+		display: grid;
+		border-bottom: 2px solid grey;
+	}
+	`,
 	];
-
 }

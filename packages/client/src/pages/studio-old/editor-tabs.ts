@@ -7,7 +7,6 @@ import { map } from 'lit/directives/map.js';
 
 import { sharedStyles } from '../../features/styles/shared-styles.js';
 
-
 /**
  * @csspart tab - the tab element.
  * @csspart tabs - container for tabs.
@@ -15,15 +14,16 @@ import { sharedStyles } from '../../features/styles/shared-styles.js';
  */
 @customElement('m-editor-tabs')
 export class EditorTabs extends MimicElement {
-
 	@property() public activeTab = '';
-	@property({ type: Array }) public tabs: {key: string, value: string}[] = [];
-	@property({ reflect: true }) public direction: 'vertical' | 'horizontal' = 'horizontal';
+	@property({ type: Array }) public tabs: { key: string; value: string }[] = [];
+	@property({ reflect: true }) public direction: 'vertical' | 'horizontal' =
+		'horizontal';
 	@property({ reflect: true }) public placement: 'start' | 'end' = 'end';
 
 	protected onTabClick(ev: EventOf) {
-		const tab = (ev.composedPath() as HTMLElement[])
-			.find(el => el.tagName === 'S-TAB');
+		const tab = (ev.composedPath() as HTMLElement[]).find(
+			el => el.tagName === 'S-TAB',
+		);
 
 		emitEvent(this, 'm-tab-click', { detail: tab?.id });
 	}
@@ -34,23 +34,27 @@ export class EditorTabs extends MimicElement {
 			part="tabs"
 			id="tabs"
 		>
-			${ map(this.tabs, ({ key, value }) => html`
+			${map(
+				this.tabs,
+				({ key, value }) => html`
 			<s-tab
 				part="tab"
-				id=${ key }
-				class=${ classMap({ active: key === this.activeTab }) }
-				@click=${ this.onTabClick }
+				id=${key}
+				class=${classMap({ active: key === this.activeTab })}
+				@click=${this.onTabClick}
 			>
-				<span>${ value }</span>
+				<span>${value}</span>
 			</s-tab>
-			`) }
+			`,
+			)}
 
 			<m-virtual-scrollbar
 				horizontal-scroll
 				direction="horizontal"
 				placement="end"
-				.reference=${ this.updateComplete
-					.then(() => this.renderRoot.querySelector('#tabs'))  }
+				.reference=${this.updateComplete.then(() =>
+					this.renderRoot.querySelector('#tabs'),
+				)}
 			></m-virtual-scrollbar>
 		</s-tabs>
 		`;
@@ -149,5 +153,4 @@ export class EditorTabs extends MimicElement {
 		}
 		`,
 	];
-
 }

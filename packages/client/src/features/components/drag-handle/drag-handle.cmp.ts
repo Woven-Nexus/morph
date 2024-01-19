@@ -3,10 +3,8 @@ import { css, html } from 'lit';
 
 import { sharedStyles } from '../../styles/shared-styles.js';
 
-
 @customElement('m-drag-handle')
 export class DragHandleCmp extends MimicElement {
-
 	protected override render(): unknown {
 		return html`
 		<s-drag-wrapper>
@@ -61,5 +59,4 @@ export class DragHandleCmp extends MimicElement {
 		}
 		`,
 	];
-
 }

@@ -1,6 +1,5 @@
 import type { ReactiveElement } from 'lit';
 
-
 /**
  * Generates a public interface type that removes private and protected fields.
  * This allows accepting otherwise compatible versions of the type (e.g. from
@@ -10,10 +9,8 @@ export type Interface<T> = {
 	[K in keyof T]: T[K];
 };
 
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Constructor<T> = new (...args: any[]) => T;
-
 
 // From the TC39 Decorators proposal
 export interface ClassDescriptor {
@@ -21,7 +18,6 @@ export interface ClassDescriptor {
 	elements: ClassElement[];
 	finisher?: <T>(clazz: Constructor<T>) => void | Constructor<T>;
 }
-
 
 // From the TC39 Decorators proposal
 export interface ClassElement {
@@ -34,7 +30,6 @@ export interface ClassElement {
 	descriptor?: PropertyDescriptor;
 }
 
-
 export const legacyPrototypeMethod = (
 	descriptor: PropertyDescriptor,
 	proto: object,
@@ -43,17 +38,15 @@ export const legacyPrototypeMethod = (
 	Object.defineProperty(proto, name, descriptor);
 };
 
-
 export const standardPrototypeMethod = (
 	descriptor: PropertyDescriptor,
 	element: ClassElement,
 ) => ({
-	kind:      'method',
+	kind: 'method',
 	placement: 'prototype',
-	key:       element.key,
+	key: element.key,
 	descriptor,
 });
-
 
 /**
  * Helper for decorating a property that is compatible with both TypeScript
@@ -67,51 +60,59 @@ export const standardPrototypeMethod = (
  * property key as an argument and returns a property descriptor to define for
  * the given property.
  */
-export const decorateProperty = ({ finisher, descriptor }: {
-	finisher?:
-	| ((ctor: typeof ReactiveElement, property: PropertyKey) => void)
-	| null;
-	descriptor?: (property: PropertyKey) => PropertyDescriptor;
-}) => (
-	protoOrDescriptor: Interface<ReactiveElement> | ClassElement,
-	name?: PropertyKey,
-	// Note TypeScript requires the return type to be `void|any`
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-): void | any => {
-	// TypeScript / Babel legacy mode
-	if (name !== undefined) {
-		const ctor = (protoOrDescriptor as ReactiveElement)
-			.constructor as typeof ReactiveElement;
-		if (descriptor !== undefined)
-			Object.defineProperty(protoOrDescriptor, name, descriptor(name));
+export const decorateProperty =
+	({
+		finisher,
+		descriptor,
+	}: {
+		finisher?:
+			| ((ctor: typeof ReactiveElement, property: PropertyKey) => void)
+			| null;
+		descriptor?: (property: PropertyKey) => PropertyDescriptor;
+	}) =>
+	(
+		protoOrDescriptor: Interface<ReactiveElement> | ClassElement,
+		name?: PropertyKey,
+		// Note TypeScript requires the return type to be `void|any`
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	): void | any => {
+		// TypeScript / Babel legacy mode
+		if (name !== undefined) {
+			const ctor = (protoOrDescriptor as ReactiveElement)
+				.constructor as typeof ReactiveElement;
+			if (descriptor !== undefined)
+				Object.defineProperty(protoOrDescriptor, name, descriptor(name));
 
-		finisher?.(ctor, name!);
-		// Babel standard mode
-	}
-	else {
-		// Note, the @property decorator saves `key` as `originalKey`
-		// so try to use it here.
-		const key = (protoOrDescriptor as any).originalKey
-			?? (protoOrDescriptor as ClassElement).key;
+			finisher?.(ctor, name!);
+			// Babel standard mode
+		} else {
+			// Note, the @property decorator saves `key` as `originalKey`
+			// so try to use it here.
+			const key =
+				(protoOrDescriptor as any).originalKey ??
+				(protoOrDescriptor as ClassElement).key;
 
-		const info: ClassElement = descriptor != undefined
-			? {
-				kind:       'method',
-				placement:  'prototype',
-				key,
-				descriptor: descriptor((protoOrDescriptor as ClassElement).key),
+			const info: ClassElement =
+				descriptor !== undefined
+					? {
+							kind: 'method',
+							placement: 'prototype',
+							key,
+							descriptor: descriptor((protoOrDescriptor as ClassElement).key),
+					  }
+					: {
+							...(protoOrDescriptor as ClassElement),
+							key,
+					  };
+
+			if (finisher !== undefined) {
+				info.finisher = <ReactiveElement>(
+					ctor: Constructor<ReactiveElement>,
+				) => {
+					finisher(ctor as unknown as typeof ReactiveElement, key);
+				};
 			}
-			: {
-				...(protoOrDescriptor as ClassElement),
-				key,
-			};
 
-		if (finisher != undefined) {
-			info.finisher = function<ReactiveElement>(ctor: Constructor<ReactiveElement>) {
-				finisher(ctor as unknown as typeof ReactiveElement, key);
-			};
+			return info;
 		}
-
-		return info;
-	}
-};
+	};

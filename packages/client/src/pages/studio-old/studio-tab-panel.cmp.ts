@@ -4,14 +4,11 @@ import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { queryAssignedElements } from 'lit/decorators.js';
 
-
 MMIcon.register();
 MMButton.register();
 
-
 @customElement('m-studio-tab-panel')
 export class StudioTabPanel extends MimicElement {
-
 	@queryAssignedElements({ slot: 'tab' }) protected tabs: HTMLElement[];
 
 	public override connectedCallback(): void {
@@ -127,5 +124,4 @@ export class StudioTabPanel extends MimicElement {
 		}
 		`,
 	];
-
 }

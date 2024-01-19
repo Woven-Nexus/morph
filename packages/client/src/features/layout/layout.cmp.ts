@@ -5,10 +5,8 @@ import { NavbarCmp } from './navbar.cmp.js';
 
 NavbarCmp.register();
 
-
 @customElement('app-layout')
 export class AppLayoutCmp extends MimicElement {
-
 	public static page = true;
 
 	protected override render(): unknown {
@@ -29,5 +27,4 @@ export class AppLayoutCmp extends MimicElement {
 		}
 		`,
 	];
-
 }

@@ -3,29 +3,19 @@
 	"editor.guides.bracketPairs": "active",
 	"editor.formatOnSave": true,
 	"editor.codeActionsOnSave": {
-		"source.fixAll.eslint": "explicit"
+		"source.organizeImports.biome": "explicit",
+		"quickfix.biome": "explicit"
 	},
 	"editor.detectIndentation": false,
 	"editor.insertSpaces": false,
-	"eslint.run": "onSave",
-	"eslint.useESLintClass": true,
-	"eslint.format.enable": true,
-	"eslint.validate": [
-		"javascript",
-		"typescript",
-	],
-	"prettier.enable": false,
 	"[typescript]": {
-		"editor.defaultFormatter": "dbaeumer.vscode-eslint"
+		"editor.defaultFormatter": "biomejs.biome"
 	},
-	"typescript.format.insertSpaceAfterTypeAssertion": true,
-	"typescript.format.semicolons": "insert",
-	"typescript.preferences.importModuleSpecifier": "project-relative",
-	"typescript.preferences.quoteStyle": "single",
 	"typescript.updateImportsOnFileMove.enabled": "always",
-	"javascript.preferences.importModuleSpecifierEnding": "js",
+	"typescript.preferences.importModuleSpecifier": "project-relative",
 	"typescript.preferences.importModuleSpecifierEnding": "js",
 	"typescript.tsdk": "node_modules\\typescript\\lib",
+	"peacock.color": "rgb(30,30,30)",
 	"workbench.colorCustomizations": {
 		"activityBar.activeBackground": "#373737",
 		"activityBar.background": "#373737",
@@ -45,8 +35,7 @@
 		"titleBar.inactiveBackground": "#1e1e1e99",
 		"titleBar.inactiveForeground": "#e7e7e799"
 	},
-	"peacock.color": "rgb(30,30,30)",
-	"restoreTerminals.runOnStartup": true,
+	"restoreTerminals.runOnStartup": false,
 	"restoreTerminals.terminals": [
 		{
 			"splitTerminals": [

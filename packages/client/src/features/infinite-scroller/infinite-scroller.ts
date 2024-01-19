@@ -1,11 +1,16 @@
-import { AegisElement, customElement, query, queryId } from '@roenlie/lit-aegis';
+import {
+	AegisElement,
+	customElement,
+	query,
+	queryId,
+} from '@roenlie/lit-aegis';
 import { debounce, withDebounce } from '@roenlie/mimic-core/timing';
-import { css, type CSSResultGroup, html } from 'lit';
+import type { RecordOf } from '@roenlie/mimic-core/types';
+import { type CSSResultGroup, css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { until } from 'lit/directives/until.js';
 import { when } from 'lit/directives/when.js';
-
 
 interface BufferElement extends HTMLElement {
 	translateY: number;
@@ -13,22 +18,16 @@ interface BufferElement extends HTMLElement {
 	children: HTMLCollectionOf<SlotElement>;
 }
 
-
 interface SlotElement extends HTMLSlotElement {
 	_itemWrapper: ItemWrapperElement;
 }
 
-
 interface ItemWrapperElement extends HTMLDivElement {
-	instance: HTMLElement & Record<PropertyKey, any>;
+	instance: HTMLElement & Record<PropertyKey, unknown>;
 }
 
-
 // TODO, Make the minimum buffer change depending on available space.
-
-
 export abstract class InfiniteScroller extends AegisElement {
-
 	@queryId('scroller') protected scrollerQry: HTMLElement;
 	@queryId('fullHeight') protected fullHeightQry: HTMLElement;
 	@query('infinite-scroller-scrollbar') protected scrollbarQry: ScrollbarCmp;
@@ -76,8 +75,12 @@ export abstract class InfiniteScroller extends AegisElement {
 	}, 200);
 
 	protected debounceBlockScroll = withDebounce(
-		() => { this.scrollerQry.style.setProperty('overflow', 'hidden'); },
-		() => { this.scrollerQry.style.removeProperty('overflow'); },
+		() => {
+			this.scrollerQry.style.setProperty('overflow', 'hidden');
+		},
+		() => {
+			this.scrollerQry.style.removeProperty('overflow');
+		},
 		100,
 	);
 
@@ -94,8 +97,7 @@ export abstract class InfiniteScroller extends AegisElement {
 
 	protected get showScrollbar() {
 		const itemCount = (this.maxIndex ?? 0) - (this.minIndex ?? 0);
-		if (!itemCount)
-			return;
+		if (!itemCount) return false;
 
 		const availableSpace = this.offsetHeight;
 		const usedSpace = this.itemHeight * (itemCount + 1);
@@ -105,10 +107,11 @@ export abstract class InfiniteScroller extends AegisElement {
 
 	/** This must be set to true for the scroller to initialized. */
 	#active = false;
-	public get active(): boolean { return this.#active; }
+	public get active(): boolean {
+		return this.#active;
+	}
 	public set active(active) {
-		if (this.#active || !active)
-			return;
+		if (this.#active || !active) return;
 
 		this.createPool();
 		this.#active = true;
@@ -121,13 +124,18 @@ export abstract class InfiniteScroller extends AegisElement {
 	#itemHeight = 0;
 	public get itemHeight(): number {
 		if (!this.#itemHeight && this.fullHeightQry) {
-			const itemHeight = getComputedStyle(this)
-				.getPropertyValue('--_infinite-scroller-item-height');
+			const itemHeight = getComputedStyle(this).getPropertyValue(
+				'--_infinite-scroller-item-height',
+			);
 
 			// Use background-position temp inline style for unit conversion
 			const tmpStyleProp = 'background-position';
 			this.fullHeightQry.style.setProperty(tmpStyleProp, itemHeight);
-			const itemHeightPx = getComputedStyle(this.fullHeightQry).getPropertyValue(tmpStyleProp);
+
+			const itemHeightPx = getComputedStyle(
+				this.fullHeightQry,
+			).getPropertyValue(tmpStyleProp);
+
 			this.fullHeightQry.style.removeProperty(tmpStyleProp);
 			this.#itemHeight = parseFloat(itemHeightPx);
 		}
@@ -146,19 +154,24 @@ export abstract class InfiniteScroller extends AegisElement {
 	}
 
 	public get position(): number {
-		return (this.scrollerQry.scrollTop - this.buffers[0].translateY)
-			/ this.itemHeight + this.firstIndex;
+		return (
+			(this.scrollerQry.scrollTop - this.buffers[0].translateY) /
+				this.itemHeight +
+			this.firstIndex
+		);
 	}
 
 	/** Current scroller position as index. Can be a fractional number. */
 	public set position(index: number) {
 		this.preventScrollEvent = true;
-		if (index > this.firstIndex && index < this.firstIndex + this.bufferSize * 2) {
-			this.scrollerQry.scrollTop = this.itemHeight
-				* (index - this.firstIndex)
-				+ this.buffers[0].translateY;
-		}
-		else {
+		if (
+			index > this.firstIndex &&
+			index < this.firstIndex + this.bufferSize * 2
+		) {
+			this.scrollerQry.scrollTop =
+				this.itemHeight * (index - this.firstIndex) +
+				this.buffers[0].translateY;
+		} else {
 			this.initialIndex = ~~index;
 			this.reset();
 			this.scrollDisabled = true;
@@ -190,15 +203,15 @@ export abstract class InfiniteScroller extends AegisElement {
 		super.firstUpdated(props);
 
 		const bufferEls = this.shadowRoot!.querySelectorAll('.buffer');
-		this.buffers = [ ...bufferEls ] as typeof this.buffers;
-		this.fullHeightQry.style.height = `${ this.initialScroll * 2 }px`;
-		this.scrollerQry.addEventListener('scroll',
-			this.handleScroll.bind(this), { passive: true });
+		this.buffers = [...bufferEls] as typeof this.buffers;
+		this.fullHeightQry.style.height = `${this.initialScroll * 2}px`;
+		this.scrollerQry.addEventListener('scroll', this.handleScroll.bind(this), {
+			passive: true,
+		});
 
 		// Firefox interprets elements with overflow:auto as focusable
 		// https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
-		if (isFirefox)
-			this.scrollerQry.tabIndex = -1;
+		if (isFirefox) this.scrollerQry.tabIndex = -1;
 	}
 
 	protected createPool() {
@@ -207,11 +220,11 @@ export abstract class InfiniteScroller extends AegisElement {
 
 		for (const buffer of this.buffers) {
 			for (let i = 0; i < this.bufferSize; i++) {
-				const slotName = `infinite-scroller-item-content-${ id++ }`;
+				const slotName = `infinite-scroller-item-content-${id++}`;
 
 				const itemWrapper = document.createElement('div') as ItemWrapperElement;
 				itemWrapper.setAttribute('slot', slotName);
-				itemWrapper.instance = {} as HTMLElement;
+				itemWrapper.instance = {} as RecordOf<HTMLElement>;
 
 				const slot = document.createElement('slot') as SlotElement;
 				slot._itemWrapper = itemWrapper;
@@ -230,8 +243,7 @@ export abstract class InfiniteScroller extends AegisElement {
 	}
 
 	protected ensureStampedInstance(itemWrapper: ItemWrapperElement) {
-		if (itemWrapper.firstElementChild)
-			return;
+		if (itemWrapper.firstElementChild) return;
 
 		const tmpInstance = itemWrapper.instance;
 
@@ -244,8 +256,7 @@ export abstract class InfiniteScroller extends AegisElement {
 	}
 
 	protected finishInit() {
-		if (this.initDone)
-			return;
+		if (this.initDone) return;
 
 		// Once the first set of items start fading in, stamp the rest
 		for (const buffer of this.buffers) {
@@ -253,8 +264,7 @@ export abstract class InfiniteScroller extends AegisElement {
 				this.ensureStampedInstance(slot._itemWrapper);
 		}
 
-		if (!this.buffers[0].translateY)
-			this.reset();
+		if (!this.buffers[0].translateY) this.reset();
 
 		this.initDone = true;
 		this.dispatchEvent(new CustomEvent('init-done'));
@@ -269,14 +279,15 @@ export abstract class InfiniteScroller extends AegisElement {
 		this.debounceUpdateClones.cancel();
 	}
 
-	protected abstract createElement(): HTMLElement
-	protected abstract updateElement(element: HTMLElement, index: number): void
-
+	protected abstract createElement(): RecordOf<HTMLElement>;
+	protected abstract updateElement(element: HTMLElement, index: number): void;
 
 	protected translateBuffer(up: boolean) {
 		const index = up ? 1 : 0;
-		this.buffers[index].translateY = this.buffers[up ? 0 : 1].translateY + this.bufferHeight * (up ? -1 : 1);
-		this.buffers[index].style.transform = `translate3d(0, ${ this.buffers[index].translateY }px, 0)`;
+		this.buffers[index].translateY =
+			this.buffers[up ? 0 : 1].translateY + this.bufferHeight * (up ? -1 : 1);
+		this.buffers[index].style.transform =
+			`translate3d(0, ${this.buffers[index].translateY}px, 0)`;
 		this.buffers[index].updated = false;
 		this.buffers.reverse();
 	}
@@ -292,8 +303,7 @@ export abstract class InfiniteScroller extends AegisElement {
 			this.scrollbarQry.updateScrollPosition();
 		}
 
-		if (this.scrollDisabled)
-			return;
+		if (this.scrollDisabled) return;
 
 		if (this.minIndex !== undefined) {
 			if (this.position < this.minIndex) {
@@ -312,7 +322,10 @@ export abstract class InfiniteScroller extends AegisElement {
 		}
 
 		const scrollTop = this.scrollerQry.scrollTop;
-		if (scrollTop < this.bufferHeight || scrollTop > this.initialScroll * 2 - this.bufferHeight) {
+		if (
+			scrollTop < this.bufferHeight ||
+			scrollTop > this.initialScroll * 2 - this.bufferHeight
+		) {
 			// Scrolled near the end/beginning of the scrollable area -> reset.
 			// ~~ is a double Bitwise NOT operator.
 			// It is used as a faster substitute for Math.floor() for positive numbers.
@@ -322,8 +335,10 @@ export abstract class InfiniteScroller extends AegisElement {
 
 		// Check if we scrolled enough to translate the buffer positions.
 		const offset = this.itemHeight + this.bufferOffset;
-		const upperThresholdReached = scrollTop > this.buffers[1].translateY + offset;
-		const lowerThresholdReached = scrollTop < this.buffers[0].translateY + offset;
+		const upperThresholdReached =
+			scrollTop > this.buffers[1].translateY + offset;
+		const lowerThresholdReached =
+			scrollTop < this.buffers[0].translateY + offset;
 
 		if (upperThresholdReached || lowerThresholdReached) {
 			this.translateBuffer(lowerThresholdReached);
@@ -331,7 +346,9 @@ export abstract class InfiniteScroller extends AegisElement {
 		}
 
 		if (!this.preventScrollEvent) {
-			this.dispatchEvent(new CustomEvent('custom-scroll', { bubbles: false, composed: true }));
+			this.dispatchEvent(
+				new CustomEvent('custom-scroll', { bubbles: false, composed: true }),
+			);
 			this.mayHaveMomentum = true;
 		}
 
@@ -347,7 +364,7 @@ export abstract class InfiniteScroller extends AegisElement {
 		this.buffers[1].translateY = this.initialScroll;
 
 		for (const buffer of this.buffers)
-			buffer.style.transform = `translate3d(0, ${ buffer.translateY }px, 0)`;
+			buffer.style.transform = `translate3d(0, ${buffer.translateY}px, 0)`;
 
 		this.buffers[0].updated = false;
 		this.buffers[1].updated = false;
@@ -359,8 +376,9 @@ export abstract class InfiniteScroller extends AegisElement {
 	}
 
 	protected updateClones(viewPortOnly?: boolean) {
-		this.firstIndex = ~~((this.buffers[0].translateY - this.initialScroll) / this.itemHeight)
-			+ this.initialIndex;
+		this.firstIndex =
+			~~((this.buffers[0].translateY - this.initialScroll) / this.itemHeight) +
+			this.initialIndex;
 
 		const scrollerRect = viewPortOnly
 			? this.scrollerQry.getBoundingClientRect()
@@ -368,8 +386,7 @@ export abstract class InfiniteScroller extends AegisElement {
 
 		for (let i = 0; i < this.buffers.length; i++) {
 			const buffer = this.buffers[i]!;
-			if (buffer.updated)
-				continue;
+			if (buffer.updated) continue;
 
 			const firstIndex = this.firstIndex + this.bufferSize * i;
 
@@ -377,7 +394,10 @@ export abstract class InfiniteScroller extends AegisElement {
 				const slot = buffer.children[i]!;
 
 				const itemWrapper = slot._itemWrapper;
-				if (!viewPortOnly || scrollerRect && this.isVisible(itemWrapper, scrollerRect))
+				if (
+					!viewPortOnly ||
+					(scrollerRect && this.isVisible(itemWrapper, scrollerRect))
+				)
 					this.updateElement(itemWrapper.instance, firstIndex + i);
 			}
 
@@ -398,14 +418,16 @@ export abstract class InfiniteScroller extends AegisElement {
 				get: () => this.totalHeight,
 			},
 			itemCount: {
-				get: () => ((this.maxIndex ?? 0) - (this.minIndex ?? 0)),
+				get: () => (this.maxIndex ?? 0) - (this.minIndex ?? 0),
 			},
 			itemHeight: {
 				get: () => this.itemHeight,
 			},
 			position: {
 				get: () => this.position,
-				set: (v: number) => void (this.position = v),
+				set: (v: number) => {
+					this.position = v;
+				},
 			},
 		});
 
@@ -413,7 +435,7 @@ export abstract class InfiniteScroller extends AegisElement {
 			readonly totalHeight: number;
 			readonly itemCount: number;
 			readonly itemHeight: number;
-			position: number
+			position: number;
 		};
 	})();
 
@@ -425,12 +447,19 @@ export abstract class InfiniteScroller extends AegisElement {
 			<div id="fullHeight"></div>
 		</div>
 
-		${ until(this.updateComplete.then(() => when(this.useScrollbar, () => html`
-		<infinite-scroller-scrollbar
-			style=${ styleMap({ display: this.showScrollbar ? '' : 'none' }) }
-			.connector=${ this.scrollerProps }
-		></infinite-scroller-scrollbar>
-		`))) }
+		${until(
+			this.updateComplete.then(() =>
+				when(
+					this.useScrollbar,
+					() => html`
+					<infinite-scroller-scrollbar
+						style=${styleMap({ display: this.showScrollbar ? '' : 'none' })}
+						.connector=${this.scrollerProps}
+					></infinite-scroller-scrollbar>
+					`,
+				),
+			),
+		)}
 		`;
 	}
 
@@ -475,35 +504,32 @@ export abstract class InfiniteScroller extends AegisElement {
 			to { opacity: 1; }
 		}
 	`;
-
 }
-
 
 @customElement('infinite-scroller-scrollbar', true)
 export class ScrollbarCmp extends AegisElement {
-
 	@property({ type: Object }) public connector: {
 		readonly totalHeight: number;
 		readonly itemCount: number;
 		readonly itemHeight: number;
-		position: number
+		position: number;
 	};
-
 	@queryId('scroll', true) protected thumbQry: HTMLElement;
 	protected abortSig: AbortController;
 	protected get excessHeight() {
-		return (this.offsetHeight / this.connector.itemHeight)
-			* this.connector.itemHeight;
+		return (
+			(this.offsetHeight / this.connector.itemHeight) *
+			this.connector.itemHeight
+		);
 	}
 
 	public override connectedCallback(): void {
 		super.connectedCallback();
 
-		this.addEventListener(
-			'mousedown',
-			this.handleTrackMousedown,
-			{ signal: (this.abortSig = new AbortController()).signal },
-		);
+		this.abortSig = new AbortController();
+		this.addEventListener('mousedown', this.handleTrackMousedown, {
+			signal: this.abortSig.signal,
+		});
 	}
 
 	public override disconnectedCallback(): void {
@@ -520,16 +546,19 @@ export class ScrollbarCmp extends AegisElement {
 		const contentHeight = Math.max(viewportHeight, this.connector.totalHeight);
 
 		const viewableRatio = viewportHeight / contentHeight; // 1/3 or 0.333333333n
-		const scrollBarArea = viewportHeight * 2
-			- (this.excessHeight + this.connector.itemHeight); // 150px
+		const scrollBarArea =
+			viewportHeight * 2 - (this.excessHeight + this.connector.itemHeight); // 150px
 		const thumbHeight = Math.max(scrollBarArea * viewableRatio, 20); // 50px
 
-		this.thumbQry.style.height = thumbHeight + 'px';
+		this.thumbQry.style.height = `${thumbHeight}px`;
 
-		const top = Math.max(0, (viewportHeight - thumbHeight)
-			/ this.connector.itemCount * this.connector.position);
+		const top = Math.max(
+			0,
+			((viewportHeight - thumbHeight) / this.connector.itemCount) *
+				this.connector.position,
+		);
 
-		this.thumbQry.style.transform = `translate3d(0, ${ top }px, 0)`;
+		this.thumbQry.style.transform = `translate3d(0, ${top}px, 0)`;
 	}
 
 	protected handleThumbMousedown(ev: MouseEvent): void {
@@ -547,19 +576,20 @@ export class ScrollbarCmp extends AegisElement {
 			const viewportHeight = this.offsetHeight;
 
 			const viewableRatio = viewportHeight / contentHeight; // 1/3 or 0.333333333n
-			const scrollBarArea = viewportHeight * 2
-				- (this.excessHeight); // 150px
+			const scrollBarArea = viewportHeight * 2 - this.excessHeight; // 150px
 			const thumbHeight = Math.max(scrollBarArea * viewableRatio, 20); // 50px
 
 			const scrollTrackSpace = contentHeight - viewportHeight; // (600 - 200) = 400
-			const scrollThumbSpace =  viewportHeight - thumbHeight;  // (200 - 50) = 150
-			const scrollJump = scrollTrackSpace / scrollThumbSpace;  // (400 / 150 ) = 2.6667
+			const scrollThumbSpace = viewportHeight - thumbHeight; // (200 - 50) = 150
+			const scrollJump = scrollTrackSpace / scrollThumbSpace; // (400 / 150 ) = 2.6667
 
 			const jumpDistance = scrollJump * distance;
 			const positionChange = jumpDistance / this.connector.itemHeight;
 
-			this.connector.position = Math.max(0,
-				this.connector.position + positionChange);
+			this.connector.position = Math.max(
+				0,
+				this.connector.position + positionChange,
+			);
 		};
 
 		const mouseup = () => {
@@ -576,7 +606,7 @@ export class ScrollbarCmp extends AegisElement {
 
 		const hostRect = this.getBoundingClientRect();
 		const percent = calculatePercentage(ev.y, hostRect.top, hostRect.bottom);
-		const newPos = this.connector.itemCount / 100 * percent;
+		const newPos = (this.connector.itemCount / 100) * percent;
 
 		this.connector.position = Math.max(0, newPos);
 
@@ -586,7 +616,7 @@ export class ScrollbarCmp extends AegisElement {
 	protected override render(): unknown {
 		return html`
 		<s-scroll-thumb id="scroll"
-			@mousedown=${ this.handleThumbMousedown }
+			@mousedown=${this.handleThumbMousedown}
 		></s-scroll-thumb>
 		`;
 	}
@@ -603,13 +633,12 @@ export class ScrollbarCmp extends AegisElement {
 		background-color: var(--_infinite-scroller-thumb);
 	}
 	`;
-
 }
-
 
 const isFirefox = /Firefox/u.test(navigator.userAgent);
 
-
-const calculatePercentage = (current: number, min: number, max: number): number => {
-	return ((current - min) / (max - min)) * 100;
-};
+const calculatePercentage = (
+	current: number,
+	min: number,
+	max: number,
+): number => ((current - min) / (max - min)) * 100;

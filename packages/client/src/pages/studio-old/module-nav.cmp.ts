@@ -8,10 +8,8 @@ import { ModuleNavSelector } from './module-nav-selector.cmp.js';
 DragHandleCmp.register();
 ModuleNavSelector.register();
 
-
 @customElement('m-module-nav')
 export class ModuleNavCmp extends MimicElement {
-
 	protected override render(): unknown {
 		return html`
 		<m-module-nav-selector header="Namespaces"></m-module-nav-selector>
@@ -38,5 +36,4 @@ export class ModuleNavCmp extends MimicElement {
 		}
 		`,
 	];
-
 }
