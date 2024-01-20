@@ -1,0 +1,16 @@
+<mxfile host="65bd71144e">
+    <diagram id="RP7HvWYkb5BIIkOAytqQ" name="Page-1">
+        <mxGraphModel dx="766" dy="379" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="#9C9C9C" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="Forge" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=16;fontColor=#000000;" vertex="1" parent="1">
+                    <mxGeometry x="44" y="40" width="120" height="21" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="create pages&lt;br style=&quot;font-size: 14px;&quot;&gt;each page has certain layout options&lt;br style=&quot;font-size: 14px;&quot;&gt;code can be written either in the page, modules or in components&lt;br style=&quot;font-size: 14px;&quot;&gt;modules are self contained pieces of code which can import and export functionality from other modules.&lt;br style=&quot;font-size: 14px;&quot;&gt;components are semi-standalone GUI elements that can be reused in pages or other components.&lt;br&gt;&lt;br&gt;a page can insert other pages inside itself.&lt;br&gt;a page can be opened in a dialog.&lt;br&gt;&lt;br&gt;pages and components have a visual template editor, as well as panels for writing css and typescript.&lt;br&gt;&lt;br&gt;while in editing mode, application is running through vite, which gives it all of the nice rerendering features.&lt;br&gt;application is not meant to be an online editor.&lt;br&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=14;fontColor=#000000;" vertex="1" parent="1">
+                    <mxGeometry x="44" y="61" width="686" height="280" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

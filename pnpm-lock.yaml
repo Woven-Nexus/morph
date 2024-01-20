@@ -97,6 +97,12 @@ importers:
         specifier: ^1.0.3
         version: 1.0.3(@types/node@20.10.8)
 
+  packages/forge:
+    dependencies:
+      lit:
+        specifier: ^3.1.0
+        version: 3.1.1
+
   packages/html-module-plugin:
     dependencies:
       '@parse5/tools':

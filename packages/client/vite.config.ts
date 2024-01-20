@@ -38,12 +38,12 @@ export default defineConfig({
 							? path!.split('/').slice(2).join('/')
 							: path!.split('/').slice(1).join('/');
 
-						const newName = [ 'node_modules', newVersion, newPath ].join('/') + '.js';
+						const newName = `${['node_modules', newVersion, newPath].join('/')}.js`;
 
 						return newName;
 					}
 
-					return name + '.js';
+					return `${name}.js`;
 				},
 
 				/** We remove src from any module paths to preserve the folder

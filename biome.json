@@ -15,6 +15,11 @@
 			},
 			"suspicious": {
 				"noExplicitAny": "off"
+			},
+			"complexity": {
+				"noForEach": "off",
+				"noThisInStatic": "off",
+				"noStaticOnlyClass": "off"
 			}
 		},
 		"ignore": [
