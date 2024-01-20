@@ -145,8 +145,7 @@ export class BoardConfig {
 		this.hoverGridColumn.value = columnIndex;
 	};
 
-	protected debounceShowHoverOutline = debounce(
-		() => (this.showHoverOutline.value = true),
-		500,
-	);
+	protected debounceShowHoverOutline = debounce(() => {
+		this.showHoverOutline.value = true;
+	}, 500);
 }

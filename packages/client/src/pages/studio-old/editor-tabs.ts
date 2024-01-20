@@ -1,5 +1,5 @@
-import { emitEvent, type EventOf } from '@roenlie/mimic-core/dom';
-import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
+import { type EventOf, emitEvent } from '@roenlie/mimic-core/dom';
+import { MimicElement, customElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';

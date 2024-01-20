@@ -16,7 +16,7 @@ export type Constructor<T> = new (...args: any[]) => T;
 export interface ClassDescriptor {
 	kind: 'class';
 	elements: ClassElement[];
-	finisher?: <T>(clazz: Constructor<T>) => void | Constructor<T>;
+	finisher?: <T>(clazz: Constructor<T>) => undefined | Constructor<T>;
 }
 
 // From the TC39 Decorators proposal
@@ -24,9 +24,9 @@ export interface ClassElement {
 	kind: 'field' | 'method';
 	key: PropertyKey;
 	placement: 'static' | 'prototype' | 'own';
-	initializer?: Function;
+	initializer?: (...args: any[]) => any;
 	extras?: ClassElement[];
-	finisher?: <T>(clazz: Constructor<T>) => void | Constructor<T>;
+	finisher?: <T>(clazz: Constructor<T>) => undefined | Constructor<T>;
 	descriptor?: PropertyDescriptor;
 }
 
@@ -75,7 +75,7 @@ export const decorateProperty =
 		name?: PropertyKey,
 		// Note TypeScript requires the return type to be `void|any`
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	): void | any => {
+	): any => {
 		// TypeScript / Babel legacy mode
 		if (name !== undefined) {
 			const ctor = (protoOrDescriptor as ReactiveElement)
@@ -108,8 +108,8 @@ export const decorateProperty =
 			if (finisher !== undefined) {
 				info.finisher = <ReactiveElement>(
 					ctor: Constructor<ReactiveElement>,
-				) => {
-					finisher(ctor as unknown as typeof ReactiveElement, key);
+				): undefined => {
+					finisher!(ctor as unknown as typeof ReactiveElement, key);
 				};
 			}
 

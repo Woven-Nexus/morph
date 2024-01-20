@@ -18,7 +18,9 @@ export class NavbarCmp extends AegisElement {
 		return html`
 		<s-nav-container class=${classMap({ active: this.expanded })}>
 			<button
-				@click=${() => (this.expanded = !this.expanded)}
+				@click=${() => {
+					this.expanded = !this.expanded;
+				}}
 			>
 				${when(
 					this.expanded,

@@ -1,7 +1,7 @@
 import { SignalWatcher } from '@lit-labs/preact-signals';
 import { range } from '@roenlie/mimic-core/array';
 import { domId } from '@roenlie/mimic-core/dom';
-import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
+import { MimicElement, customElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -10,12 +10,9 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { when } from 'lit/directives/when.js';
 import { Socket } from 'socket.io-client';
 
-import { DynamicStyle } from '../../../features/components/dynamic-style/dynamic-style.cmp.js';
 import { manager } from '../../../features/socketio/manager.js';
 import { sharedStyles } from '../../../features/styles/shared-styles.js';
 import { BoardConfig } from './board-config.ts.js';
-
-DynamicStyle.register();
 
 interface Tile {
 	id: string;
@@ -114,10 +111,10 @@ export class BetrayalGamePage extends MimicElement {
 						  ? 3
 						  : 0;
 
-		range(shuffle).forEach(() => {
+		for (const _ of range(shuffle)) {
 			const item = dir.pop()!;
 			dir.unshift(item);
-		});
+		}
 
 		const indexOfCon = dir.indexOf(door);
 		const checkRow = [0, -1, 0, 1];

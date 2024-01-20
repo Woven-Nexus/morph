@@ -139,7 +139,10 @@ export class EditorPanel extends MimicElement {
 
 		// Create tab as it does not exist.
 		const existingTab = store.editorTabs.get(activeId);
-		if (existingTab) return void (store.activeEditorTab = existingTab);
+		if (existingTab) {
+			store.activeEditorTab = existingTab;
+			return;
+		}
 
 		const namespace = store.activeNamespace;
 		if (!namespace) return;
@@ -148,7 +151,10 @@ export class EditorPanel extends MimicElement {
 			`${serverUrl}/api/code-modules/${namespace}/${activeId}`,
 		);
 		const [result] = await maybe<DbResponse<Module>>((await fetch(url)).json());
-		if (!result) return void (store.activeModuleId = '');
+		if (!result) {
+			store.activeModuleId = '';
+			return;
+		}
 
 		const tab: EditorTab = {
 			key: activeId,
@@ -218,7 +224,9 @@ export class EditorPanel extends MimicElement {
 			<s-tab
 				slot="tab"
 				class=${classMap({ active: this.activeTab === tab })}
-				@click=${() => (this.activeTab = tab)}
+				@click=${() => {
+					this.activeTab = tab;
+				}}
 			>
 				${tab}
 			</s-tab>

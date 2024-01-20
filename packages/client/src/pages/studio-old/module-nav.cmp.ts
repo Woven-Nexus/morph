@@ -1,4 +1,4 @@
-import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
+import { MimicElement, customElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 
 import { DragHandleCmp } from '../../features/components/drag-handle/drag-handle.cmp.js';

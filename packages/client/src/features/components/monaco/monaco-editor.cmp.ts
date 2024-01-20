@@ -1,11 +1,11 @@
 import './user-worker';
 
 import { createPromiseResolver, sleep } from '@roenlie/mimic-core/async';
-import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
+import { MimicElement, customElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
-import { createRef, type Ref, ref } from 'lit/directives/ref.js';
+import { type Ref, createRef, ref } from 'lit/directives/ref.js';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import editorStyleUrl from 'monaco-editor/min/vs/editor/editor.main.css?url';
 

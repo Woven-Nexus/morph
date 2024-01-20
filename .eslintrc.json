@@ -1,8 +1,0 @@
-{
-	"root": true,
-	"parser": "@typescript-eslint/parser",
-	"extends": [
-		"@roenlie/eslint-config"
-	],
-	"rules": {}
-}

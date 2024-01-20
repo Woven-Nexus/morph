@@ -1,6 +1,6 @@
-import { consume, type ContextProp } from '@roenlie/lit-context';
+import { type ContextProp, consume } from '@roenlie/lit-context';
 import { maybe } from '@roenlie/mimic-core/async';
-import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
+import { MimicElement, customElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { state } from 'lit/decorators.js';
 import { map } from 'lit/directives/map.js';
@@ -24,7 +24,10 @@ export class ModuleSelectorCmp extends MimicElement {
 
 	protected handleNamespace = async () => {
 		const store = this.store.value;
-		if (!store.activeNamespace) return (this.moduleList = []);
+		if (!store.activeNamespace) {
+			this.moduleList = [];
+			return;
+		}
 
 		const url = new URL(
 			`${serverUrl}/api/code-modules/${store.activeNamespace}`,
@@ -44,7 +47,9 @@ export class ModuleSelectorCmp extends MimicElement {
 				this.moduleList,
 				item => html`
 			<li
-				@click=${() => (this.store.value.moduleId = item.module_id)}
+				@click=${() => {
+					this.store.value.activeModuleId = String(item.module_id);
+				}}
 			>
 				${item.name}
 			</li>

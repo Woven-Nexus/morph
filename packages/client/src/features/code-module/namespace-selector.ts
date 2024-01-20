@@ -41,7 +41,9 @@ export class NamespaceSelectorCmp extends MimicElement {
 				class=${classMap({
 					active: item.namespace === this.store.value.activeNamespace,
 				})}
-				@click=${() => (this.store.value.activeNamespace = item.namespace)}
+				@click=${() => {
+					this.store.value.activeNamespace = item.namespace;
+				}}
 			>
 				${item.namespace}
 			</li>
