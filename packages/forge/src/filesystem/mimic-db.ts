@@ -1,14 +1,13 @@
-type Lock = { __init: symbol };
-type Unwrap<T> = T extends infer R & Lock ? R : never;
+type Req = { readonly __init: unique symbol };
 
 /**
  * Marks a property as required during class construction.
  *
  * Will add this property to the required props in the constructor.
  */
-export type Required<T> = T & Lock;
+export type Required<T> = T | Req;
 
-export class MSchema<T> {
+export class MSchema<T extends object> {
 	public static dbIdentifier: string;
 	public static dbKey: string;
 
@@ -16,9 +15,9 @@ export class MSchema<T> {
 		init: {
 			[P in keyof T as P extends keyof MSchema<T>
 				? never
-				: T[P] extends Required<T[P]>
+				: Req extends Extract<T[P], Req>
 				  ? P
-				  : never]: Unwrap<T[P]>;
+				  : never]: Exclude<T[P], Req>;
 		},
 	) {
 		const me = this as Record<keyof any, any>;
@@ -30,9 +29,10 @@ export class MSchema<T> {
 
 			// If there is a descriptor, it means the prop is an accessor.
 			// And if there is no setter, we can't assign this property at this time.
-			if (descriptor && !descriptor?.set) continue;
+			if (descriptor && !descriptor?.set && descriptor.value === undefined)
+				continue;
 
-			me[prop] = init[prop as keyof typeof init];
+			me[prop] = init[prop];
 		}
 	}
 }
@@ -172,7 +172,10 @@ class Collection<T extends typeof MSchema<any>> {
 		return promise !== undefined ? new this.schema(promise) : undefined;
 	}
 
-	public async getByIndex(indexName: string, query: IDBValidKey | IDBKeyRange) {
+	public async getByIndex(
+		indexName: string,
+		query: IDBValidKey | IDBKeyRange,
+	): Promise<InstanceType<T> | undefined> {
 		const coll = await this.collection('readonly');
 
 		const promise = await new Promise<T | undefined>((res, rej) => {
@@ -182,7 +185,9 @@ class Collection<T extends typeof MSchema<any>> {
 			req.onsuccess = ev => Collection.#handleRequestSuccess(ev, res);
 		});
 
-		return promise !== undefined ? new this.schema(promise) : undefined;
+		return promise !== undefined
+			? (new this.schema(promise) as InstanceType<T>)
+			: undefined;
 	}
 
 	public async getAll() {

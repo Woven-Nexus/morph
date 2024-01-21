@@ -23,14 +23,18 @@ export class ForgeCmp extends LitElement {
 			directory: '/',
 			name: 'test',
 			extension: 'js',
-			content: 'hello I am content',
+			content: 'hello I am content2',
 		});
-
-		await connection.collection(ForgeFile).tryAdd(file);
 
 		const result = await connection
 			.collection(ForgeFile)
 			.getByIndex('name', 'test');
+
+		if (result) {
+			result.content = crypto.randomUUID();
+			await connection.collection(ForgeFile).put(result);
+		}
+
 		console.log(result);
 	}
 
