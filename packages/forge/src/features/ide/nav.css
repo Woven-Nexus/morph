@@ -15,18 +15,8 @@ a {
 	position: relative;
 	display: block;
 }
-a::after {
-	position: absolute;
-	content: '';
-	inset: 0;
-	left: 8px;
-	z-index: var(--mm-focus-index);
-	outline: var(--mm-focus-ring);
-	transition: var(--mm-focus-transition);
-	border-radius: var(--_border-radius);
-}
-a:not(:focus-visible)::after {
-	outline-color: transparent;
+a.active {
+	pointer-events: none;
 }
 s-nav-item {
 	cursor: pointer;
@@ -61,5 +51,19 @@ s-nav-item.active::after {
 	box-shadow: -4px -4px 0 4px var(--_active-bg);
 }
 mm-icon {
+	z-index: 1;
 	font-size: 24px;
+}
+mm-icon::after {
+	position: absolute;
+	content: '';
+	inset: 0;
+	left: 8px;
+	z-index: var(--mm-focus-index);
+	outline: var(--mm-focus-ring);
+	transition: var(--mm-focus-transition);
+	border-radius: var(--_border-radius);
+}
+a:not(:focus-visible) mm-icon::after {
+	outline-color: transparent;
 }

@@ -17,7 +17,8 @@ export class NavCmp extends AegisElement {
 		const sheet = new CSSStyleSheet();
 		sheet.replaceSync(`
 		::view-transition-group(activenav) {
-			animation-duration: 500ms;
+			animation-duration: 300ms;
+			animation-timing-function: ease-out;
 		}
 		`);
 
@@ -59,6 +60,8 @@ export class NavCmp extends AegisElement {
 
 	protected handleClickNav(ev: MouseEvent) {
 		const id = (ev.currentTarget as HTMLElement).id;
+		if (this.active === id) return;
+
 		document.startViewTransition?.(async () => {
 			this.active = id;
 			await this.updateComplete;
@@ -69,13 +72,14 @@ export class NavCmp extends AegisElement {
 		return html`
 		${map(
 			this.links,
-			link => html`
+			(link, i) => html`
 			<a
 				id=${link.id}
 				href="javascript:null"
 				style=${styleMap({
 					viewTransitionName: this.active === link.id ? 'activenav' : '',
 				})}
+				class=${classMap({ active: this.active === link.id })}
 				@click=${this.handleClickNav.bind(this)}
 				${tooltip(link.tooltip, { placement: 'right' })}
 			>
@@ -83,6 +87,7 @@ export class NavCmp extends AegisElement {
 					class=${classMap({ active: this.active === link.id })}
 				>
 					<mm-icon
+						style=${`view-transition-name:nav-${i}`}
 						url=${link.icon}
 					></mm-icon>
 				</s-nav-item>
