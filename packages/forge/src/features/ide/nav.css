@@ -14,10 +14,36 @@
 a {
 	position: relative;
 	display: block;
+
+	&.active {
+		pointer-events: none;
+
+		s-nav-item {
+			background: var(--_active-bg);
+		}
+		s-nav-item::before,
+		s-nav-item::after {
+			content: '';
+			position: absolute;
+			width: var(--_border-radius);
+			height: var(--_border-radius);
+			left: 0;
+			background: transparent;
+		}
+		s-nav-item::before {
+			top: calc(var(--_border-radius) * -1);
+			border-radius: 0 0 0 999px;
+			box-shadow: -4px 4px 0 4px var(--_active-bg);
+		}
+		s-nav-item::after {
+			bottom: calc(var(--_border-radius) * -1);
+			border-radius: 999px 0 0 0;
+			box-shadow: -4px -4px 0 4px var(--_active-bg);
+		}
+	}
+
 }
-a.active {
-	pointer-events: none;
-}
+
 s-nav-item {
 	cursor: pointer;
 	display: flex;
@@ -27,29 +53,7 @@ s-nav-item {
 	padding: 8px 12px;
 	padding-right: 4px;
 }
-s-nav-item.active {
-	position: relative;
-	background: var(--_active-bg);
-}
-s-nav-item.active::before,
-s-nav-item.active::after {
-	content: '';
-	position: absolute;
-	width: var(--_border-radius);
-	height: var(--_border-radius);
-	left: 0;
-	background: transparent;
-}
-s-nav-item.active::before {
-	top: calc(var(--_border-radius) * -1);
-	border-radius: 0 0 0 999px;
-	box-shadow: -4px 4px 0 4px var(--_active-bg);
-}
-s-nav-item.active::after {
-	bottom: calc(var(--_border-radius) * -1);
-	border-radius: 999px 0 0 0;
-	box-shadow: -4px -4px 0 4px var(--_active-bg);
-}
+
 mm-icon {
 	z-index: 1;
 	font-size: 24px;
