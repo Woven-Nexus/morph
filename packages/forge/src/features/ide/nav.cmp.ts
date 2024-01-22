@@ -70,21 +70,23 @@ export class NavCmp extends AegisElement {
 		${map(
 			this.links,
 			link => html`
-			<s-nav-item
+			<a
 				id=${link.id}
+				href="javascript:null"
 				style=${styleMap({
 					viewTransitionName: this.active === link.id ? 'activenav' : '',
-				})}
-				class=${classMap({
-					active: this.active === link.id,
 				})}
 				@click=${this.handleClickNav.bind(this)}
 				${tooltip(link.tooltip, { placement: 'right' })}
 			>
-				<mm-icon
-					url=${link.icon}
-				></mm-icon>
-			</s-nav-item>
+				<s-nav-item
+					class=${classMap({ active: this.active === link.id })}
+				>
+					<mm-icon
+						url=${link.icon}
+					></mm-icon>
+				</s-nav-item>
+			</a>
 			`,
 		)}
 		`;

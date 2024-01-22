@@ -11,8 +11,23 @@
 	gap: 22px;
 	background-color: rgb(55, 55, 55);
 }
-
-
+a {
+	position: relative;
+	display: block;
+}
+a::after {
+	position: absolute;
+	content: '';
+	inset: 0;
+	left: 8px;
+	z-index: var(--mm-focus-index);
+	outline: var(--mm-focus-ring);
+	transition: var(--mm-focus-transition);
+	border-radius: var(--_border-radius);
+}
+a:not(:focus-visible)::after {
+	outline-color: transparent;
+}
 s-nav-item {
 	cursor: pointer;
 	display: flex;
@@ -22,7 +37,6 @@ s-nav-item {
 	padding: 8px 12px;
 	padding-right: 4px;
 }
-
 s-nav-item.active {
 	position: relative;
 	background: var(--_active-bg);
@@ -46,7 +60,6 @@ s-nav-item.active::after {
 	border-radius: 999px 0 0 0;
 	box-shadow: -4px -4px 0 4px var(--_active-bg);
 }
-
 mm-icon {
 	font-size: 24px;
 }

@@ -9,10 +9,10 @@
 		"dev": "vite"
 	},
 	"dependencies": {
-		"@roenlie/lit-aegis": "^1.0.37",
-		"@roenlie/mimic-core": "^0.0.78",
-		"@roenlie/mimic-elements": "^0.0.73",
-		"@roenlie/mimic-lit": "^0.0.88",
+		"@roenlie/lit-aegis": "^1.0.38",
+		"@roenlie/mimic-core": "^0.0.79",
+		"@roenlie/mimic-elements": "^0.0.74",
+		"@roenlie/mimic-lit": "^0.0.89",
 		"@roenlie/morph-components": "workspace:^",
 		"@vaadin/router": "^1.7.5",
 		"lit": "^3.1.0"
