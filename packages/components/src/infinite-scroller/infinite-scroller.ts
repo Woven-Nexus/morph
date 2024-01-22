@@ -1,13 +1,9 @@
-import {
-	AegisElement,
-	customElement,
-	query,
-	queryId,
-} from '@roenlie/lit-aegis';
 import { debounce, withDebounce } from '@roenlie/mimic-core/timing';
 import type { RecordOf } from '@roenlie/mimic-core/types';
+import { queryId } from '@roenlie/mimic-lit/decorators';
+import { MimicElement, customElement } from '@roenlie/mimic-lit/element';
 import { type CSSResultGroup, css, html } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { until } from 'lit/directives/until.js';
 import { when } from 'lit/directives/when.js';
@@ -27,7 +23,7 @@ interface ItemWrapperElement extends HTMLDivElement {
 }
 
 // TODO, Make the minimum buffer change depending on available space.
-export abstract class InfiniteScroller extends AegisElement {
+export abstract class InfiniteScroller extends MimicElement {
 	@queryId('scroller') protected scrollerQry: HTMLElement;
 	@queryId('fullHeight') protected fullHeightQry: HTMLElement;
 	@query('infinite-scroller-scrollbar') protected scrollbarQry: ScrollbarCmp;
@@ -506,8 +502,8 @@ export abstract class InfiniteScroller extends AegisElement {
 	`;
 }
 
-@customElement('infinite-scroller-scrollbar', true)
-export class ScrollbarCmp extends AegisElement {
+@customElement('infinite-scroller-scrollbar')
+export class ScrollbarCmp extends MimicElement {
 	@property({ type: Object }) public connector: {
 		readonly totalHeight: number;
 		readonly itemCount: number;
@@ -634,6 +630,7 @@ export class ScrollbarCmp extends AegisElement {
 	}
 	`;
 }
+ScrollbarCmp.register();
 
 const isFirefox = /Firefox/u.test(navigator.userAgent);
 

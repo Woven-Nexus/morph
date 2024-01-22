@@ -1,3 +1,27 @@
+@import url('./vendor/mimic-elements/tokens-all.css');
+@import url('./vendor/mimic-elements/tokens-extra.css');
+@import url('./vendor/mimic-elements/tokens-dark.css');
+@import url('./vendor/mimic-elements/tokens-light.css');
+
+/*::view-transition-group(activenav) {
+	animation-duration: 1000ms;
+}*/
+
+:root {
+	font-family: 'Inter', sans-serif;
+}
+
+@supports (font-variation-settings: normal) {
+	:root {
+		font-family: 'Inter var', sans-serif;
+	}
+}
+
+
 body {
+	height: 100lvh;
 	background-color: black;
+	color: white;
+	margin: 0;
+	padding: 0;
 }

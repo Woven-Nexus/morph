@@ -1,13 +1,12 @@
 {
 	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"organizeImports": {
-		"enabled": true,
 		"ignore": [
-			".vscode/settings.json"
+			".vscode/settings.json",
+			"node_modules"
 		]
 	},
 	"linter": {
-		"enabled": true,
 		"rules": {
 			"recommended": true,
 			"style": {
@@ -23,13 +22,15 @@
 			}
 		},
 		"ignore": [
-			"*.json"
+			"*.json",
+			"node_modules"
 		]
 	},
 	"formatter": {
-		"formatWithErrors": true,
+		"formatWithErrors": false,
 		"ignore": [
-			"configuration-schema.json"
+			"configuration-schema.json",
+			"node_modules"
 		]
 	},
 	"javascript": {
@@ -37,7 +38,6 @@
 			"unsafeParameterDecoratorsEnabled": true
 		},
 		"formatter": {
-			"enabled": true,
 			"arrowParentheses": "asNeeded",
 			"quoteStyle": "single",
 			"bracketSpacing": true
@@ -45,7 +45,6 @@
 	},
 	"json": {
 		"formatter": {
-			"enabled": false
 		}
 	}
 }

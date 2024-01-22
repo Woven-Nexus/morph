@@ -1,0 +1,26 @@
+{
+	"name": "@roenlie/morph-components",
+	"description": "description",
+	"authors": "author",
+	"version": "1.0.0",
+	"type": "module",
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"exports": {
+		"./monaco": {
+			"types": "./src/monaco/index.ts",
+			"default": "./src/monaco/index.ts"
+		}
+	},
+	"scripts": {
+		"build": "pnpm run \"/^build->.+/\"",
+		"build->indexes": "package-toolbox build-indexes",
+		"build->exports": "package-toolbox build-exports"
+	},
+	"dependencies": {
+		"@roenlie/mimic-core": "^0.0.74",
+		"@roenlie/mimic-lit": "^0.0.84",
+		"lit": "^3.1.0",
+		"monaco-editor": "^0.45.0"
+	}
+}

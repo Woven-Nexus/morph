@@ -3,11 +3,14 @@
 	"editor.guides.bracketPairs": "active",
 	"editor.formatOnSave": true,
 	"editor.codeActionsOnSave": {
-		"source.organizeImports.biome": "explicit",
+		"source.organizeImports.biome": "never",
 		"quickfix.biome": "explicit"
 	},
 	"editor.detectIndentation": false,
 	"editor.insertSpaces": false,
+	"[javascript]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
 	"[typescript]": {
 		"editor.defaultFormatter": "biomejs.biome"
 	},

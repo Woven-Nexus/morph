@@ -1,0 +1,51 @@
+:host {
+	display: contents;
+}
+
+s-accordian {
+	display: flex;
+	flex-flow: column;
+
+	&:hover s-actions {
+		opacity: 1;
+	}
+}
+s-accordian-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 4px;
+	height: 32px;
+	background-color: rgb(33, 37, 43);
+	border-top: 1px solid rgb(13, 17, 23);
+	text-transform: uppercase;
+	cursor: pointer;
+	user-select: none;
+
+	span {
+		flex-grow: 1;
+	}
+
+	s-actions {
+		display: flex;
+		transition: opacity 300ms ease-out;
+		opacity: 0;
+	}
+}
+s-accordian-content {
+	flex-grow: 1;
+	display: flex;
+	flex-flow: column;
+
+	s-accordian-item {
+		display: block;
+
+		&:hover {
+			background-color: rgb(39, 41, 48);
+		}
+		&.active {
+			background-color: rgb(53, 57, 64);
+		}
+	}
+
+}

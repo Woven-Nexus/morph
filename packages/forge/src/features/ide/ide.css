@@ -1,0 +1,43 @@
+:host {
+	height: 100%;
+	display: grid;
+	grid-template: "nav primary-sidebar workspace secondary-sidebar" 1fr
+						"nav primary-sidebar panel secondary-sidebar" max-content
+						"status-bar status-bar status-bar status-bar" max-content
+						/ max-content max-content 1fr max-content;
+}
+#nav {
+	grid-area: nav;
+
+	min-width: 60px;
+	border-right: 1px solid rgb(13, 17, 23);
+}
+#primary-sidebar {
+	display: block;
+	grid-area: primary-sidebar;
+
+	min-width: 200px;
+	background-color: rgb(24, 26, 31);
+	border-right: 1px solid rgb(13, 17, 23);
+}
+#workspace {
+	display: block;
+	grid-area: workspace;
+	background-color: rgb(33, 37, 43);
+}
+#panel {
+	display: block;
+	grid-area: panel;
+}
+#secondary-sidebar {
+	display: block;
+	grid-area: secondary-sidebar;
+}
+#status-bar {
+	display: block;
+	grid-area: status-bar;
+
+	min-height: 20px;
+	background-color: rgb(30, 30, 30);
+	border-top: 1px solid rgb(13, 17, 23);
+}
