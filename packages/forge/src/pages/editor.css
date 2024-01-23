@@ -1,10 +1,10 @@
 :host {
 	height: 100%;
 	display: grid;
-	grid-template: "nav primary-sidebar workspace secondary-sidebar" 1fr
-						"nav primary-sidebar panel secondary-sidebar" max-content
-						"status-bar status-bar status-bar status-bar" max-content
-						/ max-content max-content 1fr max-content;
+	grid-template: "primary-sidebar workspace secondary-sidebar" 1fr
+						"primary-sidebar panel secondary-sidebar" max-content
+						"status-bar status-bar status-bar" max-content
+						/ max-content 1fr max-content;
 }
 #nav {
 	grid-area: nav;

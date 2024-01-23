@@ -51,7 +51,7 @@ s-nav-item {
 	border-top-right-radius: var(--_border-radius);
 	border-bottom-right-radius: var(--_border-radius);
 	padding: 8px 12px;
-	padding-right: 4px;
+	padding-right: 8px;
 }
 
 mm-icon {

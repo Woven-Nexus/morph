@@ -5,37 +5,42 @@ type Req = { readonly __init: unique symbol };
  *
  * Will add this property to the required props in the constructor.
  */
-export type Required<T> = T | Req;
+export type Init<T> = T | Req;
+
+type Constructor<T> = { new (): T };
 
 export class MSchema<T extends object> {
-	public static dbIdentifier: string;
-	public static dbKey: string;
+		public static dbIdentifier: string;
+		public static dbKey: string;
+		public static create<T extends object>(
+			this: Constructor<T>,
+			init: {
+				[P in keyof T as P extends keyof MSchema<T>
+					? never
+					: Req extends Extract<T[P], Req>
+					  ? P
+					  : never]: Exclude<T[P], Req>;
+			},
+		): T {
+			const schema = new this() as Record<keyof any, any>;
 
-	constructor(
-		init: {
-			[P in keyof T as P extends keyof MSchema<T>
-				? never
-				: Req extends Extract<T[P], Req>
-				  ? P
-				  : never]: Exclude<T[P], Req>;
-		},
-	) {
-		const me = this as Record<keyof any, any>;
-		for (const prop in init) {
-			const descriptor = Object.getOwnPropertyDescriptor(
-				Object.getPrototypeOf(this),
-				prop,
-			);
+			for (const prop in init) {
+				const descriptor = Object.getOwnPropertyDescriptor(
+					Object.getPrototypeOf(schema),
+					prop,
+				);
 
-			// If there is a descriptor, it means the prop is an accessor.
-			// And if there is no setter, we can't assign this property at this time.
-			if (descriptor && !descriptor?.set && descriptor.value === undefined)
-				continue;
+				// If there is a descriptor, it means the prop is an accessor.
+				// And if there is no setter, we can't assign this property at this time.
+				if (descriptor && !descriptor?.set && descriptor.value === undefined)
+					continue;
 
-			me[prop] = init[prop];
+				schema[prop] = init[prop];
+			}
+
+			return schema;
 		}
 	}
-}
 
 export class MimicDB {
 	static #setups: Setup[] = [];
@@ -169,7 +174,7 @@ class Collection<T extends typeof MSchema<any>> {
 			req.onsuccess = ev => Collection.#handleRequestSuccess(ev, res);
 		});
 
-		return promise !== undefined ? new this.schema(promise) : undefined;
+		return promise !== undefined ? this.schema.create(promise) : undefined;
 	}
 
 	public async getByIndex(
@@ -186,7 +191,7 @@ class Collection<T extends typeof MSchema<any>> {
 		});
 
 		return promise !== undefined
-			? (new this.schema(promise) as InstanceType<T>)
+			? (this.schema.create(promise) as InstanceType<T>)
 			: undefined;
 	}
 
@@ -199,7 +204,7 @@ class Collection<T extends typeof MSchema<any>> {
 			req.onsuccess = ev => Collection.#handleRequestSuccess(ev, res);
 		});
 
-		return promise.map(item => new this.schema(item) as InstanceType<T>);
+		return promise.map(item => this.schema.create(item) as InstanceType<T>);
 	}
 
 	public async add<TKey extends IDBValidKey>(

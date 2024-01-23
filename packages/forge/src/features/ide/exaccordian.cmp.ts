@@ -5,15 +5,61 @@ import exaccordianStyles from './exaccordian.css' with { type: 'css' };
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { map } from 'lit/directives/map.js';
 import { tooltip } from '@roenlie/mimic-elements/tooltip';
+import { when } from 'lit/directives/when.js';
+import { emitEvent } from '@roenlie/mimic-core/dom';
+import { live } from 'lit/directives/live.js';
+import { keyed } from 'lit/directives/keyed.js';
+import { repeat } from 'lit/directives/repeat.js';
 
+export type AccordianAction = {
+	label: string;
+	icon: string;
+	action: () => void;
+};
+
+export type AccordianItem = {
+	id: string;
+	name: string;
+	editing: boolean;
+};
+
+interface AccordianInput extends HTMLInputElement {
+	item: AccordianItem;
+}
+
+/**
+ * @emits input-focusout - Emitted when a editing input field loses focus.
+ */
 @customElement('m-exaccordian', true)
 export class ExaccordianCmp extends AegisElement {
-	@property() public header?: string;
-	@property({ type: Array }) public actions?: {
-		label: string;
-		icon: string;
-		action: () => void;
-	}[];
+	@property({ type: Boolean }) public expanded?: boolean;
+	@property({ type: String }) public header?: string;
+	@property({ type: Array }) public actions?: AccordianAction[];
+	@property({ type: Array }) public items?: AccordianItem[];
+
+	protected handleInputFocusout(ev: FocusEvent) {
+		//const el = ev.currentTarget as HTMLInputElement & { item: AccordianItem };
+		//if (el.item.name) {
+		//	//
+		//	console.log('save the thing');
+		//}
+
+		emitEvent(this, 'input-focusout');
+	}
+
+	protected handleInputInput(ev: InputEvent) {
+		const el = ev.currentTarget as AccordianInput;
+		el.item.name = el.value;
+	}
+
+	protected handleInputKeydown(ev: KeyboardEvent) {
+		const key = ev.key;
+		if (key !== 'Enter') return;
+
+		ev.preventDefault();
+		const el = ev.currentTarget as AccordianInput;
+		el.blur();
+	}
 
 	protected renderHeader(text: string) {
 		return html`
@@ -34,6 +80,7 @@ export class ExaccordianCmp extends AegisElement {
 						variant="text"
 						size="small"
 						shape="rounded"
+						@click=${def.action}
 					>
 						<mm-icon
 							style="font-size:18px;"
@@ -50,15 +97,42 @@ export class ExaccordianCmp extends AegisElement {
 	protected renderContent() {
 		return html`
 		<s-accordian-content>
-			${this.renderItem('Item 1')}
+			${when(this.expanded, () =>
+				repeat(
+					this.items ?? [],
+					i => i.id,
+					item => this.renderItem(item),
+				),
+			)}
 		</s-accordian-content>
 		`;
 	}
 
-	renderItem(text: string) {
+	protected renderItem(item: AccordianItem) {
+		this.updateComplete.then(() => {
+			const input = this.shadowRoot?.querySelector('input');
+			input?.focus();
+		});
+
 		return html`
 		<s-accordian-item>
-			${text}
+			${when(
+				item.editing,
+				() =>
+					keyed(
+						item.id,
+						html`
+						<input
+							.item=${item}
+							.value=${live(item.name)}
+							@focusout=${this.handleInputFocusout}
+							@input=${this.handleInputInput}
+							@keydown=${this.handleInputKeydown}
+						/>
+						`,
+					),
+				() => item.name,
+			)}
 		</s-accordian-item>
 		`;
 	}

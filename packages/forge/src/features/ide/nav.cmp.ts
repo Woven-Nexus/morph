@@ -1,4 +1,10 @@
-import { AegisElement, customElement, state } from '@roenlie/lit-aegis';
+import {
+	Adapter,
+	AegisComponent,
+	customElement,
+	inject,
+	state,
+} from '@roenlie/lit-aegis';
 import { MMIcon } from '@roenlie/mimic-elements/icon';
 import { html } from 'lit';
 import navStyles from './nav.css' with { type: 'css' };
@@ -8,53 +14,60 @@ import { domId } from '@roenlie/mimic-core/dom';
 import { tooltip } from '@roenlie/mimic-elements/tooltip';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import { type Signal } from '@lit-labs/preact-signals';
 
 MMIcon.register();
 
+type LinkBase = { id: string; tooltip: string; icon: string };
+type Link = LinkBase & { path: string };
+type Action = LinkBase & { action: () => any };
+
 @customElement('m-nav')
-export class NavCmp extends AegisElement {
+export class NavCmp extends AegisComponent {
 	static {
 		const sheet = new CSSStyleSheet();
 		sheet.replaceSync(`
-		::view-transition-group(activenav) {
-			animation-duration: 300ms;
-			animation-timing-function: ease-out;
-		}
+			::view-transition-group(activenav) {
+				animation-duration: 300ms;
+				animation-timing-function: ease-out;
+			}
 		`);
 
 		document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
 	}
 
+	constructor() {
+		super(NavAdapter);
+	}
+}
+
+export class NavAdapter extends Adapter {
+	@inject('show-info-center') showInfoCenter: Signal<boolean>;
 	@state() protected active: string;
-	protected links: {
-		id: string;
-		tooltip: string;
-		icon: string;
-		path: string;
-	}[] = [
+	protected links: (Link | Action)[] = [
 		{
 			id: domId(),
 			tooltip: 'forge',
 			icon: 'https://icons.getbootstrap.com/assets/icons/sourceforge.svg',
-			path: '',
+			path: router.urlForName('editor'),
 		},
 		{
 			id: domId(),
 			tooltip: 'settings',
 			icon: 'https://icons.getbootstrap.com/assets/icons/sliders2.svg',
-			path: '',
+			path: router.urlForName('settings'),
 		},
 		{
 			id: domId(),
 			tooltip: 'help',
 			icon: 'https://icons.getbootstrap.com/assets/icons/patch-question.svg',
-			path: '',
+			action: () => {
+				this.showInfoCenter.value = !this.showInfoCenter.value;
+			},
 		},
 	];
 
 	override connectedCallback(): void {
-		super.connectedCallback();
-
 		this.active = this.links[0]!.id;
 	}
 
@@ -62,39 +75,69 @@ export class NavCmp extends AegisElement {
 		const id = (ev.currentTarget as HTMLElement).id;
 		if (this.active === id) return;
 
+		const link = this.links.find(l => l.id === id)!;
+		if (!('path' in link)) return;
+
 		document.startViewTransition?.(async () => {
 			this.active = id;
 			await this.updateComplete;
 		});
 	}
 
-	protected override render(): unknown {
+	protected handleClickAction(ev: MouseEvent) {
+		const id = (ev.currentTarget as HTMLElement).id;
+		const link = this.links.find(l => l.id === id)!;
+		if ('action' in link) link.action();
+	}
+
+	protected renderItem(link: Link | Action) {
 		return html`
-		${map(
-			this.links,
-			(link, i) => html`
-			<a
-				id=${link.id}
-				href="javascript:null"
-				style=${styleMap({
-					viewTransitionName: this.active === link.id ? 'activenav' : '',
-				})}
-				class=${classMap({ active: this.active === link.id })}
-				@click=${this.handleClickNav.bind(this)}
-				${tooltip(link.tooltip, { placement: 'right' })}
-			>
-				<s-nav-item
-					class=${classMap({ active: this.active === link.id })}
-				>
-					<mm-icon
-						style=${`view-transition-name:nav-${i}`}
-						url=${link.icon}
-					></mm-icon>
-				</s-nav-item>
-			</a>
-			`,
-		)}
+		<s-nav-item class=${classMap({ active: this.active === link.id })}>
+			<mm-icon
+				style=${`view-transition-name:nav-${link.id}`}
+				url=${link.icon}
+			></mm-icon>
+		</s-nav-item>
 		`;
+	}
+
+	protected renderLink(link: Link) {
+		return html`
+		<a
+			id=${link.id}
+			href=${link.path}
+			style=${styleMap({
+				viewTransitionName: this.active === link.id ? 'activenav' : '',
+			})}
+			class=${classMap({ active: this.active === link.id })}
+			@click=${this.handleClickNav.bind(this)}
+			${tooltip(link.tooltip, { placement: 'right' })}
+		>
+			${this.renderItem(link)}
+		</a>
+		`;
+	}
+
+	protected renderAction(link: Action) {
+		return html`
+		<a
+			id=${link.id}
+			style=${styleMap({
+				viewTransitionName: this.active === link.id ? 'activenav' : '',
+			})}
+			class=${classMap({ active: this.active === link.id })}
+			@click=${this.handleClickAction.bind(this)}
+			${tooltip(link.tooltip, { placement: 'right' })}
+		>
+			${this.renderItem(link)}
+		</a>
+		`;
+	}
+
+	public override render(): unknown {
+		return map(this.links, (link, i) =>
+			'path' in link ? this.renderLink(link) : this.renderAction(link),
+		);
 	}
 	public static override styles = [sharedStyles, navStyles];
 }

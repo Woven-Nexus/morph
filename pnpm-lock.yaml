@@ -114,18 +114,21 @@ importers:
 
   packages/forge:
     dependencies:
+      '@lit-labs/preact-signals':
+        specifier: ^1.0.1
+        version: 1.0.1
       '@roenlie/lit-aegis':
-        specifier: ^1.0.38
-        version: 1.0.38(lit@3.1.1)
+        specifier: ^1.0.39
+        version: 1.0.39(lit@3.1.1)
       '@roenlie/mimic-core':
-        specifier: ^0.0.79
-        version: 0.0.79
+        specifier: ^0.0.80
+        version: 0.0.80
       '@roenlie/mimic-elements':
-        specifier: ^0.0.74
-        version: 0.0.74(lit@3.1.1)
+        specifier: ^0.0.75
+        version: 0.0.75(lit@3.1.1)
       '@roenlie/mimic-lit':
-        specifier: ^0.0.89
-        version: 0.0.89(lit@3.1.1)
+        specifier: ^0.0.90
+        version: 0.0.90(lit@3.1.1)
       '@roenlie/morph-components':
         specifier: workspace:^
         version: link:../components
@@ -621,12 +624,12 @@ packages:
       lit: 3.1.1
     dev: false
 
-  /@roenlie/lit-aegis@1.0.38(lit@3.1.1):
-    resolution: {integrity: sha512-83z8fWXk10ic0OycFHjYVlPcYjmbzsHbzSBymR+9Al1pbTbPI5IZBesdHYGyIavBInk4dkJYYtrll1fd0wn0LA==}
+  /@roenlie/lit-aegis@1.0.39(lit@3.1.1):
+    resolution: {integrity: sha512-qPwi8V9yFTKncnCNPKZ9WNBEd2GNVUB51fQaWfxcOK1YMCpgJb5vfWsSKmxhuEPefF4DLanwx4xS7CkJGjDi/A==}
     peerDependencies:
       lit: '*'
     dependencies:
-      '@roenlie/mimic-core': 0.0.79
+      '@roenlie/mimic-core': 0.0.80
       '@roenlie/reflect-metadata': 1.0.3
       deepmerge-ts: 5.1.0
       inversify: 6.0.2
@@ -665,8 +668,8 @@ packages:
       ts-toolbelt: 9.6.0
     dev: false
 
-  /@roenlie/mimic-core@0.0.79:
-    resolution: {integrity: sha512-AD3/O+mugDTbmHl1ZlfGiuyXRhLAVmoF9AK7OZRw6MjwcXQmsJzolwONmY9x7vB99Lfhb8K4vThlQVSPgrF+lA==}
+  /@roenlie/mimic-core@0.0.80:
+    resolution: {integrity: sha512-H0N1bapKCdIziN3sBVSM1yWqfKIGf30y85+BylbvcPEZupigx9FFv7Nq3MBF29HxsrvXQaqW+vZLDsVgwvOOaQ==}
     dependencies:
       nanoid: 5.0.4
       ts-toolbelt: 9.6.0
@@ -686,16 +689,16 @@ packages:
       lit: 3.1.1
     dev: false
 
-  /@roenlie/mimic-elements@0.0.74(lit@3.1.1):
-    resolution: {integrity: sha512-4atz8+igalSsWHaQN6t7sUsoCKntwgxLseqLsV1jbtdAAI1+4YK+Ui959PRtlaRcyDmHMU0Kmx7l0IRFOFiI/w==}
+  /@roenlie/mimic-elements@0.0.75(lit@3.1.1):
+    resolution: {integrity: sha512-++Nz3A4wva5ckbi+sfejad00FQy6Xek7ck0Qhx1ztErhxfQOzIq7PPfpsRoxCi40Sl39cVsysy2md7s/iddU6A==}
     peerDependencies:
       lit: '*'
     dependencies:
       '@floating-ui/dom': 1.5.4
-      '@roenlie/lit-aegis': 1.0.38(lit@3.1.1)
-      '@roenlie/mimic-core': 0.0.79
-      '@roenlie/mimic-lit': 0.0.89(lit@3.1.1)
-      '@roenlie/mimic-localize': 0.0.50(lit@3.1.1)
+      '@roenlie/lit-aegis': 1.0.39(lit@3.1.1)
+      '@roenlie/mimic-core': 0.0.80
+      '@roenlie/mimic-lit': 0.0.90(lit@3.1.1)
+      '@roenlie/mimic-localize': 0.0.51(lit@3.1.1)
       '@vaadin/router': 1.7.5
       lit: 3.1.1
     dev: false
@@ -712,13 +715,13 @@ packages:
       nanoid: 5.0.4
     dev: false
 
-  /@roenlie/mimic-lit@0.0.89(lit@3.1.1):
-    resolution: {integrity: sha512-5lTeaBLA7OZjPeXjMkrDMpuRdfujqqqAGHY8g996eIerGdIJJyZx6CaDUM0BEdbBYNkd8UNIVmNNzRhNy2ExXA==}
+  /@roenlie/mimic-lit@0.0.90(lit@3.1.1):
+    resolution: {integrity: sha512-luDAbL+vW6CJXerVej0v3CBpOrNWQrr0JoPuIN7VD8mnQ/+cyBbxBdKwrxsvI/9LJo6Ok9BG4BM9mW4kPpAG2w==}
     peerDependencies:
       lit: '*'
     dependencies:
       '@floating-ui/dom': 1.5.4
-      '@roenlie/mimic-core': 0.0.79
+      '@roenlie/mimic-core': 0.0.80
       fast-equals: 5.0.1
       lit: 3.1.1
       nanoid: 5.0.4
@@ -733,12 +736,12 @@ packages:
       lit: 3.1.1
     dev: false
 
-  /@roenlie/mimic-localize@0.0.50(lit@3.1.1):
-    resolution: {integrity: sha512-HH4SAwUME4WUhsWb6BagHR4A/grk5t83YsMWaiSh3HhIkQf8WGodwXCR264tx+8Uv259fOZAPCnT0IaGYqfuqw==}
+  /@roenlie/mimic-localize@0.0.51(lit@3.1.1):
+    resolution: {integrity: sha512-O9fvgbirVAHbcydeO/R3T5N2M9P19Ckinep/7OgSltSNBextAPDdMz1GN2V20dpjXC/2YO53Www9xyMl3dv8IA==}
     peerDependencies:
       lit: '*'
     dependencies:
-      '@roenlie/mimic-core': 0.0.79
+      '@roenlie/mimic-core': 0.0.80
       lit: 3.1.1
     dev: false
 
