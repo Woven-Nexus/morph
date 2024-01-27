@@ -22,6 +22,7 @@ export class ForgeFile extends MSchema<ForgeFile> {
 		public name: Init<string>;
 		public extension: Init<string>;
 		public content: Init<string>;
+		public folder: Init<boolean>;
 		@skipSerialize() public editing?: Init<boolean>;
 		@enumerable() public get path() {
 			return `${this.directory}/${this.name}.${this.extension}`.replaceAll(

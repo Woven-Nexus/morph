@@ -1,13 +1,14 @@
 import { AegisElement, customElement, state } from '@roenlie/lit-aegis';
-import { html } from 'lit';
-import explorerStyles from './explorer.css' with { type: 'css' };
-import { sharedStyles } from '@roenlie/mimic-lit/styles';
-import { MMIcon } from '@roenlie/mimic-elements/icon';
 import { MMButton } from '@roenlie/mimic-elements/button';
-import { ExaccordianCmp } from './exaccordian.cmp.js';
+import { MMIcon } from '@roenlie/mimic-elements/icon';
 import { MMTooltip } from '@roenlie/mimic-elements/tooltip';
-import { ForgeFileDB, ForgeFile } from '../filesystem/forge-file.js';
+import { sharedStyles } from '@roenlie/mimic-lit/styles';
+import { html } from 'lit';
+
+import { ForgeFile, ForgeFileDB } from '../filesystem/forge-file.js';
 import { MimicDB } from '../filesystem/mimic-db.js';
+import { ExaccordianCmp } from './exaccordian.cmp.js';
+import explorerStyles from './explorer.css' with { type: 'css' };
 
 MMIcon.register();
 MMButton.register();
@@ -16,14 +17,13 @@ ExaccordianCmp.register();
 
 @customElement('m-explorer')
 export class ExplorerCmp extends AegisElement {
+
 	@state() protected files: ForgeFile[] = [];
 
 	public override async connectedCallback() {
 		super.connectedCallback();
 
-		this.files = await MimicDB.connect(ForgeFileDB)
-			.collection(ForgeFile)
-			.getAll();
+		this.files = await MimicDB.connect(ForgeFileDB).collection(ForgeFile).getAll();
 	}
 
 	protected async handleFilesFocusout() {
@@ -33,6 +33,9 @@ export class ExplorerCmp extends AegisElement {
 		await Promise.all(
 			files.map(async file => {
 				file.editing = false;
+
+				//const basename = basename
+
 				await collection.add(file);
 			}),
 		);
@@ -44,11 +47,12 @@ export class ExplorerCmp extends AegisElement {
 		this.files = [
 			...this.files,
 			ForgeFile.create({
-				content: '',
+				content:   '',
 				directory: '',
 				extension: '',
-				name: '',
-				editing: true,
+				name:      '',
+				editing:   true,
+				folder:    false,
 			}),
 		];
 	}
@@ -74,28 +78,29 @@ export class ExplorerCmp extends AegisElement {
 		<m-exaccordian
 			expanded
 			header="files"
-			.actions=${[
+			.actions=${ [
 				{
-					label: 'New File...',
-					icon: 'https://icons.getbootstrap.com/assets/icons/file-earmark-plus.svg',
+					label:  'New File...',
+					icon:   'https://icons.getbootstrap.com/assets/icons/file-earmark-plus.svg',
 					action: () => this.handleNewFile(),
 				},
 				{
-					label: 'New Folder...',
-					icon: 'https://icons.getbootstrap.com/assets/icons/folder-plus.svg',
+					label:  'New Folder...',
+					icon:   'https://icons.getbootstrap.com/assets/icons/folder-plus.svg',
 					action: () => {},
 				},
 				{
-					label: 'Collapse Folders in Explorer',
-					icon: 'https://icons.getbootstrap.com/assets/icons/dash-square.svg',
+					label:  'Collapse Folders in Explorer',
+					icon:   'https://icons.getbootstrap.com/assets/icons/dash-square.svg',
 					action: () => {},
 				},
-			]}
-			.items=${this.files}
-			@input-focusout=${this.handleFilesFocusout}
+			] }
+			.items=${ this.files as any }
+			@input-focusout=${ this.handleFilesFocusout }
 		></m-exaccordian>
 		`;
 	}
-	public static override styles = [sharedStyles, explorerStyles];
-}
 
+	public static override styles = [ sharedStyles, explorerStyles ];
+
+}

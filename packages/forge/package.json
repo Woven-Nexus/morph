@@ -10,10 +10,10 @@
 	},
 	"dependencies": {
 		"@lit-labs/preact-signals": "^1.0.1",
-		"@roenlie/lit-aegis": "^1.0.39",
-		"@roenlie/mimic-core": "^0.0.80",
-		"@roenlie/mimic-elements": "^0.0.75",
-		"@roenlie/mimic-lit": "^0.0.90",
+		"@roenlie/lit-aegis": "^1.0.40",
+		"@roenlie/mimic-core": "^0.0.81",
+		"@roenlie/mimic-elements": "^0.0.76",
+		"@roenlie/mimic-lit": "^0.0.91",
 		"@roenlie/morph-components": "workspace:^",
 		"@vaadin/router": "^1.7.5",
 		"lit": "^3.1.0"

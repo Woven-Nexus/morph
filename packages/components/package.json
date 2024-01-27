@@ -18,8 +18,8 @@
 		"build->exports": "package-toolbox build-exports"
 	},
 	"dependencies": {
-		"@roenlie/mimic-core": "^0.0.74",
-		"@roenlie/mimic-lit": "^0.0.84",
+		"@roenlie/mimic-core": "^0.0.81",
+		"@roenlie/mimic-lit": "^0.0.91",
 		"lit": "^3.1.0",
 		"monaco-editor": "^0.45.0"
 	}

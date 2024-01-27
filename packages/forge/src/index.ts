@@ -1,9 +1,10 @@
 import { AppRouterCmp } from '@roenlie/mimic-elements/router';
+import { initializeStyleTokens } from '@roenlie/mimic-elements/styles';
+import type { Router } from '@vaadin/router';
 import { render } from 'lit';
 
 import { routes } from './features/routes/routes.js';
-import { initializeStyleTokens } from '@roenlie/mimic-elements/styles';
-import type { Router } from '@vaadin/router';
+
 
 initializeStyleTokens();
 AppRouterCmp.register();
@@ -16,11 +17,9 @@ Object.assign(window, {
 });
 
 declare global {
-	// biome-ignore lint/style/noVar: <explanation>
-	// biome-ignore lint/suspicious/noRedeclare: <explanation>
+	// eslint-disable-next-line no-var
 	var router: Router;
 }
-
 
 
 render(routerEl, document.body);

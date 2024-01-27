@@ -1,4 +1,4 @@
-type Req = { readonly __init: unique symbol };
+interface Req { readonly __init: unique symbol }
 
 /**
  * Marks a property as required during class construction.
@@ -7,47 +7,50 @@ type Req = { readonly __init: unique symbol };
  */
 export type Init<T> = T | Req;
 
-type Constructor<T> = { new (): T };
+type Constructor<T> = new () => T
 
 export class MSchema<T extends object> {
-		public static dbIdentifier: string;
-		public static dbKey: string;
-		public static create<T extends object>(
-			this: Constructor<T>,
-			init: {
-				[P in keyof T as P extends keyof MSchema<T>
-					? never
-					: Req extends Extract<T[P], Req>
-					  ? P
-					  : never]: Exclude<T[P], Req>;
-			},
-		): T {
-			const schema = new this() as Record<keyof any, any>;
 
-			for (const prop in init) {
-				const descriptor = Object.getOwnPropertyDescriptor(
-					Object.getPrototypeOf(schema),
-					prop,
-				);
+	public static dbIdentifier: string;
+	public static dbKey: string;
+	public static create<T extends object>(
+		this: Constructor<T>,
+		init: {
+			[P in keyof T as P extends keyof MSchema<T>
+				? never
+				: Req extends Extract<T[P], Req>
+					? P
+					: never]: Exclude<T[P], Req>;
+		},
+	): T {
+		const schema = new this() as Record<keyof any, any>;
 
-				// If there is a descriptor, it means the prop is an accessor.
-				// And if there is no setter, we can't assign this property at this time.
-				if (descriptor && !descriptor?.set && descriptor.value === undefined)
-					continue;
+		for (const prop in init) {
+			const descriptor = Object.getOwnPropertyDescriptor(
+				Object.getPrototypeOf(schema),
+				prop,
+			);
 
-				schema[prop] = init[prop];
-			}
+			// If there is a descriptor, it means the prop is an accessor.
+			// And if there is no setter, we can't assign this property at this time.
+			if (descriptor && !descriptor?.set && descriptor.value === undefined)
+				continue;
 
-			return schema;
+			schema[prop] = init[prop];
 		}
+
+		return schema;
 	}
 
+}
+
 export class MimicDB {
+
 	static #setups: Setup[] = [];
 
 	static #handleRequestError(event: Event, reject: (reason?: any) => void) {
 		const target = event.target as IDBOpenDBRequest;
-		reject(`Database error: ${target.error}`);
+		reject(`Database error: ${ target.error }`);
 	}
 
 	static #handleRequestSuccess(event: Event, resolve: (value: any) => void) {
@@ -66,7 +69,7 @@ export class MimicDB {
 				if (db) {
 					const setupIndex = this.#setups.findIndex(s => s.dbName === dbName);
 					if (setupIndex > -1) {
-						const [setup] = this.#setups.splice(setupIndex, 1);
+						const [ setup ] = this.#setups.splice(setupIndex, 1);
 						setup?.__execute(db);
 					}
 				}
@@ -78,23 +81,25 @@ export class MimicDB {
 
 	public static setup(dbName: string, fn: (setup: DBSetup) => void) {
 		if (this.#setups.find(s => s.dbName === dbName))
-			throw new Error(`setup for ${dbName} has already been registered.`);
+			throw new Error(`setup for ${ dbName } has already been registered.`);
 
 		const setupInstance = new Setup(dbName);
 		fn(setupInstance);
 
 		this.#setups.push(setupInstance);
 	}
+
 }
 
 class Setup {
+
 	#setups: ((db: IDBDatabase) => void)[] = [];
 
 	constructor(public dbName: string) {}
 
 	public createCollection<T extends typeof MSchema<any>>(
 		schema: T,
-		...[name, options]: Parameters<IDBDatabase['createObjectStore']>
+		...[ name, options ]: Parameters<IDBDatabase['createObjectStore']>
 	) {
 		const _createCollection = (db: IDBDatabase) =>
 			db.createObjectStore(name, options);
@@ -115,7 +120,7 @@ class Setup {
 
 					store.transaction.onerror = event => {
 						const target = event.target as IDBOpenDBRequest;
-						console.error(`Database error: ${target.error}`);
+						console.error(`Database error: ${ target.error }`);
 					};
 
 					store.transaction.oncomplete = () => {
@@ -132,9 +137,11 @@ class Setup {
 	public __execute(db: IDBDatabase) {
 		this.#setups.forEach(setup => setup(db));
 	}
+
 }
 
 class Database {
+
 	constructor(public database: Promise<IDBDatabase>) {}
 
 	public collection<T extends typeof MSchema<any>>(schema: T) {
@@ -146,9 +153,11 @@ class Database {
 			return store;
 		});
 	}
+
 }
 
 class Collection<T extends typeof MSchema<any>> {
+
 	constructor(
 		public schema: T,
 		public collection: (mode: IDBTransactionMode) => Promise<IDBObjectStore>,
@@ -156,7 +165,7 @@ class Collection<T extends typeof MSchema<any>> {
 
 	static #handleRequestError(event: Event, reject: (reason?: any) => void) {
 		const target = event.target as IDBRequest;
-		reject(`Request error: ${target.error}`);
+		reject(`Request error: ${ target.error }`);
 	}
 
 	static #handleRequestSuccess(event: Event, resolve: (value: any) => void) {
@@ -214,7 +223,8 @@ class Collection<T extends typeof MSchema<any>> {
 		const coll = await this.collection('readwrite');
 		const promise = await new Promise<TKey>((res, rej) => {
 			const _item: Record<keyof any, any> = {};
-			for (const key in item) _item[key] = item[key];
+			for (const key in item)
+				_item[key] = item[key];
 
 			const req = coll.add(_item, key ?? (item as any)[this.schema.dbKey]);
 
@@ -231,7 +241,8 @@ class Collection<T extends typeof MSchema<any>> {
 	): Promise<TKey | undefined> {
 		try {
 			return await this.add(item, key);
-		} catch (error) {}
+		}
+		catch (error) { /*  */ }
 	}
 
 	public async put<TKey extends IDBValidKey>(
@@ -241,7 +252,8 @@ class Collection<T extends typeof MSchema<any>> {
 		const coll = await this.collection('readwrite');
 		const promise = await new Promise<TKey>((res, rej) => {
 			const _item: Record<keyof any, any> = {};
-			for (const key in item) _item[key] = item[key];
+			for (const key in item)
+				_item[key] = item[key];
 
 			const req = coll.put(_item, key ?? (item as any)[this.schema.dbKey]);
 
@@ -301,6 +313,7 @@ class Collection<T extends typeof MSchema<any>> {
 
 		return promise;
 	}
+
 }
 
 export type DBSetup = Omit<Setup, '__execute' | 'dbName'>;
