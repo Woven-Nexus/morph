@@ -4,6 +4,7 @@ import { MMIcon } from '@roenlie/mimic-elements/icon';
 import { MMTooltip } from '@roenlie/mimic-elements/tooltip';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { html } from 'lit';
+import { basename } from 'posix-path-browser';
 
 import { ForgeFile, ForgeFileDB } from '../filesystem/forge-file.js';
 import { MimicDB } from '../filesystem/mimic-db.js';
@@ -34,7 +35,7 @@ export class ExplorerCmp extends AegisElement {
 			files.map(async file => {
 				file.editing = false;
 
-				//const basename = basename
+				const base = basename;
 
 				await collection.add(file);
 			}),

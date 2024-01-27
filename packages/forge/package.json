@@ -16,7 +16,8 @@
 		"@roenlie/mimic-lit": "^0.0.91",
 		"@roenlie/morph-components": "workspace:^",
 		"@vaadin/router": "^1.7.5",
-		"lit": "^3.1.0"
+		"lit": "^3.1.0",
+		"posix-path-browser": "workspace:^"
 	},
 	"devDependencies": {
 		"vite-plugin-import-css-sheet": "^1.0.3"

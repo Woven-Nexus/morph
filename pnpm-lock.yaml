@@ -156,6 +156,9 @@ importers:
       lit:
         specifier: ^3.1.0
         version: 3.1.1
+      posix-path-browser:
+        specifier: workspace:^
+        version: link:../posix-path-browser
     devDependencies:
       vite-plugin-import-css-sheet:
         specifier: ^1.0.3
