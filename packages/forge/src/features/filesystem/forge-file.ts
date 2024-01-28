@@ -1,10 +1,5 @@
-import { MSchema, type Init } from './mimic-db.js';
+import { type Init, MSchema } from './mimic-db.js';
 
-const initial = (value: any) => (target: any, propertyKey: string) => {
-	target[propertyKey] = value;
-};
-
-const skipSerialize = () => (target: any, propertyKey: string) => {};
 
 const enumerable =
 	() => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
@@ -14,20 +9,23 @@ const enumerable =
 export const ForgeFileDB = 'forge-filesystem' as const;
 
 export class ForgeFile extends MSchema<ForgeFile> {
-		public static override dbIdentifier = 'files';
-		public static override dbKey = 'id';
 
-		public id = crypto.randomUUID();
-		public directory: Init<string>;
-		public name: Init<string>;
-		public extension: Init<string>;
-		public content: Init<string>;
-		public folder: Init<boolean>;
-		@skipSerialize() public editing?: Init<boolean>;
-		@enumerable() public get path() {
-			return `${this.directory}/${this.name}.${this.extension}`.replaceAll(
-				/\/+/g,
-				'/',
-			);
-		}
+	public static override dbIdentifier = 'files';
+	public static override dbKey = 'id';
+
+	public id = crypto.randomUUID();
+	public project: Init<string>;
+	public directory: Init<string>;
+	public name: Init<string>;
+	public extension: Init<string>;
+	public content: Init<string>;
+	public accessor editing: Init<boolean>;
+
+	@enumerable() public get path() {
+		return `${ this.directory }/${ this.name }${ this.extension }`.replaceAll(
+			/\/+/g,
+			'/',
+		);
 	}
+
+}

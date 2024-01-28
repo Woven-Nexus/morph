@@ -1,3 +1,4 @@
+import { type Signal, SignalWatcher } from '@lit-labs/preact-signals';
 import {
 	Adapter,
 	AegisComponent,
@@ -5,36 +6,41 @@ import {
 	inject,
 } from '@roenlie/lit-aegis';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
-import { html, css } from 'lit';
-import { NavCmp } from '../features/ide/nav.cmp.js';
-import { layoutModule } from './layout.module.js';
-import { SignalWatcher, type Signal } from '@lit-labs/preact-signals';
+import { css, html } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 
+import { NavCmp } from '../features/ide/nav.cmp.js';
+import { layoutModule } from './layout.module.js';
+
 NavCmp.register();
+
 
 @SignalWatcher
 @customElement('m-layout-page')
 export class LayoutPageCmp extends AegisComponent {
+
 	public static page = true;
 
 	constructor() {
 		super(LayoutPageAdapter, layoutModule);
 	}
+
 }
 
 export class LayoutPageAdapter extends Adapter {
-	@inject('show-info-center') showInfoCenter: Signal<boolean>;
+
+	@inject('show-info-center') public showInfoCenter: Signal<boolean>;
 
 	public override render(): unknown {
 		return html`
 		<s-info-center
-			class=${classMap({ active: this.showInfoCenter.value })}
+			class=${ classMap({ active: this.showInfoCenter.value }) }
 		></s-info-center>
 		<m-nav id="nav"></m-nav>
 		<slot></slot>
 		`;
 	}
+
 	public static override styles = [
 		sharedStyles,
 		css`
@@ -56,6 +62,5 @@ export class LayoutPageAdapter extends Adapter {
 		}
 		`,
 	];
+
 }
-
-

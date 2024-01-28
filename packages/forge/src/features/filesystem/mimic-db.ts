@@ -9,6 +9,7 @@ export type Init<T> = T | Req;
 
 type Constructor<T> = new () => T
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export class MSchema<T extends object> {
 
 	public static dbIdentifier: string;

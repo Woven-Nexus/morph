@@ -4,7 +4,7 @@ import { MMIcon } from '@roenlie/mimic-elements/icon';
 import { MMTooltip } from '@roenlie/mimic-elements/tooltip';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { html } from 'lit';
-import { basename } from 'posix-path-browser';
+import { join, normalize, parse, sep } from 'posix-path-browser';
 
 import { ForgeFile, ForgeFileDB } from '../filesystem/forge-file.js';
 import { MimicDB } from '../filesystem/mimic-db.js';
@@ -16,44 +16,80 @@ MMButton.register();
 MMTooltip.register();
 ExaccordianCmp.register();
 
+
 @customElement('m-explorer')
 export class ExplorerCmp extends AegisElement {
 
+	@state() protected project = 'test';
 	@state() protected files: ForgeFile[] = [];
 
 	public override async connectedCallback() {
 		super.connectedCallback();
 
-		this.files = await MimicDB.connect(ForgeFileDB).collection(ForgeFile).getAll();
+		this.files = (await MimicDB.connect(ForgeFileDB).collection(ForgeFile)
+			.getAll())
+			.filter(file => file.project === this.project);
+
+		this.files.forEach(file => console.log((file.content as string).length));
 	}
 
 	protected async handleFilesFocusout() {
 		const collection = MimicDB.connect(ForgeFileDB).collection(ForgeFile);
 		const files = this.files.filter(file => file.editing && file.name);
 
-		await Promise.all(
-			files.map(async file => {
-				file.editing = false;
+		const fileTransactions: Promise<any>[] = [];
 
-				const base = basename;
+		for (const file of files) {
+			const parsed = parse(file.name as string);
 
-				await collection.add(file);
-			}),
-		);
+			if (parsed.dir) {
+				parsed.dir.split(sep).forEach((dir, i, arr) => {
+					if (!dir)
+						return;
+
+					const folder = ForgeFile.create({
+						project:   this.project,
+						directory: join(file.directory as string, ...arr.slice(0, i)),
+						name:      dir,
+						extension: '',
+						content:   '',
+						editing:   false,
+					});
+
+					collection.tryAdd(folder);
+				});
+			}
+
+			if (parsed.ext) {
+				file.extension = parsed.ext;
+				file.name = parsed.name;
+			}
+
+			file.editing = false;
+			file.directory = join(file.directory as string, parsed.dir);
+			file.directory = normalize(file.directory);
+
+			fileTransactions.push(collection.add(file));
+		}
+
+		await Promise.all(fileTransactions);
 
 		this.files = await collection.getAll();
 	}
 
 	protected handleNewFile() {
+		if (this.files.some(file => file.editing))
+			return;
+
 		this.files = [
 			...this.files,
 			ForgeFile.create({
-				content:   '',
-				directory: '',
+				project:   this.project,
+				directory: '/',
 				extension: '',
 				name:      '',
 				editing:   true,
-				folder:    false,
+				content:   '',
 			}),
 		];
 	}

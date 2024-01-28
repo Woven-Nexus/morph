@@ -22,9 +22,12 @@ export interface AccordianAction {
 
 export interface AccordianItem {
 	id: string;
+	directory: string;
 	name: string;
+	extension: string;
 	editing: boolean;
-	folder: boolean;
+	open?: boolean;
+	children?: AccordianItem[];
 }
 
 interface AccordianInput extends HTMLInputElement {
@@ -42,6 +45,20 @@ export class ExaccordianCmp extends AegisElement {
 	@property({ type: String }) public header?: string;
 	@property({ type: Array }) public actions?: AccordianAction[];
 	@property({ type: Array }) public items?: AccordianItem[];
+
+	protected override willUpdate(props: Map<PropertyKey, unknown>): void {
+		if (props.has('items')) {
+			const pathMap = new Map<string, AccordianItem[]>();
+			this.items?.forEach(item => {
+				const arr = pathMap.get(item.directory)
+					?? (() => pathMap.set(item.directory, []).get(item.directory))();
+
+				arr?.push(item);
+			});
+
+			console.log(pathMap);
+		}
+	}
 
 	protected handleInputFocusout(_ev: FocusEvent) {
 		//const el = ev.currentTarget as HTMLInputElement & { item: AccordianItem };
@@ -104,46 +121,53 @@ export class ExaccordianCmp extends AegisElement {
 	protected renderContent() {
 		return html`
 		<s-accordian-content>
-			${ when(this.expanded, () =>
-				repeat(
-					this.items ?? [],
-					i => i.id,
-					item => this.renderItem(item),
-				)) }
+			${ repeat(
+				this.items ?? [],
+				i => i.id,
+				item => this.renderItem(item),
+			) }
 		</s-accordian-content>
 		`;
 	}
 
 	protected renderItem(item: AccordianItem) {
-		if (item.editing) {
-			this.updateComplete.then(() => {
-				const input = this.shadowRoot?.querySelector('input');
-				input?.focus();
-			});
-		}
+		return match(item, [
+			[ item => item.editing, () => this.renderInput(item) ],
+			[ item => !item.extension, () => this.renderFolder(item) ],
+		], () => this.renderFile(item));
+	}
 
+	protected renderInput(item: AccordianItem): unknown {
+		this.updateComplete.then(() =>
+			this.shadowRoot?.querySelector('input')?.focus());
+
+		return keyed(item.id, html`
+		<input
+			.item=${ item }
+			.value=${ live(item.name) }
+			@focusout=${ this.handleInputFocusout }
+			@input=${ this.handleInputInput }
+			@keydown=${ this.handleInputKeydown }
+		/>
+		`);
+	}
+
+	protected renderFile(item: AccordianItem) {
 		return html`
 		<s-accordian-item>
-			${ match(item, [
-				[
-					(item) => item.editing, (item) => keyed(item.id, html`
-					<input
-						.item=${ item }
-						.value=${ live(item.name) }
-						@focusout=${ this.handleInputFocusout }
-						@input=${ this.handleInputInput }
-						@keydown=${ this.handleInputKeydown }
-					/>
-					`),
-				],
-				[
-					item => item.folder, item => html`
-					${ item.name }
-					`,
-				],
-			], item => html`
+			<s-item>
 				${ item.name }
-			`) }
+			</s-item>
+		</s-accordian-item>
+		`;
+	}
+
+	protected renderFolder(item: AccordianItem) {
+		return html`
+		<s-accordian-item>
+			<s-folder>
+				${ item.name }
+			</s-folder>
 		</s-accordian-item>
 		`;
 	}
@@ -152,7 +176,7 @@ export class ExaccordianCmp extends AegisElement {
 		return html`
 		<s-accordian>
 			${ this.renderHeader(this.header ?? '') }
-			${ this.renderContent() }
+			${ when(this.expanded, () => this.renderContent()) }
 		</s-accordian>
 		`;
 	}
