@@ -29,19 +29,15 @@ export class ExplorerCmp extends AegisElement {
 		this.files = (await MimicDB.connect(ForgeFileDB).collection(ForgeFile)
 			.getAll())
 			.filter(file => file.project === this.project);
-
-		this.files.forEach(file => console.log((file.content as string).length));
 	}
 
 	protected async handleFilesFocusout() {
 		const collection = MimicDB.connect(ForgeFileDB).collection(ForgeFile);
 		const files = this.files.filter(file => file.editing && file.name);
-
 		const fileTransactions: Promise<any>[] = [];
 
 		for (const file of files) {
-			const parsed = parse(file.name as string);
-
+			const parsed = parse(file.name);
 			if (parsed.dir) {
 				parsed.dir.split(sep).forEach((dir, i, arr) => {
 					if (!dir)
@@ -49,7 +45,7 @@ export class ExplorerCmp extends AegisElement {
 
 					const folder = ForgeFile.create({
 						project:   this.project,
-						directory: join(file.directory as string, ...arr.slice(0, i)),
+						directory: join(file.directory, ...arr.slice(0, i)),
 						name:      dir,
 						extension: '',
 						content:   '',
@@ -66,7 +62,10 @@ export class ExplorerCmp extends AegisElement {
 			}
 
 			file.editing = false;
-			file.directory = join(file.directory as string, parsed.dir);
+			file.directory =  parsed.dir
+				? join(file.directory, parsed.dir)
+				: file.directory;
+
 			file.directory = normalize(file.directory);
 
 			fileTransactions.push(collection.add(file));
@@ -81,11 +80,22 @@ export class ExplorerCmp extends AegisElement {
 		if (this.files.some(file => file.editing))
 			return;
 
+		const exAccordianEl = this.shadowRoot?.querySelector('m-exaccordian');
+		let activeDir = '/';
+
+		const item = exAccordianEl?.activeItem;
+		if (item) {
+			if (item.data.extension)
+				activeDir = item.data.directory;
+			else
+				activeDir = item.data.path;
+		}
+
 		this.files = [
 			...this.files,
 			ForgeFile.create({
 				project:   this.project,
-				directory: '/',
+				directory: activeDir,
 				extension: '',
 				name:      '',
 				editing:   true,
@@ -124,7 +134,7 @@ export class ExplorerCmp extends AegisElement {
 				{
 					label:  'New Folder...',
 					icon:   'https://icons.getbootstrap.com/assets/icons/folder-plus.svg',
-					action: () => {},
+					action: () => this.handleNewFile(),
 				},
 				{
 					label:  'Collapse Folders in Explorer',

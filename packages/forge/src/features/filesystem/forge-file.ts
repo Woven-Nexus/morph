@@ -1,4 +1,4 @@
-import { type Init, MSchema } from './mimic-db.js';
+import { MSchema } from './mimic-db.js';
 
 
 const enumerable =
@@ -14,18 +14,16 @@ export class ForgeFile extends MSchema<ForgeFile> {
 	public static override dbKey = 'id';
 
 	public id = crypto.randomUUID();
-	public project: Init<string>;
-	public directory: Init<string>;
-	public name: Init<string>;
-	public extension: Init<string>;
-	public content: Init<string>;
-	public accessor editing: Init<boolean>;
+	public project: string;
+	public directory: string;
+	public name: string;
+	public extension: string;
+	public content: string;
+	public accessor editing = false;
 
 	@enumerable() public get path() {
-		return `${ this.directory }/${ this.name }${ this.extension }`.replaceAll(
-			/\/+/g,
-			'/',
-		);
+		return `${ this.directory }/${ this.name }${ this.extension }`
+			.replaceAll(/\/+/g, '/');
 	}
 
 }

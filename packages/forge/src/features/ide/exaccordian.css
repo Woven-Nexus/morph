@@ -32,19 +32,52 @@ s-accordian-header {
 	}
 }
 s-accordian-content {
-	flex-grow: 1;
+	--depth: 1;
+	--_base-padding: 12px;
+	--_padding-left: calc(var(--depth) * var(--_base-padding));
+
+	position: relative;
 	display: flex;
 	flex-flow: column;
 
 	s-accordian-item {
-		display: block;
+		display: flex;
+		align-items: center;
+		height: 26px;
+		padding-left: var(--_padding-left);
 
 		&:hover {
-			background-color: rgb(39, 41, 48);
+			background-color: rgb(39 41 48);
 		}
 		&.active {
-			background-color: rgb(53, 57, 64);
+			background-color: rgb(53 57 64);
 		}
+
+		s-item, s-folder {
+			padding-left: 6px;
+		}
+
+		input {
+			all: unset;
+			width: 100%;
+			height: 100%;
+			vertical-align: middle;
+			background-color: rgb(15 15 15);
+			margin-right: 4px;
+			padding-inline: 4px;
+		}
+	}
+
+	&:not(.root)::before {
+		content: '';
+		position: absolute;
+		z-index: 1;
+		display: block;
+		top: 0;
+		bottom: 0;
+		left: calc(var(--_padding-left) - var(--_base-padding) * 0.75);
+		width: 1px;
+		background-color: rgb(55, 55, 55);
 	}
 
 }

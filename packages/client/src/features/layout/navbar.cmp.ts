@@ -11,18 +11,19 @@ MMIcon.register();
 
 @customElement('m-navbar')
 export class NavbarCmp extends AegisElement {
+
 	@query('s-nav-container') protected container: HTMLElement;
 	@state() protected expanded = false;
 
 	protected override render(): unknown {
 		return html`
-		<s-nav-container class=${classMap({ active: this.expanded })}>
+		<s-nav-container class=${ classMap({ active: this.expanded }) }>
 			<button
-				@click=${() => {
+				@click=${ () => {
 					this.expanded = !this.expanded;
-				}}
+				} }
 			>
-				${when(
+				${ when(
 					this.expanded,
 					() => html`
 					<mm-icon
@@ -34,7 +35,7 @@ export class NavbarCmp extends AegisElement {
 						url="https://icons.getbootstrap.com/assets/icons/chevron-right.svg"
 					></mm-icon>
 					`,
-				)}
+				) }
 			</button>
 
 			<ul>
@@ -68,5 +69,6 @@ export class NavbarCmp extends AegisElement {
 		`;
 	}
 
-	public static override styles: CSSResultGroup = [sharedStyles, navbarStyles];
+	public static override styles: CSSResultGroup = [ sharedStyles, navbarStyles ];
+
 }
