@@ -39,6 +39,7 @@ s-accordian-content {
 	position: relative;
 	display: flex;
 	flex-flow: column;
+	user-select: none;
 
 	s-accordian-item {
 		display: flex;
@@ -52,11 +53,12 @@ s-accordian-content {
 		&.active {
 			background-color: rgb(53 57 64);
 		}
-
+		*:first-child {
+			padding-right: 6px;
+		}
 		s-item, s-folder {
 			padding-left: 6px;
 		}
-
 		input {
 			all: unset;
 			width: 100%;

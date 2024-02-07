@@ -52,7 +52,7 @@ export class ExplorerCmp extends AegisElement {
 						editing:   false,
 					});
 
-					collection.tryAdd(folder);
+					fileTransactions.push(collection.tryAdd(folder));
 				});
 			}
 
@@ -71,9 +71,10 @@ export class ExplorerCmp extends AegisElement {
 			fileTransactions.push(collection.add(file));
 		}
 
-		await Promise.all(fileTransactions);
+		await Promise.allSettled(fileTransactions);
 
 		this.files = await collection.getAll();
+		console.log('ze files', this.files);
 	}
 
 	protected handleNewFile() {
