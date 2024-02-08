@@ -36,6 +36,8 @@ export class ExplorerCmp extends AegisElement {
 		const files = this.files.filter(file => file.editing && file.name);
 		const fileTransactions: Promise<any>[] = [];
 
+		let fileToFocus = '';
+
 		for (const file of files) {
 			const parsed = parse(file.name);
 			if (parsed.dir) {
@@ -56,25 +58,25 @@ export class ExplorerCmp extends AegisElement {
 				});
 			}
 
-			if (parsed.ext) {
-				file.extension = parsed.ext;
-				file.name = parsed.name;
-			}
-
 			file.editing = false;
-			file.directory =  parsed.dir
+			file.name = parsed.name;
+			file.extension = parsed.ext;
+			file.directory =  normalize(parsed.dir
 				? join(file.directory, parsed.dir)
-				: file.directory;
-
-			file.directory = normalize(file.directory);
+				: file.directory);
 
 			fileTransactions.push(collection.add(file));
+			fileToFocus = file.id;
 		}
 
 		await Promise.allSettled(fileTransactions);
 
 		this.files = await collection.getAll();
-		console.log('ze files', this.files);
+
+		const exAccordianEl = this.shadowRoot?.querySelector('m-exaccordian');
+		this.updateComplete
+			.then(() => exAccordianEl?.updateComplete)
+			.then(() => exAccordianEl?.setActiveItem(fileToFocus));
 	}
 
 	protected handleNewFile() {
@@ -103,6 +105,12 @@ export class ExplorerCmp extends AegisElement {
 				content:   '',
 			}),
 		];
+
+		window.addEventListener('click', (ev) => {
+			const path = ev.composedPath() as HTMLElement[];
+			if (!path.some(el => el === exAccordianEl))
+				this.handleFilesFocusout();
+		}, { once: true });
 	}
 
 	protected override render(): unknown {
@@ -145,6 +153,10 @@ export class ExplorerCmp extends AegisElement {
 			] }
 			.items=${ this.files as any }
 			@input-focusout=${ this.handleFilesFocusout }
+			@select-item=${ (ev: CustomEvent<ForgeFile>) => {
+				const exAccordianEl = this.shadowRoot?.querySelector('m-exaccordian');
+				exAccordianEl?.setActiveItem(ev.detail.id);
+			} }
 		></m-exaccordian>
 		`;
 	}

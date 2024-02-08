@@ -2,8 +2,9 @@
 	display: contents;
 }
 s-accordian {
-	display: flex;
-	flex-flow: column;
+	overflow: hidden;
+	display: grid;
+	grid-template-rows: max-content 1fr;
 
 	&:hover s-actions {
 		opacity: 1;
@@ -37,12 +38,15 @@ s-accordian-content {
 	--_padding-left: calc(var(--depth) * var(--_base-padding));
 
 	position: relative;
-	display: flex;
-	flex-flow: column;
+	display: grid;
+	grid-auto-flow: row;
+	grid-auto-rows: max-content;
 	user-select: none;
 
 	s-accordian-item {
-		display: flex;
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: max-content;
 		align-items: center;
 		height: 26px;
 		padding-left: var(--_padding-left);
@@ -59,6 +63,9 @@ s-accordian-content {
 		s-item, s-folder {
 			padding-left: 6px;
 		}
+		&:has(input) {
+			display: flex;
+		}
 		input {
 			all: unset;
 			width: 100%;
@@ -68,6 +75,11 @@ s-accordian-content {
 			margin-right: 4px;
 			padding-inline: 4px;
 		}
+	}
+
+	&.root {
+		overflow: auto;
+		overflow-x: hidden;
 	}
 
 	&:not(.root)::before {

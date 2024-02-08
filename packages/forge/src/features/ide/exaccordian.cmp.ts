@@ -52,15 +52,27 @@ interface AccordianInput extends HTMLInputElement {
 @customElement('m-exaccordian', true)
 export class ExaccordianCmp extends AegisElement {
 
+	protected static isFolder(item?: ExplorerItem): item is ExplorerFolder {
+		return !!(item && 'open' in item);
+	}
+
+	protected static isFile(item?: ExplorerItem): item is ExplorerFile {
+		return !!(item && !('open' in item));
+	}
+
+	protected static findFromPath = <T>(event: Event, find: (el: HTMLElement) => boolean): T | undefined => {
+		return event.composedPath().find(el => find(el as HTMLElement)) as T | undefined;
+	};
+
 	@property({ type: Boolean }) public expanded?: boolean;
 	@property({ type: String }) public header?: string;
 	@property({ type: Array }) public actions?: AccordianAction[];
 	@property({ type: Array }) public items?: ForgeFile[];
 	@state() protected roots: ExplorerItem[] = [];
-	protected windowAbort: AbortController;
+	protected itemSet = new Set<ExplorerItem>();
 	public get activeItem(): ExplorerItem | undefined {
 		let item: ExplorerItem | undefined = undefined;
-		this.traverse(this.roots, node => {
+		this.itemSet.forEach(node => {
 			if (node.active)
 				item = node;
 		});
@@ -68,53 +80,62 @@ export class ExaccordianCmp extends AegisElement {
 		return item;
 	}
 
-	protected traverse(items: ExplorerItem[], fn: (item: ExplorerItem) => void) {
-		for (const item of items) {
-			fn(item);
-			if ('children' in item)
-				this.traverse(item.children, fn);
+	public setActiveItem(id: string) {
+		this.itemSet.forEach(node => { node.active = node.data.id === id; });
+
+		// open any parent folders that contain the active item.
+		let currentItem = this.activeItem?.parent;
+		while (ExaccordianCmp.isFolder(currentItem)) {
+			currentItem.open = true;
+			currentItem = currentItem.parent;
 		}
+
+		this.requestUpdate();
 	}
 
-	public override connectedCallback(): void {
-		super.connectedCallback();
+	protected traverse(items: ExplorerItem[], fn: (item: ExplorerItem) => void) {
+		const visitedItems = new WeakSet();
+		const trav = (items: ExplorerItem[], fn: (item: ExplorerItem) => void) => {
+			for (const item of items) {
+				if (visitedItems.has(item))
+					continue;
 
-		this.windowAbort = new AbortController();
-		window.addEventListener(
-			'click',
-			this.handleOutsideThisClick.bind(this),
-			{ signal: this.windowAbort.signal },
-		);
-	}
+				visitedItems.add(item);
+				fn(item);
 
-	public override disconnectedCallback(): void {
-		super.disconnectedCallback();
-		this.windowAbort.abort();
+				if ('children' in item)
+					trav(item.children, fn);
+			}
+		};
+		trav(items, fn);
 	}
 
 	protected override willUpdate(props: Map<PropertyKey, unknown>): void {
 		if (props.has('items') && this.items) {
+			const itemSet = new Set<ExplorerItem>();
 			const files: ExplorerFile[] = [];
 			const folders: ExplorerFolder[] = [];
 			const roots: ExplorerItem[] = [];
 
 			for (const item of this.items ?? []) {
-				let exItem: ExplorerItem;
+				let exItem: ExplorerItem | undefined = undefined;
+
+				this.itemSet.forEach(node => {
+					if (node.data.id === item.id)
+						exItem = node;
+				});
 
 				if (!item.extension && !item.editing) {
-					exItem = {
-						active:   true,
-						selected: false,
-						open:     false,
-						data:     item,
-						children: [],
-						parent:   undefined,
-					} satisfies ExplorerFolder;
-
-					this.traverse(this.roots, node => {
-						if (node.data.id === item.id)
-							exItem = node;
-					});
+					if (!exItem) {
+						exItem = {
+							active:   false,
+							selected: false,
+							open:     false,
+							data:     item,
+							children: [],
+							parent:   undefined,
+						} satisfies ExplorerFolder;
+					}
 
 					// If going from an editing state to a folder.
 					// the open property has not been added, even if the item exists.
@@ -122,50 +143,38 @@ export class ExaccordianCmp extends AegisElement {
 					folders.push(exItem);
 				}
 				else {
-					exItem = {
-						active:   true,
-						selected: false,
-						data:     item,
-						parent:   undefined,
-					} satisfies ExplorerFile;
-
-					this.traverse(this.roots, node => {
-						if (node.data.id === item.id)
-							exItem = node;
-					});
+					if (!exItem) {
+						exItem = {
+							active:   false,
+							selected: false,
+							data:     item,
+							parent:   undefined,
+						} satisfies ExplorerFile;
+					}
 
 					files.push(exItem);
 				}
 
+				// We clear out the children, as we relink these below.
+				if (ExaccordianCmp.isFolder(exItem))
+					exItem.children = [];
+
 				if (item.directory === '/')
 					roots.push(exItem);
+
+				itemSet.add(exItem);
 			}
 
-			// Link folder hierarchy structure.
-			for (const folder of folders) {
-				folder.children = [];
-
+			// Link folder hierarchy structure then add files into the correct folders.
+			for (const item of [ ...folders, ...files ]) {
 				// find parent folder.
-				const parent = folders.find(f => f.data.path === folder.data.directory);
+				const parent = folders.find(f => f.data.path === item.data.directory);
 				if (!parent)
 					continue; // folder is in root.
 
-				folder.parent = parent;
-
-				if (!parent.children.some(i => i === folder))
-					parent.children.push(folder);
-			}
-
-			// Add files into the correct folders.
-			for (const file of files) {
-				const parent = folders.find(f => f.data.path === file.data.directory);
-				if (!parent)
-					continue; // file is in root.
-
-				file.parent = parent;
-
-				if (!parent.children.some(i => i === file))
-					parent.children.push(file);
+				item.parent = parent;
+				if (!parent.children.some(i => i === item))
+					parent.children.push(item);
 			}
 
 			// open any parent folders that contain an item being edited.
@@ -174,59 +183,32 @@ export class ExaccordianCmp extends AegisElement {
 					continue;
 
 				let currentItem = file.parent;
-				while (currentItem) {
-					if ('open' in currentItem)
-						currentItem.open = true;
-
+				while (ExaccordianCmp.isFolder(currentItem)) {
+					currentItem.open = true;
 					currentItem = currentItem.parent;
 				}
 			}
 
-			// Find out which nodes are new, and select the last one of those as the active.
-
-
 			this.roots = roots;
+			this.itemSet = itemSet;
 		}
 	}
 
 	protected handleItemClick(ev: PointerEvent) {
 		ev.preventDefault();
-		const path = ev.composedPath() as HTMLElement[];
-		const itemEl = path.find(el =>
-			el.localName === 's-accordian-item') as AccordianItem;
 
-		this.traverse(this.roots, item => {
-			if (itemEl.item !== item)
-				item.active = false;
-		});
+		const item = ExaccordianCmp .findFromPath<AccordianItem>(
+			ev, el => el.localName === 's-accordian-item',
+		)?.item;
 
-		itemEl.item.active = true;
-		const activeItem = this.activeItem;
+		if (!item)
+			return;
 
-		console.log({ activeItem });
+		if (ExaccordianCmp.isFolder(item))
+			item.open = !item.open;
 
-
-		if (activeItem && 'open' in activeItem)
-			activeItem.open = !activeItem.open;
-
+		emitEvent(this, 'select-item', { detail: item?.data });
 		this.requestUpdate();
-	}
-
-	protected handleOutsideItemClick(ev: PointerEvent) {
-		const path = ev.composedPath() as HTMLElement[];
-		const itemEl = path.find(el =>
-			el.localName === 's-accordian-item') as AccordianItem;
-
-		if (!itemEl) {
-			this.traverse(this.roots, item => item.active = false);
-			this.requestUpdate();
-		}
-	}
-
-	protected handleOutsideThisClick(ev: MouseEvent) {
-		const path = ev.composedPath() as HTMLElement[];
-		if (!path.some(el => el === this))
-			emitEvent(this, 'input-focusout');
 	}
 
 	protected handleInputFocusout(_ev: FocusEvent) {
@@ -370,7 +352,7 @@ export class ExaccordianCmp extends AegisElement {
 
 	protected override render(): unknown {
 		return html`
-		<s-accordian @click=${ this.handleOutsideItemClick }>
+		<s-accordian>
 			${ this.renderHeader(this.header ?? '') }
 			${ when(
 				this.expanded,
