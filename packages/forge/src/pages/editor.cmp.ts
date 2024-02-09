@@ -1,6 +1,7 @@
 import { AegisElement, customElement } from '@roenlie/lit-aegis';
-import { html } from 'lit';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
+import { html } from 'lit';
+
 import { ForgeFile } from '../features/filesystem/forge-file.js';
 import { MimicDB } from '../features/filesystem/mimic-db.js';
 import { ExplorerCmp } from '../features/ide/explorer.cmp.js';
@@ -21,11 +22,12 @@ MimicDB.setup('forge-filesystem', setup => {
 
 @customElement('m-editor-page', true)
 export class EditorPageCmp extends AegisElement {
+
 	public static page = true;
 
 	protected override render(): unknown {
 		return html`
-		<s-primary-sidebar id="primary-sidebar">
+		<s-primary-sidebar id="primary-sidebar" style="width:200px;">
 			<m-explorer></m-explorer>
 		</s-primary-sidebar>
 
@@ -43,5 +45,7 @@ export class EditorPageCmp extends AegisElement {
 		</s-status-bar>
 		`;
 	}
-	public static override styles = [sharedStyles, editorStyles];
+
+	public static override styles = [ sharedStyles, editorStyles ];
+
 }

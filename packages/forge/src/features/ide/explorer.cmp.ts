@@ -2,19 +2,23 @@ import { AegisElement, customElement, state } from '@roenlie/lit-aegis';
 import { MMButton } from '@roenlie/mimic-elements/button';
 import { MMIcon } from '@roenlie/mimic-elements/icon';
 import { MMTooltip } from '@roenlie/mimic-elements/tooltip';
+import { DynamicStyle } from '@roenlie/mimic-elements/utilities';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { html } from 'lit';
+import { query, queryAll } from 'lit/decorators.js';
 import { join, normalize, parse, sep } from 'posix-path-browser';
 
 import { ForgeFile, ForgeFileDB } from '../filesystem/forge-file.js';
 import { MimicDB } from '../filesystem/mimic-db.js';
-import { ExaccordianCmp } from './exaccordian.cmp.js';
 import explorerStyles from './explorer.css' with { type: 'css' };
+import { type AccordianAction, ExplorerAccordianCmp } from './explorer-accordian.cmp.js';
+import { FileExplorerCmp } from './file-explorer.cmp.js';
 
 MMIcon.register();
 MMButton.register();
 MMTooltip.register();
-ExaccordianCmp.register();
+ExplorerAccordianCmp.register();
+FileExplorerCmp.register();
 
 
 @customElement('m-explorer')
@@ -22,6 +26,26 @@ export class ExplorerCmp extends AegisElement {
 
 	@state() protected project = 'test';
 	@state() protected files: ForgeFile[] = [];
+	@query('m-file-explorer') protected fileExplorerEl: FileExplorerCmp;
+	@queryAll('m-explorer-accordian') protected accordianEls: NodeListOf<HTMLElement>;
+
+	protected fileExplorerActions: AccordianAction[] = [
+		{
+			label:  'New File...',
+			icon:   'https://icons.getbootstrap.com/assets/icons/file-earmark-plus.svg',
+			action: () => this.handleNewFile(),
+		},
+		{
+			label:  'New Folder...',
+			icon:   'https://icons.getbootstrap.com/assets/icons/folder-plus.svg',
+			action: () => this.handleNewFile(),
+		},
+		{
+			label:  'Collapse Folders in Explorer',
+			icon:   'https://icons.getbootstrap.com/assets/icons/dash-square.svg',
+			action: () => {},
+		},
+	];
 
 	public override async connectedCallback() {
 		super.connectedCallback();
@@ -72,21 +96,18 @@ export class ExplorerCmp extends AegisElement {
 		await Promise.allSettled(fileTransactions);
 
 		this.files = await collection.getAll();
-
-		const exAccordianEl = this.shadowRoot?.querySelector('m-exaccordian');
 		this.updateComplete
-			.then(() => exAccordianEl?.updateComplete)
-			.then(() => exAccordianEl?.setActiveItem(fileToFocus));
+			.then(() => this.fileExplorerEl.updateComplete)
+			.then(() => this.fileExplorerEl.setActiveItem(fileToFocus));
 	}
 
 	protected handleNewFile() {
 		if (this.files.some(file => file.editing))
 			return;
 
-		const exAccordianEl = this.shadowRoot?.querySelector('m-exaccordian');
 		let activeDir = '/';
 
-		const item = exAccordianEl?.activeItem;
+		const item = this.fileExplorerEl.activeItem;
 		if (item) {
 			if (item.data.extension)
 				activeDir = item.data.directory;
@@ -106,15 +127,41 @@ export class ExplorerCmp extends AegisElement {
 			}),
 		];
 
-		window.addEventListener('click', (ev) => {
+		window.addEventListener('mousedown', (ev) => {
 			const path = ev.composedPath() as HTMLElement[];
-			if (!path.some(el => el === exAccordianEl))
+			if (!path.some(el => el === this.fileExplorerEl))
 				this.handleFilesFocusout();
 		}, { once: true });
 	}
 
+	protected handleAccordianToggle(ev: Event) {
+		const target = (ev.composedPath() as HTMLElement[])
+			.find(el => el.localName === 'm-explorer-accordian') as ExplorerAccordianCmp | undefined;
+
+		if (target) {
+			target.expanded = !target.expanded;
+			this.requestUpdate();
+		}
+	}
+
+	protected handleSelectItem(ev: CustomEvent<ForgeFile>) {
+		this.fileExplorerEl.setActiveItem(ev.detail.id);
+	}
+
+	protected dynamicStyle = new DynamicStyle();
+	protected get dynamicStyles() {
+		const style = this.dynamicStyle;
+		style.selector('s-explorer-content')
+			.property('grid-template-rows', [ ...this.accordianEls ].map((el) =>
+				el.hasAttribute('expanded') ? 'minmax(32px, 1fr)' : 'minmax(32px, 0fr)').join(' '));
+
+		return style.toString();
+	}
+
 	protected override render(): unknown {
 		return html`
+		<style>${ this.dynamicStyles }</style>
+
 		<s-explorer-header>
 			<span>
 				EXPLORER
@@ -131,33 +178,44 @@ export class ExplorerCmp extends AegisElement {
 				></mm-icon>
 			</mm-button>
 		</s-explorer-header>
-		<m-exaccordian
-			expanded
-			header="files"
-			.actions=${ [
-				{
-					label:  'New File...',
-					icon:   'https://icons.getbootstrap.com/assets/icons/file-earmark-plus.svg',
-					action: () => this.handleNewFile(),
-				},
-				{
-					label:  'New Folder...',
-					icon:   'https://icons.getbootstrap.com/assets/icons/folder-plus.svg',
-					action: () => this.handleNewFile(),
-				},
-				{
-					label:  'Collapse Folders in Explorer',
-					icon:   'https://icons.getbootstrap.com/assets/icons/dash-square.svg',
-					action: () => {},
-				},
-			] }
-			.items=${ this.files as any }
-			@input-focusout=${ this.handleFilesFocusout }
-			@select-item=${ (ev: CustomEvent<ForgeFile>) => {
-				const exAccordianEl = this.shadowRoot?.querySelector('m-exaccordian');
-				exAccordianEl?.setActiveItem(ev.detail.id);
-			} }
-		></m-exaccordian>
+
+		<s-explorer-content
+			@expand=${ this.handleAccordianToggle }
+			@collapse=${ this.handleAccordianToggle }
+		>
+			<m-explorer-accordian
+				expanded
+				id="file-explorer"
+				header="files"
+				.actions=${ [
+					{
+						label:  'New File...',
+						icon:   'https://icons.getbootstrap.com/assets/icons/file-earmark-plus.svg',
+						action: () => this.handleNewFile(),
+					},
+					{
+						label:  'New Folder...',
+						icon:   'https://icons.getbootstrap.com/assets/icons/folder-plus.svg',
+						action: () => this.handleNewFile(),
+					},
+					{
+						label:  'Collapse Folders in Explorer',
+						icon:   'https://icons.getbootstrap.com/assets/icons/dash-square.svg',
+						action: () => {},
+					},
+				] }
+			>
+				<m-file-explorer
+					.items=${ this.files }
+					@select-item=${ this.handleSelectItem }
+					@input-focusout=${ this.handleFilesFocusout }
+				></m-file-explorer>
+			</m-explorer-accordian>
+
+			<m-explorer-accordian
+				header="Other"
+			></m-explorer-accordian>
+		</s-explorer-content>
 		`;
 	}
 

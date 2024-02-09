@@ -1,38 +1,8 @@
 :host {
 	display: contents;
 }
-s-accordian {
-	overflow: hidden;
-	display: grid;
-	grid-template-rows: max-content 1fr;
 
-	&:hover s-actions {
-		opacity: 1;
-	}
-}
-s-accordian-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 4px;
-	height: 32px;
-	background-color: rgb(33, 37, 43);
-	border-top: 1px solid rgb(13, 17, 23);
-	text-transform: uppercase;
-	cursor: pointer;
-	user-select: none;
-
-	span {
-		flex-grow: 1;
-	}
-
-	s-actions {
-		display: flex;
-		transition: opacity 300ms ease-out;
-		opacity: 0;
-	}
-}
-s-accordian-content {
+s-explorer-content {
 	--depth: 1;
 	--_base-padding: 12px;
 	--_padding-left: calc(var(--depth) * var(--_base-padding));
@@ -43,10 +13,10 @@ s-accordian-content {
 	grid-auto-rows: max-content;
 	user-select: none;
 
-	s-accordian-item {
+	s-explorer-item {
+		overflow: hidden;
 		display: grid;
-		grid-auto-flow: column;
-		grid-auto-columns: max-content;
+		grid-template-columns: max-content max-content 1fr;
 		align-items: center;
 		height: 26px;
 		padding-left: var(--_padding-left);
@@ -61,6 +31,10 @@ s-accordian-content {
 			padding-right: 6px;
 		}
 		s-item, s-folder {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			display: block;
 			padding-left: 6px;
 		}
 		&:has(input) {
