@@ -5,20 +5,36 @@ import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
-self.MonacoEnvironment = {
-	getWorker(_: unknown, label: string) {
-		if (label === 'json') return new jsonWorker();
 
-		if (label === 'css' || label === 'scss' || label === 'less')
-			return new cssWorker();
+export const setUserWorker = (() => {
+	let initialized = false;
 
-		if (label === 'html' || label === 'handlebars' || label === 'razor')
-			return new htmlWorker();
+	const fn = () => {
+		if (initialized)
+			return;
 
-		if (label === 'typescript' || label === 'javascript') return new tsWorker();
+		initialized = true;
+		self.MonacoEnvironment = {
+			getWorker(_: unknown, label: string) {
+				if (label === 'json')
+					return new jsonWorker();
 
-		return new editorWorker();
-	},
-};
+				if (label === 'css' || label === 'scss' || label === 'less')
+					return new cssWorker();
 
-monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+				if (label === 'html' || label === 'handlebars' || label === 'razor')
+					return new htmlWorker();
+
+				if (label === 'typescript' || label === 'javascript')
+					return new tsWorker();
+
+				return new editorWorker();
+			},
+		};
+
+		monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+	};
+	fn();
+
+	return fn;
+})();

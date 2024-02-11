@@ -1,21 +1,24 @@
+import { viteCopy } from '@roenlie/package-toolbox/vite-utils';
 import { defineConfig } from 'vite';
 import { viteImportCssSheet } from 'vite-plugin-import-css-sheet';
-import { viteCopy } from '@roenlie/package-toolbox/vite-utils';
 
-export default defineConfig({
-	root: './src',
+export default defineConfig((env) => ({
+	root:      './src',
 	publicDir: '../public',
-	plugins: [
+	plugins:   [
 		viteImportCssSheet(),
 		viteCopy({
 			targets: [
 				{
 					from: './node_modules/@roenlie/mimic-elements/styles/*',
-					to: './public/vendor/mimic-elements',
+					to:   './public/vendor/mimic-elements',
 				},
 			],
-			hook: 'config',
+			hook:     'config',
 			copyOnce: true,
 		}),
 	],
-});
+	resolve: {
+		conditions: env.mode === 'development' ? [ 'morph-workspace' ] : [],
+	},
+}));
