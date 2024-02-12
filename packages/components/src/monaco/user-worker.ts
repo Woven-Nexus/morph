@@ -5,7 +5,6 @@ import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
-
 export const setUserWorker = (() => {
 	let initialized = false;
 
@@ -32,8 +31,41 @@ export const setUserWorker = (() => {
 			},
 		};
 
-		monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+		const ts = monaco.languages.typescript;
+		ts.typescriptDefaults.setEagerModelSync(true);
+		ts.typescriptDefaults.setCompilerOptions({
+			...ts.typescriptDefaults.getCompilerOptions(),
+			experimentalDecorators:             true,
+			target:                             ts.ScriptTarget.ESNext,
+			module:                             ts.ModuleKind.ESNext,
+			moduleResolution:                   ts.ModuleResolutionKind.Classic,
+			pretty:                             true,
+			strict:                             true,
+			noUncheckedIndexedAccess:           true,
+			noPropertyAccessFromIndexSignature: true,
+			strictPropertyInitialization:       false,
+			forceConsistentCasingInFileNames:   true,
+			allowSyntheticDefaultImports:       true,
+			noImplicitOverride:                 true,
+			useDefineForClassFields:            false,
+			noEmitOnError:                      true,
+			incremental:                        false,
+			verbatimModuleSyntax:               true,
+			esModuleInterop:                    true,
+			skipLibCheck:                       true,
+			resolveJsonModule:                  true,
+			noUnusedLocals:                     false,
+			noUnusedParameters:                 false,
+			noFallthroughCasesInSwitch:         true,
+			strictNullChecks:                   true,
+			emitDecoratorMetadata:              true,
+			noImplicitReturns:                  false,
+			noImplicitAny:                      true,
+			noImplicitThis:                     true,
+			isolatedModules:                    true,
+		});
 	};
+
 	fn();
 
 	return fn;

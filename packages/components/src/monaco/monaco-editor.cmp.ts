@@ -12,15 +12,31 @@ import { editor } from 'monaco-editor';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import editorStyleUrl from 'monaco-editor/min/vs/editor/editor.main.css?url';
 
-import plasticTheme from './plastic-theme.json';
-import { updateTheme } from './theme-converter.js';
-
-const converted = updateTheme(plasticTheme);
-console.log(converted);
+import { updateLangConfig } from './lang-config-extender.js';
 
 
 @customElement('monaco-editor')
 export class MonacoEditorCmp extends MimicElement {
+
+	protected static modifyLangConfig: Promise<any>;
+	static {
+		this.modifyLangConfig = updateLangConfig('typescript', {
+			keywords:  [ 'this' ],
+			// The main tokenizer for language
+			tokenizer: {
+				root:       [ { include: 'custom' } ],
+				assignment: [ [ /= \(/, 'meta.assignment', '@pop' ] ],
+				custom:     [
+					{ include: '@whitespace' },
+					[ 'this', 'keywords.this' ],
+					[ 'export', 'keywords.export' ],
+					[ '@', 'meta.decorator' ],
+					[ /[\w\d]+(?:\()/, { token: 'keywords.function', goBack: 1 } ],
+					[ /[\w\d]+ += +\(/, { token: 'keywords.arrowfunction', goBack: 4 } ],
+				],
+			},
+		});
+	}
 
 	@property() public placeholder: string;
 
@@ -61,32 +77,45 @@ export class MonacoEditorCmp extends MimicElement {
 	protected async afterConnected() {
 		this.resizeObs.observe(this);
 
-		this._editor = monaco.editor.create(this.monacoRef.value!, {
-			model:                null,
-			language:             'typescript',
-			tabSize:              3,
-			theme:                'vs-dark',
-			mouseWheelZoom:       true,
-			fixedOverflowWidgets: true,
-			useShadowDOM:         true,
-			minimap:              { enabled: false },
-		});
-
-		monaco.editor.defineTheme(converted.name, {
-			...converted,
-			colors: {
+		await MonacoEditorCmp.modifyLangConfig;
+		monaco.editor.defineTheme('Plastic', {
+			base:    'vs-dark',
+			inherit: true,
+			colors:  {
 				'editor.background':                   '#1E1E1E',
 				'editor.foreground':                   '#D4D4D4',
 				'editor.inactiveSelectionBackground':  '#3A3D41',
 				'editorIndentGuide.background':        '#404040',
 				'editor.selectionHighlightBackground': '#ADD6FF26',
+				'editorBracketHighlight.foreground1':  '#A9B2C3',
+				'editorBracketHighlight.foreground2':  '#61AFEF',
+				'editorBracketHighlight.foreground3':  '#E5C07B',
+				'editorBracketHighlight.foreground4':  '#E06C75',
+				'editorBracketHighlight.foreground5':  '#98C379',
+				'editorBracketHighlight.foreground6':  '#B57EDC',
 			},
 			rules: [
-				//
 				{ token: 'type', foreground: 'E5C07B' },
+				{ token: 'identifier', foreground: 'C6CCD7' },
+				{ token: 'string', foreground: '98C379' },
+				{ token: 'keywords.this', foreground: 'E06C75' },
+				{ token: 'keywords.export', foreground: 'E06C75' },
+				{ token: 'keywords.function', foreground: 'B57EDC' },
+				{ token: 'keywords.arrowfunction', foreground: 'B57EDC' },
+				{ token: 'meta.decorator', foreground: 'A9B2C3' },
 			],
 		});
-		monaco.editor.setTheme('Plastic');
+
+		this._editor = monaco.editor.create(this.monacoRef.value!, {
+			model:                null,
+			language:             'typescript',
+			tabSize:              3,
+			theme:                'Plastic',
+			mouseWheelZoom:       true,
+			fixedOverflowWidgets: true,
+			useShadowDOM:         true,
+			minimap:              { enabled: false },
+		});
 
 		this.disposables.push(
 			this._editor.onDidChangeModel(() => {

@@ -8,6 +8,24 @@ import workspaceStyles from './workspace.css' with { type: 'css' };
 
 MonacoEditorCmp.register();
 
+const exampleCode = `
+const property = () => (target: any, prop: any, key?: any) => {}
+
+export class Test {
+
+	@property() public publicProp: string = 'hello string';
+
+	public numberGoesHere = 5;
+
+	public method() {
+		this.publicProp = 'lets reassign';
+	}
+
+}
+// Here is a comment
+const variable = 'string goes here';
+`;
+
 
 @customElement('m-workspace')
 export class WorkspaceCmp extends AegisElement {
@@ -20,10 +38,7 @@ export class WorkspaceCmp extends AegisElement {
 		const editor = target.editor!;
 
 		// Initialize the editor with a model.
-		const model = monaco.createModel(`
-class Test {
-
-}`, 'typescript');
+		const model = monaco.createModel(exampleCode, 'typescript');
 		editor.setModel(model);
 		editor.restoreViewState(null);
 		editor.focus();
