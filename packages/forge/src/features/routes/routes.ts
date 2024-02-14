@@ -1,5 +1,6 @@
 import { AppRouterCmp } from '@roenlie/mimic-elements/router';
 import type { Route } from '@vaadin/router';
+
 import { LayoutPageCmp } from '../../pages/layout.cmp.js';
 
 // We cache the layout, as we don't want to reinitialize it.
@@ -7,10 +8,11 @@ let layoutCmp: HTMLElement | undefined = undefined;
 
 export const routes: Route[] = [
 	{
-		name: 'layout',
-		path: '/',
+		name:   'layout',
+		path:   '/',
 		action: async () => {
-			if (layoutCmp) return layoutCmp;
+			if (layoutCmp)
+				return layoutCmp;
 
 			(await import('../../pages/layout.cmp.js')).LayoutPageCmp.register();
 			layoutCmp = document.createElement(LayoutPageCmp.tagName);
@@ -18,17 +20,17 @@ export const routes: Route[] = [
 			return layoutCmp;
 		},
 		children: [
-			{ path: '', redirect: '/editor' },
+			{ path: '', redirect: '/forge' },
 			{
-				name: 'editor',
-				path: '/editor',
+				name:   'forge',
+				path:   '/forge',
 				action: AppRouterCmp.routeComponent(
-					() => import('../../pages/editor.cmp.js'),
+					() => import('../../pages/forge.cmp.js'),
 				),
 			},
 			{
-				name: 'settings',
-				path: '/settings',
+				name:   'settings',
+				path:   '/settings',
 				action: AppRouterCmp.routeComponent(
 					() => import('../../pages/settings.cmp.js'),
 				),

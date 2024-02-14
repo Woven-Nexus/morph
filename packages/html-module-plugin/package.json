@@ -11,6 +11,7 @@
 	},
 	"dependencies": {
 		"@parse5/tools": "^0.3.0",
-		"parse5": "^7.1.2"
+		"parse5": "^7.1.2",
+		"tslib": "^2.6.2"
 	}
 }

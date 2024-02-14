@@ -2,9 +2,9 @@
 	overflow: hidden;
 	height: 100%;
 	display: grid;
-	grid-template: "primary-sidebar workspace secondary-sidebar" 1fr
-						"primary-sidebar panel secondary-sidebar" max-content
-						"status-bar status-bar status-bar" max-content
+	grid-template: "primary-sidebar workspace  secondary-sidebar" 1fr
+						"primary-sidebar panel      secondary-sidebar" max-content
+						"status-bar      status-bar status-bar" max-content
 						/ max-content 1fr max-content;
 }
 #nav {
@@ -14,30 +14,30 @@
 	border-right: 1px solid rgb(13, 17, 23);
 }
 #primary-sidebar {
-	display: block;
 	grid-area: primary-sidebar;
+	display: block;
 
 	min-width: 200px;
 	background-color: rgb(24, 26, 31);
 	border-right: 1px solid rgb(13, 17, 23);
 }
 #workspace {
+	grid-area: workspace;
 	overflow: hidden;
 	display: block;
-	grid-area: workspace;
 	background-color: rgb(33, 37, 43);
 }
 #panel {
-	display: block;
 	grid-area: panel;
+	display: block;
 }
 #secondary-sidebar {
-	display: block;
 	grid-area: secondary-sidebar;
+	display: block;
 }
 #status-bar {
-	display: block;
 	grid-area: status-bar;
+	display: block;
 
 	min-height: 20px;
 	background-color: rgb(30, 30, 30);

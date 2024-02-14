@@ -13,5 +13,7 @@
 		"build->js": "vite build",
 		"build->ts": "tsc --project ./src/tsconfig.json"
 	},
-	"dependencies": {}
+	"dependencies": {
+		"tslib": "^2.6.2"
+	}
 }

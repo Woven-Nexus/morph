@@ -14,6 +14,8 @@ import editorStyleUrl from 'monaco-editor/min/vs/editor/editor.main.css?url';
 
 import { updateLangConfig } from './lang-config-extender.js';
 
+export type { editor };
+
 
 @customElement('monaco-editor')
 export class MonacoEditorCmp extends MimicElement {
@@ -21,18 +23,24 @@ export class MonacoEditorCmp extends MimicElement {
 	protected static modifyLangConfig: Promise<any>;
 	static {
 		this.modifyLangConfig = updateLangConfig('typescript', {
-			keywords:  [ 'this' ],
-			// The main tokenizer for language
-			tokenizer: {
-				root:       [ { include: 'custom' } ],
-				assignment: [ [ /= \(/, 'meta.assignment', '@pop' ] ],
-				custom:     [
-					{ include: '@whitespace' },
-					[ 'this', 'keywords.this' ],
-					[ 'export', 'keywords.export' ],
+			typeKeywords:    [ 'any', 'boolean', 'number', 'object', 'string', 'undefined' ],
+			specialKeywords: [ 'this', 'export', 'return', 'default' ],
+			tokenizer:       {
+				root:   [ { include: 'custom' } ],
+				custom: [
 					[ '@', 'meta.decorator' ],
-					[ /[\w\d]+(?:\()/, { token: 'keywords.function', goBack: 1 } ],
-					[ /[\w\d]+ += +\(/, { token: 'keywords.arrowfunction', goBack: 4 } ],
+					[ /[\w\d]+ *`/, { token: 'function', goBack: 1 } ],
+					[ /[\w\d]+ *\(/, { token: 'function', goBack: 1 } ],
+					[
+						/[#]?[a-z_$][\w$]*/, {
+							cases: {
+								'@specialKeywords': 'keyword.special',
+								'@typeKeywords':    'keyword.type',
+								'@keywords':        'keyword',
+								'@default':         'identifier',
+							},
+						},
+					],
 				],
 			},
 		});
@@ -95,13 +103,12 @@ export class MonacoEditorCmp extends MimicElement {
 				'editorBracketHighlight.foreground6':  '#B57EDC',
 			},
 			rules: [
-				{ token: 'type', foreground: 'E5C07B' },
 				{ token: 'identifier', foreground: 'C6CCD7' },
 				{ token: 'string', foreground: '98C379' },
-				{ token: 'keywords.this', foreground: 'E06C75' },
-				{ token: 'keywords.export', foreground: 'E06C75' },
-				{ token: 'keywords.function', foreground: 'B57EDC' },
-				{ token: 'keywords.arrowfunction', foreground: 'B57EDC' },
+				{ token: 'function', foreground: 'B57EDC' },
+				{ token: 'type', foreground: 'E5C07B' },
+				{ token: 'keyword.type', foreground: 'E5C07B' },
+				{ token: 'keyword.special', foreground: 'E06C75' },
 				{ token: 'meta.decorator', foreground: 'A9B2C3' },
 			],
 		});
@@ -109,8 +116,8 @@ export class MonacoEditorCmp extends MimicElement {
 		this._editor = monaco.editor.create(this.monacoRef.value!, {
 			model:                null,
 			language:             'typescript',
-			tabSize:              3,
 			theme:                'Plastic',
+			tabSize:              3,
 			mouseWheelZoom:       true,
 			fixedOverflowWidgets: true,
 			useShadowDOM:         true,

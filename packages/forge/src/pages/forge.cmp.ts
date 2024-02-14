@@ -4,11 +4,11 @@ import { html } from 'lit';
 
 import { ForgeFile } from '../features/filesystem/forge-file.js';
 import { MimicDB } from '../features/filesystem/mimic-db.js';
+import { EditorCmp } from '../features/ide/editor.cmp.js';
 import { ExplorerCmp } from '../features/ide/explorer.cmp.js';
-import { WorkspaceCmp } from '../features/ide/workspace.cmp.js';
-import editorStyles from './editor.css' with { type: 'css' };
+import forgeStyles from './forge.css' with { type: 'css' };
 
-WorkspaceCmp.register();
+EditorCmp.register();
 ExplorerCmp.register();
 
 MimicDB.setup('forge-filesystem', setup => {
@@ -20,8 +20,9 @@ MimicDB.setup('forge-filesystem', setup => {
 		.mutate(() => {});
 });
 
-@customElement('m-editor-page', true)
-export class EditorPageCmp extends AegisElement {
+
+@customElement('m-forge-page', true)
+export class ForgePageCmp extends AegisElement {
 
 	public static page = true;
 
@@ -32,7 +33,7 @@ export class EditorPageCmp extends AegisElement {
 		</s-primary-sidebar>
 
 		<s-workspace id="workspace">
-			<m-workspace></m-workspace>
+			<m-editor></m-editor>
 		</s-workspace>
 
 		<s-panel id="panel">
@@ -46,6 +47,6 @@ export class EditorPageCmp extends AegisElement {
 		`;
 	}
 
-	public static override styles = [ sharedStyles, editorStyles ];
+	public static override styles = [ sharedStyles, forgeStyles ];
 
 }

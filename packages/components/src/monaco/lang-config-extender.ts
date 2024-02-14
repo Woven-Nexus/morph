@@ -1,7 +1,7 @@
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 
 
-interface MonarchObject {
+type MonarchObject = {
 	defaultToken: string;
 	tokenPostfix: string;
 	keywords: string[];
@@ -16,7 +16,7 @@ interface MonarchObject {
 	regexpctl: RegExp;
 	regexpesc: RegExp;
 	tokenizer: MonarchTokenizer;
-}
+} & Record<string, any>
 
 type MonarchTokenizer = Record<string, TokenizerEntry[]>;
 
@@ -31,10 +31,19 @@ type TokenizerEntry = [
 ] | [
 	regex: string | RegExp,
 	{
-		token: string;
+		token?: string;
 		goBack?: number;
+		cases?: Record<string, TokenizerEntry | string>;
+		log?: string;
+		next?: string;
 	}
 ] | {
+	token?: string;
+	goBack?: number;
+	cases?: Record<string, TokenizerEntry | string>;
+	log?: string;
+	next?: string;
+} | {
 	include: string;
 }
 
@@ -65,8 +74,6 @@ export const updateLangConfig = async (lang: string, monarchObject: Partial<Mona
 				if (Array.isArray(tokenDefs))
 					tokenArr.unshift(...tokenDefs);
 			}
-
-			console.log(tokenizer);
 		}
 		else if (Array.isArray(value)) {
 			const propArr: unknown = ((language as any)[key] ??= []);

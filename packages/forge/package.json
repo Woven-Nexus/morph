@@ -17,6 +17,8 @@
 		"@roenlie/morph-components": "workspace:^",
 		"@vaadin/router": "^1.7.5",
 		"lit": "^3.1.0",
+		"tslib": "^2.6.2",
+		"typescript": "^5.3.3",
 		"posix-path-browser": "workspace:^"
 	},
 	"devDependencies": {
