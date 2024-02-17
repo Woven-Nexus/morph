@@ -9,17 +9,18 @@
 		"dev": "vite"
 	},
 	"dependencies": {
-		"@lit-labs/preact-signals": "^1.0.1",
-		"@roenlie/lit-aegis": "^1.0.40",
-		"@roenlie/mimic-core": "^0.0.81",
-		"@roenlie/mimic-elements": "^0.0.76",
-		"@roenlie/mimic-lit": "^0.0.91",
+		"@lit-labs/preact-signals": "^1.0.2",
+		"@roenlie/lit-aegis": "^1.0.42",
+		"@roenlie/mimic-core": "^0.0.83",
+		"@roenlie/mimic-elements": "^0.0.78",
+		"@roenlie/mimic-lit": "^0.0.93",
 		"@roenlie/morph-components": "workspace:^",
 		"@vaadin/router": "^1.7.5",
-		"lit": "^3.1.0",
+		"lit": "^3.1.2",
+		"magic-string": "^0.30.7",
+		"posix-path-browser": "workspace:^",
 		"tslib": "^2.6.2",
-		"typescript": "^5.3.3",
-		"posix-path-browser": "workspace:^"
+		"typescript": "^5.3.3"
 	},
 	"devDependencies": {
 		"vite-plugin-import-css-sheet": "^1.0.3"

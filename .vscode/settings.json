@@ -69,6 +69,26 @@
 					]
 				}
 			]
+		},
+		{
+			"splitTerminals": [
+				{
+					"name": "forge",
+					"commands": [
+						"cd packages/forge"
+					]
+				}
+			]
+		},
+		{
+			"splitTerminals": [
+				{
+					"name": "components",
+					"commands": [
+						"cd packages/components"
+					]
+				}
+			]
 		}
 	],
 }

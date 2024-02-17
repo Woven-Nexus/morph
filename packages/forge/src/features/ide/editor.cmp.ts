@@ -3,6 +3,7 @@ import { debounce } from '@roenlie/mimic-core/timing';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { type editor, MonacoEditorCmp } from '@roenlie/morph-components/monaco';
 import { html } from 'lit';
+import { queryAssignedElements } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
@@ -13,6 +14,10 @@ MonacoEditorCmp.register();
 
 
 const exampleCode = `
+import 'forge0';
+import tester, {something1, something2} from 'forge1';
+import allofit from 'forge2';
+
 export default class Component extends HTMLElement {
 	connectedCallback() {
 		console.log('hei');
@@ -69,11 +74,9 @@ export class EditorCmp extends AegisElement {
 		try {
 			const encodedJs = encodeURIComponent(data);
 			const dataUri = `data:text/javascript;charset=utf-8,${ encodedJs }`;
-			const module = (await import(/* @vite-ignore */ dataUri));
-
-			const def = module.default;
-
-			console.log(def);
+			//const module = (await import(/* @vite-ignore */ dataUri));
+			//const def = module.default;
+			//console.log(def);
 		}
 		catch (error) {
 			console.warn('Import failed. Reason:', error);

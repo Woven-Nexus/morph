@@ -7,6 +7,7 @@ import {
 	state,
 } from '@roenlie/lit-aegis';
 import { domId } from '@roenlie/mimic-core/dom';
+import { forOf } from '@roenlie/mimic-core/iterators';
 import { MMIcon } from '@roenlie/mimic-elements/icon';
 import { tooltip } from '@roenlie/mimic-elements/tooltip';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
@@ -20,7 +21,7 @@ import navStyles from './nav.css' with { type: 'css' };
 MMIcon.register();
 
 
-interface LinkBase { id: string; tooltip: string; icon: string }
+interface LinkBase { id: string; tooltip: string; icon: string; }
 type Link = LinkBase & { path: string };
 type Action = LinkBase & { action: () => any };
 
@@ -50,7 +51,7 @@ export class NavAdapter extends Adapter {
 
 	@inject('show-info-center') protected showInfoCenter: Signal<boolean>;
 	@state() protected active: string;
-	protected links: (Link | Action)[] = [
+	protected topLinks: (Link | Action)[] = [
 		{
 			id:      domId(),
 			tooltip: 'forge',
@@ -63,6 +64,9 @@ export class NavAdapter extends Adapter {
 			icon:    'https://icons.getbootstrap.com/assets/icons/sliders2.svg',
 			path:    router.urlForName('settings'),
 		},
+	];
+
+	protected bottomLinks: (Link | Action)[] = [
 		{
 			id:      domId(),
 			tooltip: 'help',
@@ -74,7 +78,7 @@ export class NavAdapter extends Adapter {
 	];
 
 	public override connectedCallback(): void {
-		this.active = this.links[0]!.id;
+		this.active = this.topLinks[0]!.id;
 	}
 
 	protected handleClickNav(ev: MouseEvent) {
@@ -82,7 +86,7 @@ export class NavAdapter extends Adapter {
 		if (this.active === id)
 			return;
 
-		const link = this.links.find(l => l.id === id)!;
+		const link = forOf(this.topLinks, this.bottomLinks).find(l => l.id === id)!;
 		if (!('path' in link))
 			return;
 
@@ -94,7 +98,7 @@ export class NavAdapter extends Adapter {
 
 	protected handleClickAction(ev: MouseEvent) {
 		const id = (ev.currentTarget as HTMLElement).id;
-		const link = this.links.find(l => l.id === id)!;
+		const link = forOf(this.topLinks, this.bottomLinks).find(l => l.id === id)!;
 		if ('action' in link)
 			link.action();
 	}
@@ -115,9 +119,7 @@ export class NavAdapter extends Adapter {
 		<a
 			id=${ link.id }
 			href=${ link.path }
-			style=${ styleMap({
-				viewTransitionName: this.active === link.id ? 'activenav' : '',
-			}) }
+			style=${ this.active === link.id ? 'view-transition-name:activenav;' : '' }
 			class=${ classMap({ active: this.active === link.id }) }
 			@click=${ this.handleClickNav.bind(this) }
 			${ tooltip(link.tooltip, { placement: 'right' }) }
@@ -131,9 +133,7 @@ export class NavAdapter extends Adapter {
 		return html`
 		<a
 			id=${ link.id }
-			style=${ styleMap({
-				viewTransitionName: this.active === link.id ? 'activenav' : '',
-			}) }
+			style=${ this.active === link.id ? 'view-transition-name:activenav;' : '' }
 			class=${ classMap({ active: this.active === link.id }) }
 			@click=${ this.handleClickAction.bind(this) }
 			${ tooltip(link.tooltip, { placement: 'right' }) }
@@ -144,8 +144,17 @@ export class NavAdapter extends Adapter {
 	}
 
 	public override render(): unknown {
-		return map(this.links, (link, i) =>
-			'path' in link ? this.renderLink(link) : this.renderAction(link));
+		return html`
+		<s-link-wrapper>
+			${ map(this.topLinks, link =>
+				'path' in link ? this.renderLink(link) : this.renderAction(link)) }
+		</s-link-wrapper>
+
+		<s-link-wrapper>
+			${ map(this.bottomLinks, link =>
+				'path' in link ? this.renderLink(link) : this.renderAction(link)) }
+		</s-link-wrapper>
+		`;
 	}
 
 	public static override styles = [ sharedStyles, navStyles ];
