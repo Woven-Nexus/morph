@@ -1,4 +1,6 @@
 :host {
+	--layout-border: 1px solid rgb(13, 17, 23);
+
 	overflow: hidden;
 	height: 100%;
 	display: grid;
@@ -11,7 +13,7 @@
 	grid-area: nav;
 
 	min-width: 60px;
-	border-right: 1px solid rgb(13, 17, 23);
+	border-right: var(--layout-border);
 }
 #primary-sidebar {
 	grid-area: primary-sidebar;
@@ -19,7 +21,7 @@
 
 	min-width: 200px;
 	background-color: rgb(24, 26, 31);
-	border-right: 1px solid rgb(13, 17, 23);
+	border-right: var(--layout-border);
 }
 #workspace {
 	grid-area: workspace;
@@ -41,5 +43,5 @@
 
 	min-height: 20px;
 	background-color: rgb(30, 30, 30);
-	border-top: 1px solid rgb(13, 17, 23);
+	border-top: var(--layout-border);
 }

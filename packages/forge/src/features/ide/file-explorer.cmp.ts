@@ -55,12 +55,10 @@ export class FileExplorerCmp extends AegisElement {
 	}
 
 	@property() public set activeId(id: string) {
-		const currentItem = this.activeItem;
-		if (currentItem?.data.id === id)
-			return;
-
 		this.setActiveItem(id);
 	}
+
+	public get activeId() { return this.activeItem?.data.id ?? ''; }
 
 	public get activeItem(): ExplorerItem | undefined {
 		let item: ExplorerItem | undefined = undefined;
@@ -76,31 +74,17 @@ export class FileExplorerCmp extends AegisElement {
 	@state() protected roots: ExplorerItem[] = [];
 	protected itemSet = new Set<ExplorerItem>();
 
-	protected traverse(items: ExplorerItem[], fn: (item: ExplorerItem) => void) {
-		const visitedItems = new WeakSet();
-		const trav = (items: ExplorerItem[], fn: (item: ExplorerItem) => void) => {
-			for (const item of items) {
-				if (visitedItems.has(item))
-					continue;
-
-				visitedItems.add(item);
-				fn(item);
-
-				if ('children' in item)
-					trav(item.children, fn);
-			}
-		};
-		trav(items, fn);
-	}
-
 	protected override willUpdate(props: Map<PropertyKey, unknown>): void {
 		if (props.has('items') && this.items)
 			this.updateItems();
 	}
 
-	public setActiveItem(id: string) {
-		this.itemSet.forEach(node => { node.active = node.data.id === id; });
+	public setActiveItem(id: string | undefined) {
+		const previousItem = this.activeItem;
+		if (previousItem?.data.id === id)
+			return;
 
+		this.itemSet.forEach(node => { node.active = node.data.id === id; });
 		const activeItem = this.activeItem;
 
 		// open any parent folders that contain the active item.
@@ -111,8 +95,7 @@ export class FileExplorerCmp extends AegisElement {
 		}
 
 		this.requestUpdate();
-
-		return activeItem;
+		emitEvent(this, 'select-item', { detail: this.activeItem?.data });
 	}
 
 	protected updateItems() {
@@ -200,9 +183,8 @@ export class FileExplorerCmp extends AegisElement {
 	protected handleItemClick(ev: PointerEvent) {
 		ev.preventDefault();
 
-		const item = FileExplorerCmp
-			.findFirstElement<ExplorerItemElement>(ev, 's-explorer-item')?.item;
-
+		type E = ExplorerItemElement;
+		const item = FileExplorerCmp.findFirstElement<E>(ev, 's-explorer-item')?.item;
 		if (!item)
 			return;
 
@@ -263,15 +245,15 @@ export class FileExplorerCmp extends AegisElement {
 			class=${ classMap({ active: item.active }) }
 		>
 		${ keyed(item.data.id, html`
-			<input
-				.item=${ item }
-				.value=${ live(item.data.name) }
-				@input=${ this.handleInputInput }
-				@keydown=${ this.handleInputKeydown }
-				@focusout=${ this.handleInputFocusout }
-			/>
-		</s-explorer-item>
+		<input
+			.item=${ item }
+			.value=${ live(item.data.name) }
+			@input=${ this.handleInputInput }
+			@keydown=${ this.handleInputKeydown }
+			@focusout=${ this.handleInputFocusout }
+		/>
 		`) }
+		</s-explorer-item>
 		`;
 	}
 
@@ -327,7 +309,16 @@ export class FileExplorerCmp extends AegisElement {
 		`;
 	}
 
-
 	public static override styles = [ sharedStyles, fileExplorerStyles ];
 
+}
+
+
+declare global {
+	interface HTMLElementTagNameMap {
+		'm-file-explorer': FileExplorerCmp;
+	}
+	interface HTMLElementEventMap {
+		'select-item': CustomEvent<ForgeFile | undefined>;
+	}
 }

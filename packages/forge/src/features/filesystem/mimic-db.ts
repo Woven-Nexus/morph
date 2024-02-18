@@ -323,3 +323,10 @@ export type DBSetup = Omit<Setup, '__execute' | 'dbName'>;
 export type MimicDBSetup = typeof Setup;
 export type MimicDBDatabase = typeof Database;
 export type MimicDBCollection = typeof Collection;
+
+
+export const enumerable = () => (
+	target: any, propertyKey: string, descriptor: PropertyDescriptor,
+) => {
+	descriptor.enumerable = true;
+};

@@ -1,5 +1,6 @@
 /** @type {Map<string, Record<string, unknown>>} */
 const moduleMap = new Map();
+window.moduleMap ??= moduleMap;
 
 
 /**
@@ -26,18 +27,18 @@ export const importShim = (from) => {
 		return module;
 
 	return (async () => {
-		const javascript = getJavascript(from);
-		const encodedJs = encodeURIComponent(javascript);
-		const dataUri = `data:text/javascript;charset=utf-8,${ encodedJs }`;
+		const dataUri = await getDataUri(from);
 
 		/** @type {Record<string, unknown>} */
 		const module = await import(dataUri);
-
 		moduleMap.set(from, module);
 
 		return module;
 	})();
 };
+
+
+export const clearModuleMap = () => moduleMap.clear();
 
 
 const createPromise = () => {
@@ -49,9 +50,9 @@ const createPromise = () => {
 
 /**
  * @param {string} from the module identifier.
- * @returns {string}
+ * @returns {Promise<string>}
  */
-const getJavascript = async (from) => {
+const getDataUri = async (from) => {
 	const moduleDbName = 'forge-filesystem';
 	const moduleColName = 'files';
 	const moduleReqIndex = 'path';
@@ -73,8 +74,8 @@ const getJavascript = async (from) => {
 	const [ requestSuccess, requestResolve ] = createPromise();
 	request.onsuccess = ev => requestResolve(ev.target.result);
 
-	/** @type {{ javascript: string; }} */
+	/** @type {{ uriImport: string; }} */
 	const result = await requestSuccess;
 
-	return result.javascript;
+	return result.uriImport;
 };

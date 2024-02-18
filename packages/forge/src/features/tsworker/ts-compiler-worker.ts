@@ -41,13 +41,11 @@ self.onmessage = async (ev: MessageEvent<{id: string; content: string;}>) => {
 			const exportNames = [ defaultExport, ...exports ].filter(Boolean);
 
 			return exportNames.length
-				? `const {${ exportNames }} = importShim('${ from }')`
-				: `importShim('${ from }')`;
+				? `const {${ exportNames }} = await importShim('${ from }')`
+				: `await importShim('${ from }')`;
 		}),
 		code,
 	].join('\n');
-
-	//console.log(code);
 
 	const transpiledCode = transpile(code ?? '', {
 		target:                 ScriptTarget.ESNext,
@@ -57,12 +55,18 @@ self.onmessage = async (ev: MessageEvent<{id: string; content: string;}>) => {
 	// After transpiling, we get the current file, and update its content and javascript entries.
 	const collection = MimicDB.connect(ForgeFileDB).collection(ForgeFile);
 	const file = (await collection.get(id))!;
-	if (file.content !== content || file.javascript !== transpiledCode) {
+	const encodedJs = encodeURIComponent(transpiledCode);
+	const dataUri = 'data:text/javascript;charset=utf-8,' + encodedJs;
+
+	if (file.content !== content) {
+		file.uriImport = dataUri;
 		file.content = content;
-		file.javascript = transpiledCode;
 
 		await collection.put(file);
 	}
 
-	postMessage(transpiledCode);
+	postMessage({
+		specifier: file.path.replace(/^\/+/, ''),
+		uri:       dataUri,
+	});
 };

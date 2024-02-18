@@ -1,58 +1,90 @@
-import { AegisElement, customElement, state } from '@roenlie/lit-aegis';
+import { SignalWatcher } from '@lit-labs/preact-signals';
+import { Adapter, AegisComponent, customElement, inject, state } from '@roenlie/lit-aegis';
 import { debounce } from '@roenlie/mimic-core/timing';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { type editor, MonacoEditorCmp } from '@roenlie/morph-components/monaco';
-import { html } from 'lit';
+import { html, render } from 'lit';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
+import type { ForgeFile } from '../filesystem/forge-file.js';
+import type { ExplorerStore } from '../stores/explorer-store.js';
 import { createTSWorker } from '../tsworker/create-ts-worker.js';
 import editorStyles from './editor.css' with { type: 'css' };
 
 MonacoEditorCmp.register();
 
-
-const exampleCode = `
-import 'forge0';
-import tester, {something1, something2} from 'forge1';
-import allofit from 'forge2';
-
-export default class Component extends HTMLElement {
-	connectedCallback() {
-		console.log('hei');
-	}
+interface ImportMap {
+	imports: Record<string, string>;
+	scopes?: Record<string, Record<string, string>>;
 }
 
-customElements.define('test-whatwhat', Component);
-`;
 
-
+@SignalWatcher
 @customElement('m-editor')
-export class EditorCmp extends AegisElement {
+export class EditorCmp extends AegisComponent {
 
+	constructor() {
+		super(EditorAdapter);
+	}
+
+}
+
+
+export class EditorAdapter extends Adapter {
+
+	@inject(Ag.explorerStore) protected store: ExplorerStore;
 	@state() protected componentTag: string;
 	protected editorRef: Ref<MonacoEditorCmp> = createRef();
 	protected tsWorker: Worker;
+	protected models = new Map<string, editor.ITextModel>();
+	protected subs: (() => void)[] = [];
 
-	protected override firstUpdated(props: Map<PropertyKey, unknown>): void {
-		super.firstUpdated(props);
+	public override connectedCallback(): void {
+		const fileSignal = this.store.signals.get('activeFile')!;
+		this.subs.push(
+			fileSignal?.subscribe((value?: ForgeFile) => {
+				value?.extension && this.setupEditor(value);
+			}),
+		);
+	}
 
+	public override disconnectedCallback(): void {
+		this.subs.forEach(s => s());
+	}
+
+
+	public override firstUpdated(): void {
 		this.tsWorker = createTSWorker();
 		this.tsWorker.onmessage = this.handleWorkerResponse;
 	}
 
 	protected handleEditorReady(ev: Event): void {
-		const target = ev.currentTarget as MonacoEditorCmp;
-		const monaco = target.monaco;
-		const editor = target.editor!;
+		const editorCmp = ev.currentTarget as MonacoEditorCmp;
+		const editor = editorCmp.editor;
+		editor?.onDidChangeModelContent(this.debouncedModelChange);
+
+		const activeFile = this.store.activeFile;
+		if (!activeFile)
+			return;
+
+		this.setupEditor(activeFile);
+	}
+
+	protected setupEditor(file: ForgeFile) {
+		const editorEl = this.editorRef.value!;
+		const monaco = editorEl.monaco;
+		const editor = editorEl.editor!;
+
+		const existingModel = this.models.get(file.id);
 
 		// Initialize the editor with a model.
-		const model = monaco.createModel(exampleCode, 'typescript');
+		const model = existingModel ?? monaco.createModel(file.content ?? '', 'typescript');
 		editor.setModel(model);
 		editor.restoreViewState(null);
 		editor.focus();
 
-		editor.onDidChangeModelContent(this.debouncedModelChange);
+		this.models.set(file.id, model);
 		this.debouncedModelChange();
 	}
 
@@ -62,41 +94,75 @@ export class EditorCmp extends AegisElement {
 		return (_ev?: editor.IModelContentChangedEvent) => fn();
 	})();
 
-	protected handleEditorModelChange() {
-		const content = this.editorRef.value?.editor?.getValue() ?? '';
-		this.tsWorker.postMessage({ id: '033bb82f-060f-4b65-9854-acef764b0692', content });
+	protected createSrcDoc(uri: string) {
+		return `
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+			<meta charset="UTF-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>Preview</title>
+			<style>
+				body {
+					margin: 0px;
+					padding: 0px;
+					height: 100svh;
+				}
+			</style>
+			<script type="importmap">
+				{
+					"imports": {
+						"import-shim": "/import-shim.js",
+						"main": "${ uri }"
+					}
+				}
+			</script>
+			<script type="module">
+				import 'main';
+			</script>
+		</head>
+		<body>
+		</body>
+		</html>
+		`.replaceAll(/\t+/g, '')
+			.replaceAll(/\n+/g, '')
+			.replaceAll(/ +/g, ' ');
 	}
 
-	protected handleWorkerResponse = async (msg: MessageEvent<string>) => {
-		const data = msg.data;
+	protected async handleEditorModelChange() {
+		const editor = this.editorRef.value?.editor;
+		if (!editor?.getModel())
+			return;
 
+		const content = editor.getValue() ?? '';
+		this.tsWorker.postMessage({ id: this.store.activeFile!.id, content });
+	}
+
+	protected handleWorkerResponse = async (
+		msg: MessageEvent<{ specifier: string; uri: string; }>,
+	) => {
 		try {
-			const encodedJs = encodeURIComponent(data);
-			const dataUri = `data:text/javascript;charset=utf-8,${ encodedJs }`;
-			//const module = (await import(/* @vite-ignore */ dataUri));
-			//const def = module.default;
-			//console.log(def);
+			const iframe = this.querySelector<HTMLIFrameElement>('iframe')!;
+			const newFrame = document.createElement('iframe');
+			newFrame.srcdoc = this.createSrcDoc(msg.data.uri);
+			this.shadowRoot.prepend(newFrame);
+			const contentWindow = newFrame.contentWindow;
+			if (contentWindow)
+				contentWindow.onload = () => setTimeout(() => iframe.remove(), 100);
 		}
 		catch (error) {
 			console.warn('Import failed. Reason:', error);
 		}
 	};
 
-	protected renderComponent() {
+	public override render(): unknown {
 		return html`
-		<div>
-			${ unsafeHTML('<test-whatwhat></test-whatwhat>') }
-		</div>
-		`;
-	}
+		<iframe></iframe>
 
-	protected override render(): unknown {
-		return html`
-		${ this.renderComponent() }
 		<monaco-editor
 			placeholder="Choose a file to start editing."
 			${ ref(this.editorRef) }
-			@editor-ready=${ this.handleEditorReady }
+			@editor-ready=${ this.handleEditorReady.bind(this) }
 		></monaco-editor>
 		`;
 	}

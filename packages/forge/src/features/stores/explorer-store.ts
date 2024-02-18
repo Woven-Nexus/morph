@@ -1,7 +1,7 @@
+import type { Signal } from '@lit-labs/preact-signals';
 import { injectable } from '@roenlie/lit-aegis';
 
 import type { ForgeFile } from '../filesystem/forge-file.js';
-import type { ExplorerItem } from '../ide/file-explorer.cmp.js';
 import { rerender } from './rerender.js';
 
 
@@ -11,6 +11,8 @@ export class ExplorerStore {
 	@rerender() public project = 'test';
 	@rerender() public files: ForgeFile[] = [];
 	@rerender() public activeFile?: ForgeFile;
+
+	public signals: Map<string, Signal>;
 
 }
 

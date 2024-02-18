@@ -1,10 +1,5 @@
-import { MSchema } from './mimic-db.js';
+import { enumerable, MSchema } from './mimic-db.js';
 
-
-const enumerable =
-	() => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-		descriptor.enumerable = true;
-	};
 
 export const ForgeFileDB = 'forge-filesystem' as const;
 
@@ -19,11 +14,11 @@ export class ForgeFile extends MSchema<ForgeFile> {
 	public name: string;
 	public extension: string;
 	public content: string;
-	public javascript: string;
+	public uriImport: string;
 	public accessor editing = false;
 
 	@enumerable() public get path() {
-		return `${ this.directory }/${ this.name }${ this.extension }`
+		return (this.directory + '/' + this.name + this.extension)
 			.replaceAll(/\/+/g, '/');
 	}
 

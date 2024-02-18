@@ -1,5 +1,5 @@
 import { SignalWatcher } from '@lit-labs/preact-signals';
-import { Adapter, AegisComponent, customElement, inject, query, queryAll } from '@roenlie/lit-aegis';
+import { Adapter, AegisComponent, customElement, inject, query, queryAll, state } from '@roenlie/lit-aegis';
 import { MMButton } from '@roenlie/mimic-elements/button';
 import { MMIcon } from '@roenlie/mimic-elements/icon';
 import { MMTooltip } from '@roenlie/mimic-elements/tooltip';
@@ -18,17 +18,15 @@ import { FileExplorerCmp } from './file-explorer.cmp.js';
 MMIcon.register();
 MMButton.register();
 MMTooltip.register();
-ExplorerAccordianCmp.register();
 FileExplorerCmp.register();
+ExplorerAccordianCmp.register();
 
 
 @SignalWatcher
 @customElement('m-explorer')
 export class ExplorerCmp extends AegisComponent {
 
-	constructor() {
-		super(ExplorerAdapterCmp);
-	}
+	constructor() { super(ExplorerAdapterCmp); }
 
 }
 
@@ -36,6 +34,7 @@ export class ExplorerCmp extends AegisComponent {
 export class ExplorerAdapterCmp extends Adapter {
 
 	@inject(Ag.explorerStore) protected store: ExplorerStore;
+	@state() protected activeId = '';
 	@query('m-file-explorer') protected fileExplorerEl: FileExplorerCmp;
 	@queryAll('m-explorer-accordian') protected accordianEls: NodeListOf<HTMLElement>;
 
@@ -106,8 +105,7 @@ export class ExplorerAdapterCmp extends Adapter {
 		this.store.files = await collection.getAll();
 		this.updateComplete
 			.then(() => this.fileExplorerEl.updateComplete)
-			.then(() => this.store.activeFile = this.fileExplorerEl
-				.setActiveItem(fileToFocus)?.data);
+			.then(() => this.activeId = fileToFocus);
 	}
 
 	protected handleNewFile() {
@@ -153,9 +151,10 @@ export class ExplorerAdapterCmp extends Adapter {
 		}
 	}
 
-	protected handleSelectItem(ev: CustomEvent<ForgeFile>) {
-		this.store.activeFile = this.fileExplorerEl
-			.setActiveItem(ev.detail.id)?.data;
+	protected async handleSelectItem(ev: HTMLElementEventMap['select-item']) {
+		await this.updateComplete;
+		this.activeId = ev.detail?.id ?? '';
+		this.store.activeFile = ev.detail;
 	}
 
 	protected dynamicStyle = new DynamicStyle();
@@ -216,9 +215,9 @@ export class ExplorerAdapterCmp extends Adapter {
 				] }
 			>
 				<m-file-explorer
-					.activeId=${ this.store.activeFile?.id ?? '' }
-					.items=${ this.store.files }
-					@select-item=${ this.handleSelectItem.bind(this) }
+					.activeId      =${ this.activeId ?? '' }
+					.items         =${ this.store.files as any }
+					@select-item   =${ this.handleSelectItem.bind(this) }
 					@input-focusout=${ this.handleFilesFocusout.bind(this) }
 				></m-file-explorer>
 			</m-explorer-accordian>
