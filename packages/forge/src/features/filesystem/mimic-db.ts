@@ -60,7 +60,7 @@ export class MimicDB {
 	}
 
 	public static connect(dbName: string, version?: number): Database {
-		const request = window.indexedDB.open(dbName, version);
+		const request = indexedDB.open(dbName, version);
 		const promise = new Promise<IDBDatabase>((res, rej) => {
 			request.onerror = ev => this.#handleRequestError(ev, rej);
 			request.onsuccess = ev => this.#handleRequestSuccess(ev, res);
@@ -184,7 +184,9 @@ class Collection<T extends typeof MSchema<any>> {
 			req.onsuccess = ev => Collection.#handleRequestSuccess(ev, res);
 		});
 
-		return promise !== undefined ? this.schema.create(promise) : undefined;
+		return promise !== undefined
+			? this.schema.create(promise) as InstanceType<T>
+			: undefined;
 	}
 
 	public async getByIndex(

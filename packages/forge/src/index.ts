@@ -1,3 +1,5 @@
+import './app/identifiers.js';
+
 import { AppRouterCmp } from '@roenlie/mimic-elements/router';
 import { initializeStyleTokens } from '@roenlie/mimic-elements/styles';
 import type { Router } from '@vaadin/router';

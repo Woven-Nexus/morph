@@ -1,3 +1,4 @@
+import { sleep } from '@roenlie/mimic-core/async';
 import { AppRouterCmp } from '@roenlie/mimic-elements/router';
 import type { Route } from '@vaadin/router';
 
@@ -24,9 +25,13 @@ export const routes: Route[] = [
 			{
 				name:   'forge',
 				path:   '/forge',
-				action: AppRouterCmp.routeComponent(
-					() => import('../../pages/forge.cmp.js'),
-				),
+				action: async (ctx) => {
+					await import('../../pages/forge-module.js');
+
+					return AppRouterCmp.routeComponent(
+						() => import('../../pages/forge.cmp.js'),
+					)(ctx);
+				},
 			},
 			{
 				name:   'settings',

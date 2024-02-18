@@ -19,6 +19,7 @@ export class ForgeFile extends MSchema<ForgeFile> {
 	public name: string;
 	public extension: string;
 	public content: string;
+	public javascript: string;
 	public accessor editing = false;
 
 	@enumerable() public get path() {

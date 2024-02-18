@@ -1,15 +1,16 @@
-import { AegisElement, customElement, state } from '@roenlie/lit-aegis';
+import { SignalWatcher } from '@lit-labs/preact-signals';
+import { Adapter, AegisComponent, customElement, inject, query, queryAll } from '@roenlie/lit-aegis';
 import { MMButton } from '@roenlie/mimic-elements/button';
 import { MMIcon } from '@roenlie/mimic-elements/icon';
 import { MMTooltip } from '@roenlie/mimic-elements/tooltip';
 import { DynamicStyle } from '@roenlie/mimic-elements/utilities';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { html } from 'lit';
-import { query, queryAll } from 'lit/decorators.js';
 import { join, normalize, parse, sep } from 'posix-path-browser';
 
 import { ForgeFile, ForgeFileDB } from '../filesystem/forge-file.js';
 import { MimicDB } from '../filesystem/mimic-db.js';
+import type { ExplorerStore } from '../stores/explorer-store.js';
 import explorerStyles from './explorer.css' with { type: 'css' };
 import { type AccordianAction, ExplorerAccordianCmp } from './explorer-accordian.cmp.js';
 import { FileExplorerCmp } from './file-explorer.cmp.js';
@@ -21,11 +22,20 @@ ExplorerAccordianCmp.register();
 FileExplorerCmp.register();
 
 
+@SignalWatcher
 @customElement('m-explorer')
-export class ExplorerCmp extends AegisElement {
+export class ExplorerCmp extends AegisComponent {
 
-	@state() protected project = 'test';
-	@state() protected files: ForgeFile[] = [];
+	constructor() {
+		super(ExplorerAdapterCmp);
+	}
+
+}
+
+
+export class ExplorerAdapterCmp extends Adapter {
+
+	@inject(Ag.explorerStore) protected store: ExplorerStore;
 	@query('m-file-explorer') protected fileExplorerEl: FileExplorerCmp;
 	@queryAll('m-explorer-accordian') protected accordianEls: NodeListOf<HTMLElement>;
 
@@ -48,16 +58,14 @@ export class ExplorerCmp extends AegisElement {
 	];
 
 	public override async connectedCallback() {
-		super.connectedCallback();
-
-		this.files = (await MimicDB.connect(ForgeFileDB).collection(ForgeFile)
+		this.store.files = (await MimicDB.connect(ForgeFileDB).collection(ForgeFile)
 			.getAll())
-			.filter(file => file.project === this.project);
+			.filter(file => file.project === this.store.project);
 	}
 
 	protected async handleFilesFocusout() {
 		const collection = MimicDB.connect(ForgeFileDB).collection(ForgeFile);
-		const files = this.files.filter(file => file.editing && file.name);
+		const files = this.store.files.filter(file => file.editing && file.name);
 		const fileTransactions: Promise<any>[] = [];
 
 		let fileToFocus = '';
@@ -70,7 +78,7 @@ export class ExplorerCmp extends AegisElement {
 						return;
 
 					const folder = ForgeFile.create({
-						project:   this.project,
+						project:   this.store.project,
 						directory: join(file.directory, ...arr.slice(0, i)),
 						name:      dir,
 						extension: '',
@@ -95,30 +103,31 @@ export class ExplorerCmp extends AegisElement {
 
 		await Promise.allSettled(fileTransactions);
 
-		this.files = await collection.getAll();
+		this.store.files = await collection.getAll();
 		this.updateComplete
 			.then(() => this.fileExplorerEl.updateComplete)
-			.then(() => this.fileExplorerEl.setActiveItem(fileToFocus));
+			.then(() => this.store.activeFile = this.fileExplorerEl
+				.setActiveItem(fileToFocus)?.data);
 	}
 
 	protected handleNewFile() {
-		if (this.files.some(file => file.editing))
+		if (this.store.files.some(file => file.editing))
 			return;
 
 		let activeDir = '/';
 
-		const item = this.fileExplorerEl.activeItem;
+		const item = this.store.activeFile;
 		if (item) {
-			if (item.data.extension)
-				activeDir = item.data.directory;
+			if (item.extension)
+				activeDir = item.directory;
 			else
-				activeDir = item.data.path;
+				activeDir = item.path;
 		}
 
-		this.files = [
-			...this.files,
+		this.store.files = [
+			...this.store.files,
 			ForgeFile.create({
-				project:   this.project,
+				project:   this.store.project,
 				directory: activeDir,
 				extension: '',
 				name:      '',
@@ -145,7 +154,8 @@ export class ExplorerCmp extends AegisElement {
 	}
 
 	protected handleSelectItem(ev: CustomEvent<ForgeFile>) {
-		this.fileExplorerEl.setActiveItem(ev.detail.id);
+		this.store.activeFile = this.fileExplorerEl
+			.setActiveItem(ev.detail.id)?.data;
 	}
 
 	protected dynamicStyle = new DynamicStyle();
@@ -158,7 +168,7 @@ export class ExplorerCmp extends AegisElement {
 		return style.toString();
 	}
 
-	protected override render(): unknown {
+	public override render(): unknown {
 		return html`
 		<style>${ this.dynamicStyles }</style>
 
@@ -180,8 +190,8 @@ export class ExplorerCmp extends AegisElement {
 		</s-explorer-header>
 
 		<s-explorer-content
-			@expand=${ this.handleAccordianToggle }
-			@collapse=${ this.handleAccordianToggle }
+			@expand=${ this.handleAccordianToggle.bind(this) }
+			@collapse=${ this.handleAccordianToggle.bind(this) }
 		>
 			<m-explorer-accordian
 				expanded
@@ -206,9 +216,10 @@ export class ExplorerCmp extends AegisElement {
 				] }
 			>
 				<m-file-explorer
-					.items=${ this.files }
-					@select-item=${ this.handleSelectItem }
-					@input-focusout=${ this.handleFilesFocusout }
+					.activeId=${ this.store.activeFile?.id ?? '' }
+					.items=${ this.store.files }
+					@select-item=${ this.handleSelectItem.bind(this) }
+					@input-focusout=${ this.handleFilesFocusout.bind(this) }
 				></m-file-explorer>
 			</m-explorer-accordian>
 

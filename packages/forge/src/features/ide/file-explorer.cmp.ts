@@ -54,9 +54,14 @@ export class FileExplorerCmp extends AegisElement {
 			.find(el => (el as HTMLElement).localName === tagname) as T | undefined;
 	}
 
-	@property({ type: Array }) public items?: ForgeFile[];
-	@state() protected roots: ExplorerItem[] = [];
-	protected itemSet = new Set<ExplorerItem>();
+	@property() public set activeId(id: string) {
+		const currentItem = this.activeItem;
+		if (currentItem?.data.id === id)
+			return;
+
+		this.setActiveItem(id);
+	}
+
 	public get activeItem(): ExplorerItem | undefined {
 		let item: ExplorerItem | undefined = undefined;
 		this.itemSet.forEach(node => {
@@ -67,18 +72,9 @@ export class FileExplorerCmp extends AegisElement {
 		return item;
 	}
 
-	public setActiveItem(id: string) {
-		this.itemSet.forEach(node => { node.active = node.data.id === id; });
-
-		// open any parent folders that contain the active item.
-		let currentItem = this.activeItem?.parent;
-		while (FileExplorerCmp.isFolder(currentItem)) {
-			currentItem.open = true;
-			currentItem = currentItem.parent;
-		}
-
-		this.requestUpdate();
-	}
+	@property({ type: Array }) public items?: ForgeFile[];
+	@state() protected roots: ExplorerItem[] = [];
+	protected itemSet = new Set<ExplorerItem>();
 
 	protected traverse(items: ExplorerItem[], fn: (item: ExplorerItem) => void) {
 		const visitedItems = new WeakSet();
@@ -100,6 +96,23 @@ export class FileExplorerCmp extends AegisElement {
 	protected override willUpdate(props: Map<PropertyKey, unknown>): void {
 		if (props.has('items') && this.items)
 			this.updateItems();
+	}
+
+	public setActiveItem(id: string) {
+		this.itemSet.forEach(node => { node.active = node.data.id === id; });
+
+		const activeItem = this.activeItem;
+
+		// open any parent folders that contain the active item.
+		let currentItem = activeItem?.parent;
+		while (FileExplorerCmp.isFolder(currentItem)) {
+			currentItem.open = true;
+			currentItem = currentItem.parent;
+		}
+
+		this.requestUpdate();
+
+		return activeItem;
 	}
 
 	protected updateItems() {

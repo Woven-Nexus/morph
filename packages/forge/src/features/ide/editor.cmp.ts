@@ -3,7 +3,6 @@ import { debounce } from '@roenlie/mimic-core/timing';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { type editor, MonacoEditorCmp } from '@roenlie/morph-components/monaco';
 import { html } from 'lit';
-import { queryAssignedElements } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
@@ -64,8 +63,8 @@ export class EditorCmp extends AegisElement {
 	})();
 
 	protected handleEditorModelChange() {
-		const value = this.editorRef.value?.editor?.getValue() ?? '';
-		this.tsWorker.postMessage(value);
+		const content = this.editorRef.value?.editor?.getValue() ?? '';
+		this.tsWorker.postMessage({ id: '033bb82f-060f-4b65-9854-acef764b0692', content });
 	}
 
 	protected handleWorkerResponse = async (msg: MessageEvent<string>) => {

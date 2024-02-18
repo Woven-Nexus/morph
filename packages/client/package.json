@@ -20,20 +20,20 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"@faker-js/faker": "^8.4.0",
-		"@floating-ui/dom": "^1.6.0",
-		"@lit-labs/preact-signals": "^1.0.1",
-		"@roenlie/lit-aegis": "^1.0.40",
-		"@roenlie/lit-context": "^1.0.40",
-		"@roenlie/lit-state-store": "^0.0.49",
-		"@roenlie/mimic-core": "^0.0.81",
-		"@roenlie/mimic-elements": "^0.0.76",
-		"@roenlie/mimic-lit": "^0.0.91",
+		"@faker-js/faker": "^8.4.1",
+		"@floating-ui/dom": "^1.6.3",
+		"@lit-labs/preact-signals": "^1.0.2",
+		"@roenlie/lit-aegis": "^1.0.42",
+		"@roenlie/lit-context": "^1.0.42",
+		"@roenlie/lit-state-store": "^0.0.51",
+		"@roenlie/mimic-core": "^0.0.83",
+		"@roenlie/mimic-elements": "^0.0.78",
+		"@roenlie/mimic-lit": "^0.0.93",
 		"@vaadin/router": "^1.7.5",
-		"lit": "^3.1.0",
-		"tslib": "^2.6.2",
-		"monaco-editor": "^0.45.0",
-		"socket.io-client": "^4.7.4"
+		"lit": "^3.1.2",
+		"monaco-editor": "^0.46.0",
+		"socket.io-client": "^4.7.4",
+		"tslib": "^2.6.2"
 	},
 	"devDependencies": {
 		"@roenlie/vite-plugin-html-modules": "workspace:^",
