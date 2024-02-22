@@ -3,7 +3,7 @@ import { enumerable, MSchema } from './mimic-db.js';
 
 export const ForgeFileDB = 'forge-filesystem' as const;
 
-export class ForgeFile extends MSchema<ForgeFile> {
+export class ForgeFile extends MSchema {
 
 	public static override dbIdentifier = 'files';
 	public static override dbKey = 'id';
@@ -14,7 +14,8 @@ export class ForgeFile extends MSchema<ForgeFile> {
 	public name: string;
 	public extension: string;
 	public content: string;
-	public uriImport: string;
+	public importAlias: string;
+	public importUri: string;
 	public accessor editing = false;
 
 	@enumerable() public get path() {

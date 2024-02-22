@@ -7,24 +7,23 @@ interface Req { readonly __init: unique symbol }
  */
 export type Init<T> = T | Req;
 
-type Constructor<T> = new () => T
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export class MSchema<T extends object> {
+export class MSchema {
 
 	public static dbIdentifier: string;
 	public static dbKey: string;
 	public static create<T extends object>(
-		this: Constructor<T>,
+		this: new () => T,
 		init: {
-			[P in keyof T as P extends keyof MSchema<T>
+			[P in keyof T as P extends keyof MSchema
 				? never
 				: Req extends Extract<T[P], Req>
 					? P
 					: never]: Exclude<T[P], Req>;
 		},
 	): T {
-		const schema = new this() as Record<keyof any, any>;
+		const schema = new this() as T & Record<keyof any, any>;
 
 		for (const prop in init) {
 			const descriptor = Object.getOwnPropertyDescriptor(
@@ -98,7 +97,7 @@ class Setup {
 
 	constructor(public dbName: string) {}
 
-	public createCollection<T extends typeof MSchema<any>>(
+	public createCollection<T extends typeof MSchema>(
 		schema: T,
 		...[ name, options ]: Parameters<IDBDatabase['createObjectStore']>
 	) {
@@ -145,7 +144,7 @@ class Database {
 
 	constructor(public database: Promise<IDBDatabase>) {}
 
-	public collection<T extends typeof MSchema<any>>(schema: T) {
+	public collection<T extends typeof MSchema>(schema: T) {
 		return new Collection(schema, async mode => {
 			const db = await this.database;
 			const transaction = db.transaction(schema.dbIdentifier, mode);
@@ -157,7 +156,7 @@ class Database {
 
 }
 
-class Collection<T extends typeof MSchema<any>> {
+class Collection<T extends typeof MSchema> {
 
 	constructor(
 		public schema: T,

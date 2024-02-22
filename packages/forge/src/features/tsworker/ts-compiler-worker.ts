@@ -1,51 +1,29 @@
+import { domId } from '@roenlie/mimic-core/dom';
 import { ScriptTarget, transpile } from 'typescript';
 
 import { ForgeFile, ForgeFileDB } from '../filesystem/forge-file.js';
 import { MimicDB } from '../filesystem/mimic-db.js';
 
 
+type Message = MessageEvent<{id: string; content: string;}>;
+
+
 const importRegex = /import *(.*?)? *?(?:from)? *?["'](.*?)["'];/g;
-const namedExportRegex = /{(.*)}/;
-
-interface Import {
-	from: string;
-	namedExports: string[];
-	defaultExport: string;
-}
+let activeId = '';
 
 
-self.onmessage = async (ev: MessageEvent<{id: string; content: string;}>) => {
+self.onmessage = async (ev: Message) => {
+	const { file, requestId } = await handleMessage(ev, activeId = domId());
+	if (activeId === requestId)
+		postMessage(file);
+};
+
+
+const handleMessage = async (ev: Message, requestId: string) => {
 	const { id, content } = ev.data;
 
-	const matches: [imports: string, from: string][] = [];
-	let code = content.replaceAll(importRegex, (_, imports, from) => {
-		return matches.push([ imports, from ]), '';
-	}).trim();
-
-	const imports = matches.map(([ imports, from ]) => {
-		const namedImports: string[] = [];
-		const defaultImport = imports?.replace(namedExportRegex, (_, group1: string) => {
-			return namedImports.push(...group1.split(',').map(s => s.trim())), '';
-		}).replace(/[, ]+$/, '') ?? '';
-
-		return {
-			defaultExport: defaultImport,
-			namedExports:  namedImports,
-			from:          from!,
-		} as Import;
-	});
-
-	code = [
-		'import {importShim} from "import-shim";',
-		...imports.map(({ defaultExport, namedExports: exports, from }) => {
-			const exportNames = [ defaultExport, ...exports ].filter(Boolean);
-
-			return exportNames.length
-				? `const {${ exportNames }} = await importShim('${ from }')`
-				: `await importShim('${ from }')`;
-		}),
-		code,
-	].join('\n');
+	const code = content.replaceAll(importRegex, (str, imports, from) =>
+		str.replace(from, from.replace(/^\/+/, ''))).trim();
 
 	const transpiledCode = transpile(code ?? '', {
 		target:                 ScriptTarget.ESNext,
@@ -59,14 +37,12 @@ self.onmessage = async (ev: MessageEvent<{id: string; content: string;}>) => {
 	const dataUri = 'data:text/javascript;charset=utf-8,' + encodedJs;
 
 	if (file.content !== content) {
-		file.uriImport = dataUri;
+		file.importAlias = file.path.replace(/^\/+/, '');
+		file.importUri = dataUri;
 		file.content = content;
 
 		await collection.put(file);
 	}
 
-	postMessage({
-		specifier: file.path.replace(/^\/+/, ''),
-		uri:       dataUri,
-	});
+	return { file, requestId };
 };

@@ -1,12 +1,14 @@
 import { SignalWatcher } from '@lit-labs/preact-signals';
 import { Adapter, AegisComponent, customElement, inject, state } from '@roenlie/lit-aegis';
+import { domId } from '@roenlie/mimic-core/dom';
 import { debounce } from '@roenlie/mimic-core/timing';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { type editor, MonacoEditorCmp } from '@roenlie/morph-components/monaco';
 import { html } from 'lit';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 
-import type { ForgeFile } from '../filesystem/forge-file.js';
+import { ForgeFile, ForgeFileDB } from '../filesystem/forge-file.js';
+import { MimicDB } from '../filesystem/mimic-db.js';
 import type { ExplorerStore } from '../stores/explorer-store.js';
 import { createTSWorker } from '../tsworker/create-ts-worker.js';
 import editorStyles from './editor.css' with { type: 'css' };
@@ -93,7 +95,25 @@ export class EditorAdapter extends Adapter {
 		return (_ev?: editor.IModelContentChangedEvent) => fn();
 	})();
 
-	protected createSrcDoc(uri: string) {
+	protected async getImportMap() {
+		const files = (await MimicDB.connect(ForgeFileDB)
+			.collection(ForgeFile)
+			.getAll())
+			.filter(file => file.extension && file.project === this.store.project);
+
+		const imports: ImportMap = {
+			imports: {
+				'import-shim': '/import-shim.js',
+			},
+		};
+
+		for (const file of files)
+			imports.imports[file.path.replace(/^\/+/, '')] = file.importUri;
+
+		return imports;
+	}
+
+	protected createSrcDoc() {
 		return `
 		<!DOCTYPE html>
 		<html lang="en">
@@ -108,17 +128,6 @@ export class EditorAdapter extends Adapter {
 					height: 100svh;
 				}
 			</style>
-			<script type="importmap">
-				{
-					"imports": {
-						"import-shim": "/import-shim.js",
-						"main": "${ uri }"
-					}
-				}
-			</script>
-			<script type="module">
-				import 'main';
-			</script>
 		</head>
 		<body>
 		</body>
@@ -138,16 +147,37 @@ export class EditorAdapter extends Adapter {
 	}
 
 	protected handleWorkerResponse = async (
-		msg: MessageEvent<{ specifier: string; uri: string; }>,
+		msg: MessageEvent<ForgeFile>,
 	) => {
 		try {
-			const iframe = this.querySelector<HTMLIFrameElement>('iframe')!;
+			const oldIframe = this.querySelector<HTMLIFrameElement>('iframe')!;
 			const newFrame = document.createElement('iframe');
-			newFrame.srcdoc = this.createSrcDoc(msg.data.uri);
+			newFrame.srcdoc = this.createSrcDoc();
+			newFrame.id = domId();
+
+			const importMap = await this.getImportMap();
+
 			this.shadowRoot.prepend(newFrame);
 			const contentWindow = newFrame.contentWindow;
-			if (contentWindow)
-				contentWindow.onload = () => setTimeout(() => iframe.remove(), 100);
+			if (contentWindow) {
+				contentWindow.addEventListener('DOMContentLoaded', () => {
+					const head = contentWindow.document.head;
+
+					const importMapScriptEl = document.createElement('script');
+					importMapScriptEl.type = 'importmap';
+					importMapScriptEl.innerText = JSON.stringify(importMap);
+					head.append(importMapScriptEl);
+
+					const mainScriptEl = document.createElement('script');
+					mainScriptEl.type = 'module';
+					mainScriptEl.innerText = `import '${ msg.data.importAlias }'`;
+					head.append(mainScriptEl);
+				}, { once: true });
+
+				contentWindow.addEventListener('load', () => {
+					setTimeout(() => oldIframe.remove(), 100);
+				}, { once: true });
+			}
 		}
 		catch (error) {
 			console.warn('Import failed. Reason:', error);
@@ -172,212 +202,3 @@ export class EditorAdapter extends Adapter {
 	];
 
 }
-
-
-abstract class CoreElement<E extends HTMLElement> {
-
-	protected abstract element: E;
-
-	public static create<C extends CoreElement<any>>(
-		this: new () => C,
-		init: (
-			api: C extends CoreElement<any>
-				? ReturnType<C['api']>
-				: never) => void,
-	): { (): C extends CoreElement<infer R> ? R : never ; core: C; } {
-		const core = new this();
-		init((core as any).api());
-		let element: HTMLElement;
-
-		const fn = () => {
-			if (element)
-				return element;
-
-			return (element = (core as CoreElement<any>).run());
-		};
-
-		fn.core = core;
-
-		return fn;
-	}
-
-	public api() {
-		return {
-			text:     this.text.bind(this),
-			style:    this.style.bind(this),
-			classes:  this.classes.bind(this),
-			children: this.children.bind(this),
-		};
-	}
-
-	protected style(styles: Record<string, string | number>) {
-		for (const style in styles) {
-			const val = styles[style];
-			this.element.style.setProperty(
-				style,
-				typeof val === 'number' ? String(val) : val!,
-			);
-		}
-	}
-
-	protected classes(classes: Record<string, boolean>) {
-		for (const clas in classes)
-			this.element.classList.toggle(clas, classes[clas]);
-	}
-
-	protected text(text: string) {
-		this.element.innerText = text;
-	}
-
-	protected children(...elements: ({(): HTMLElement; core?: CoreElement<any>;})[]) {
-		for (const element of elements) {
-			this.element.insertAdjacentElement(
-				'beforeend',
-				'core' in element ? element() : element(),
-			);
-		}
-	}
-
-	protected run() {
-		return this.element;
-	}
-
-}
-
-
-abstract class CoreCustomElement<E extends HTMLElement> extends CoreElement<E> {
-
-	protected override element: E;
-
-	constructor(tagName: string) {
-		super();
-
-		if (!customElements.get(tagName))
-			customElements.define(tagName, class extends HTMLElement {});
-
-		this.element = document.createElement(tagName) as E;
-		this.createShadowRoot();
-	}
-
-	public override api() {
-		return {
-			...super.api(),
-			stylesheet: this.stylesheet.bind(this),
-		};
-	}
-
-	protected createShadowRoot() {
-		this.element.attachShadow({ mode: 'open' });
-	}
-
-	protected stylesheet(css: string) {
-		const sheet = new CSSStyleSheet();
-		sheet.replaceSync(css);
-
-		this.element.shadowRoot!.adoptedStyleSheets = [ sheet ];
-
-		console.log('did the stylesheet');
-	}
-
-}
-
-
-class Button extends CoreElement<HTMLButtonElement> {
-
-	protected override element = document.createElement('button');
-
-	public override api() {
-		return {
-			...super.api(),
-			click: () => {
-				console.log('clickety clack');
-			},
-		};
-	}
-
-}
-
-
-class CustomButton extends CoreCustomElement<HTMLElement> {
-
-	constructor() {
-		super('f-custom-button');
-	}
-
-}
-
-
-class ForgeElement {
-
-	public static create<Props extends Record<string, any>>(
-		tagName: string,
-		creator: (horse: {
-			props: Props,
-			stylesheet: (css: string) => void,
-			children: (...elements: HTMLElement[]) => void,
-		}) => void,
-	) {
-		const cls = class extends HTMLElement {};
-		customElements.define(tagName, cls);
-
-		return (props: Props) => {
-			const el = document.createElement(tagName);
-			const root = el.attachShadow({ mode: 'open' });
-
-			creator({
-				props,
-				stylesheet: (css: string) => {
-					const sheet = new CSSStyleSheet();
-					sheet.replaceSync(css);
-					root.adoptedStyleSheets = [ sheet ];
-				},
-				children: (...elements: HTMLElement[]) => {
-					root.append(...elements);
-				},
-			});
-
-			return el;
-		};
-	}
-
-}
-
-
-const testElement = ForgeElement.create<{label: string}>(
-	'f-test1', ({ stylesheet, children }) => {
-		stylesheet(`
-		:host {
-			position: fixed;
-			display: block;
-			background-color: red;
-			width: 100px;
-			height: 100px;
-			top: 0px;
-			left: 0px;
-		}
-		`);
-
-		children(
-			testElement2({ label: 'Inner element' }),
-		);
-	},
-);
-
-const testElement2 = ForgeElement.create(
-	'f-test2', ({ stylesheet }) => {
-		stylesheet(`
-		:host {
-			position: fixed;
-			display: block;
-			background-color: blue;
-			width: 50px;
-			height: 50px;
-			top: 0px;
-			left: 0px;
-		}
-		`);
-	},
-);
-
-
-document.body.append(testElement({ label: 'label goes here' }));
