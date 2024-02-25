@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  monaco-editor@0.45.0:
+  monaco-editor@0.46.0:
     hash: 5bmkdely6ucwlmjmkhkuro4ole
     path: patches/monaco-editor@0.44.0.patch
 
@@ -99,7 +99,7 @@ importers:
         version: 3.1.2
       monaco-editor:
         specifier: ^0.46.0
-        version: 0.46.0
+        version: 0.46.0(patch_hash=5bmkdely6ucwlmjmkhkuro4ole)
       socket.io-client:
         specifier: ^4.7.4
         version: 4.7.4
@@ -127,7 +127,7 @@ importers:
         version: 3.1.2
       monaco-editor:
         specifier: ^0.46.0
-        version: 0.46.0
+        version: 0.46.0(patch_hash=5bmkdely6ucwlmjmkhkuro4ole)
       tslib:
         specifier: ^2.6.2
         version: 2.6.2
@@ -138,17 +138,17 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@roenlie/lit-aegis':
-        specifier: ^1.0.42
-        version: 1.0.42(lit@3.1.2)
+        specifier: ^1.0.44
+        version: 1.0.44(lit@3.1.2)
       '@roenlie/mimic-core':
-        specifier: ^0.0.83
-        version: 0.0.83
+        specifier: ^0.0.85
+        version: 0.0.85
       '@roenlie/mimic-elements':
-        specifier: ^0.0.78
-        version: 0.0.78(lit@3.1.2)
+        specifier: ^0.0.80
+        version: 0.0.80(lit@3.1.2)
       '@roenlie/mimic-lit':
-        specifier: ^0.0.93
-        version: 0.0.93(lit@3.1.2)
+        specifier: ^0.0.95
+        version: 0.0.95(lit@3.1.2)
       '@roenlie/morph-components':
         specifier: workspace:^
         version: link:../components
@@ -661,6 +661,18 @@ packages:
       lit: 3.1.2
     dev: false
 
+  /@roenlie/lit-aegis@1.0.44(lit@3.1.2):
+    resolution: {integrity: sha512-yQ6vzo+z5a9v0R1jlQKQJTR9Jnk4/2hSJbCMqEd2WhmEC0PlvrCeIlPtzV39PrTpsaYK+XvNNKnUoDtYlpfFjA==}
+    peerDependencies:
+      lit: '*'
+    dependencies:
+      '@roenlie/mimic-core': 0.0.85
+      '@roenlie/reflect-metadata': 1.0.3
+      deepmerge-ts: 5.1.0
+      inversify: 6.0.2
+      lit: 3.1.2
+    dev: false
+
   /@roenlie/lit-context@1.0.42(lit@3.1.2):
     resolution: {integrity: sha512-IeqLmU4y49F4G5bcxCpnqBkT2da9lqN8DhdToy1+ELM7cQ286sKVDwKpL3ozAbR31JlkiR9L4cmKUSSiRZsJqQ==}
     peerDependencies:
@@ -686,6 +698,13 @@ packages:
       ts-toolbelt: 9.6.0
     dev: false
 
+  /@roenlie/mimic-core@0.0.85:
+    resolution: {integrity: sha512-vJVzHyJXSfr754kqCwHIivDums8ArXLQ3gQ05aNpejTH3En1/hJLk904//H/du+cwuYJVRTRPpv8Vn0qNlSGdQ==}
+    dependencies:
+      nanoid: 5.0.6
+      ts-toolbelt: 9.6.0
+    dev: false
+
   /@roenlie/mimic-elements@0.0.78(lit@3.1.2):
     resolution: {integrity: sha512-YOcPXxH5Pi0x6xFaatFzFlntae9jrNFEvwm8Gca9KfQNH57vVxQDd0WruSZ3ts54nIpdMjvQxOnDK2lxr3BlGA==}
     peerDependencies:
@@ -696,6 +715,20 @@ packages:
       '@roenlie/mimic-core': 0.0.83
       '@roenlie/mimic-lit': 0.0.93(lit@3.1.2)
       '@roenlie/mimic-localize': 0.0.54(lit@3.1.2)
+      '@vaadin/router': 1.7.5
+      lit: 3.1.2
+    dev: false
+
+  /@roenlie/mimic-elements@0.0.80(lit@3.1.2):
+    resolution: {integrity: sha512-uamnLRh8uPrsScGR6j5nujTE/6w71MKT5UejVOgK3VPZahx7B0yiMgBLIFaAD6QRDVUb8A4AMzSAwxIdhLhOEA==}
+    peerDependencies:
+      lit: '*'
+    dependencies:
+      '@floating-ui/dom': 1.6.3
+      '@roenlie/lit-aegis': 1.0.44(lit@3.1.2)
+      '@roenlie/mimic-core': 0.0.85
+      '@roenlie/mimic-lit': 0.0.95(lit@3.1.2)
+      '@roenlie/mimic-localize': 0.0.56(lit@3.1.2)
       '@vaadin/router': 1.7.5
       lit: 3.1.2
     dev: false
@@ -712,12 +745,33 @@ packages:
       nanoid: 5.0.5
     dev: false
 
+  /@roenlie/mimic-lit@0.0.95(lit@3.1.2):
+    resolution: {integrity: sha512-ciInHdboI/5rppsAAlyLYZJsy4YZnm6rOdQqCmvKp55V3TLkC1VXI8wYlZWmyleoX2NwSeXtdDYcJHTqueBSiA==}
+    peerDependencies:
+      lit: '*'
+    dependencies:
+      '@floating-ui/dom': 1.6.3
+      '@roenlie/mimic-core': 0.0.85
+      fast-equals: 5.0.1
+      lit: 3.1.2
+      nanoid: 5.0.6
+    dev: false
+
   /@roenlie/mimic-localize@0.0.54(lit@3.1.2):
     resolution: {integrity: sha512-Zbunjj0/K+nnFhehex+uXJNkUFCTs5sxRmgTFIpcGiy6kv7Alztnkkny2HZgKGQ7+U0v0WzrNCK0OVkm8QgSpg==}
     peerDependencies:
       lit: '*'
     dependencies:
       '@roenlie/mimic-core': 0.0.83
+      lit: 3.1.2
+    dev: false
+
+  /@roenlie/mimic-localize@0.0.56(lit@3.1.2):
+    resolution: {integrity: sha512-ubnWqTYVUHzST1lw/8QpQXp1FRRmzGyJxec22qPMQXZssx5Ld2dTuGYL/mCShe9bLiJTnCCVl7XO4h5/eihGEw==}
+    peerDependencies:
+      lit: '*'
+    dependencies:
+      '@roenlie/mimic-core': 0.0.85
       lit: 3.1.2
     dev: false
 
@@ -2979,9 +3033,10 @@ packages:
       ufo: 1.4.0
     dev: true
 
-  /monaco-editor@0.46.0:
+  /monaco-editor@0.46.0(patch_hash=5bmkdely6ucwlmjmkhkuro4ole):
     resolution: {integrity: sha512-ADwtLIIww+9FKybWscd7OCfm9odsFYHImBRI1v9AviGce55QY8raT+9ihH8jX/E/e6QVSGM+pKj4jSUSRmALNQ==}
     dev: false
+    patched: true
 
   /ms@2.0.0:
     resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
@@ -3009,6 +3064,12 @@ packages:
 
   /nanoid@5.0.5:
     resolution: {integrity: sha512-/Veqm+QKsyMY3kqi4faWplnY1u+VuKO3dD2binyPIybP31DRO29bPF+1mszgLnrR2KqSLceFLBNw0zmvDzN1QQ==}
+    engines: {node: ^18 || >=20}
+    hasBin: true
+    dev: false
+
+  /nanoid@5.0.6:
+    resolution: {integrity: sha512-rRq0eMHoGZxlvaFOUdK1Ev83Bd1IgzzR+WJ3IbDJ7QOSdAxYjlurSPqFs9s4lJg29RT6nPwizFtJhQS6V5xgiA==}
     engines: {node: ^18 || >=20}
     hasBin: true
     dev: false

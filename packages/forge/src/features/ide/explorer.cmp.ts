@@ -1,23 +1,29 @@
 import { SignalWatcher } from '@lit-labs/preact-signals';
-import { Adapter, AegisComponent, customElement, inject, query, queryAll, state } from '@roenlie/lit-aegis';
+import {
+	Adapter, AegisComponent, customElement,
+	inject, query, queryAll, state,
+} from '@roenlie/lit-aegis';
 import { MMButton } from '@roenlie/mimic-elements/button';
 import { MMIcon } from '@roenlie/mimic-elements/icon';
 import { MMTooltip } from '@roenlie/mimic-elements/tooltip';
-import { DynamicStyle } from '@roenlie/mimic-elements/utilities';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { html } from 'lit';
+import { when } from 'lit/directives/when.js';
 import { join, normalize, parse, sep } from 'posix-path-browser';
 
 import { ForgeFile, ForgeFileDB } from '../filesystem/forge-file.js';
 import { MimicDB } from '../filesystem/mimic-db.js';
 import type { ExplorerStore } from '../stores/explorer-store.js';
+import { StyleController } from '../style-controller/style-controller.js';
 import explorerStyles from './explorer.css' with { type: 'css' };
 import { type AccordianAction, ExplorerAccordianCmp } from './explorer-accordian.cmp.js';
+import { FileDetailsCmp } from './file-details.cmp.js';
 import { FileExplorerCmp } from './file-explorer.cmp.js';
 
 MMIcon.register();
 MMButton.register();
 MMTooltip.register();
+FileDetailsCmp.register();
 FileExplorerCmp.register();
 ExplorerAccordianCmp.register();
 
@@ -64,7 +70,7 @@ export class ExplorerAdapterCmp extends Adapter {
 
 	protected async handleFilesFocusout() {
 		const collection = MimicDB.connect(ForgeFileDB).collection(ForgeFile);
-		const files = this.store.files.filter(file => file.editing && file.name);
+		const files = this.store.files.filter(file => file.editingName && file.name);
 		const fileTransactions: Promise<any>[] = [];
 
 		let fileToFocus = '';
@@ -77,19 +83,19 @@ export class ExplorerAdapterCmp extends Adapter {
 						return;
 
 					const folder = ForgeFile.create({
-						project:   this.store.project,
-						directory: join(file.directory, ...arr.slice(0, i)),
-						name:      dir,
-						extension: '',
-						content:   '',
-						editing:   false,
+						project:     this.store.project,
+						directory:   join(file.directory, ...arr.slice(0, i)),
+						name:        dir,
+						extension:   '',
+						content:     '',
+						editingName: false,
 					});
 
 					fileTransactions.push(collection.tryAdd(folder));
 				});
 			}
 
-			file.editing = false;
+			file.editingName = false;
 			file.name = parsed.name;
 			file.extension = parsed.ext;
 			file.directory =  normalize(parsed.dir
@@ -109,12 +115,12 @@ export class ExplorerAdapterCmp extends Adapter {
 	}
 
 	protected handleNewFile() {
-		if (this.store.files.some(file => file.editing))
+		if (this.store.files.some(file => file.editingName))
 			return;
 
 		let activeDir = '/';
 
-		const item = this.store.activeFile;
+		const item = this.store.activeScript;
 		if (item) {
 			if (item.extension)
 				activeDir = item.directory;
@@ -125,12 +131,12 @@ export class ExplorerAdapterCmp extends Adapter {
 		this.store.files = [
 			...this.store.files,
 			ForgeFile.create({
-				project:   this.store.project,
-				directory: activeDir,
-				extension: '',
-				name:      '',
-				editing:   true,
-				content:   '',
+				project:     this.store.project,
+				directory:   activeDir,
+				extension:   '',
+				name:        '',
+				editingName: true,
+				content:     '',
 			}),
 		];
 
@@ -154,23 +160,22 @@ export class ExplorerAdapterCmp extends Adapter {
 	protected async handleSelectItem(ev: HTMLElementEventMap['select-item']) {
 		await this.updateComplete;
 		this.activeId = ev.detail?.id ?? '';
-		this.store.activeFile = ev.detail;
+		this.store.activeScript = ev.detail;
 	}
 
-	protected dynamicStyle = new DynamicStyle();
-	protected get dynamicStyles() {
-		const style = this.dynamicStyle;
-		style.selector('s-explorer-content')
-			.property('grid-template-rows', [ ...this.accordianEls ].map((el) =>
-				el.hasAttribute('expanded') ? 'minmax(32px, 1fr)' : 'minmax(32px, 0fr)').join(' '));
-
-		return style.toString();
-	}
+	protected styleCtrl = new StyleController(this.element, css => css`
+		s-explorer-content {
+			grid-template-rows: ${ [ ...this.accordianEls ].map(el =>
+				el.hasAttribute('expanded')
+					? 'minmax(32px, 1fr)'
+					: 'minmax(32px, 0fr)')
+				.join(' ')
+			}
+		}
+	`);
 
 	public override render(): unknown {
 		return html`
-		<style>${ this.dynamicStyles }</style>
-
 		<s-explorer-header>
 			<span>
 				EXPLORER
@@ -222,9 +227,16 @@ export class ExplorerAdapterCmp extends Adapter {
 				></m-file-explorer>
 			</m-explorer-accordian>
 
+			${ when(this.activeId, () => html`
 			<m-explorer-accordian
-				header="Other"
-			></m-explorer-accordian>
+				header="File Details"
+				expanded
+			>
+				<m-file-details
+					.activeId=${ this.activeId ?? '' }
+				></m-file-details>
+			</m-explorer-accordian>
+			`) }
 		</s-explorer-content>
 		`;
 	}

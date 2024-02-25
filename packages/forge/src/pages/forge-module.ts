@@ -1,12 +1,9 @@
-import { ContainerLoader, ContainerModule } from '@roenlie/lit-aegis';
+import { ContainerModule } from '@roenlie/lit-aegis';
 
 import { ExplorerStore } from '../features/stores/explorer-store.js';
-import { ForgeStore } from '../features/stores/forge-store.js';
 
 
-const module = new ContainerModule(({ bind }) => {
-	bind(Ag.forgeStore).to(ForgeStore).inSingletonScope();
+export const forgeModule = new ContainerModule(({ bind }) => {
 	bind(Ag.explorerStore).to(ExplorerStore).inSingletonScope();
+	//bind(Ag.explorerStore).to(ExplorerStore).inTransientScope();
 });
-
-ContainerLoader.load(module);

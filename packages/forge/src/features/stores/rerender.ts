@@ -1,4 +1,4 @@
-import { Signal, signal } from '@lit-labs/preact-signals';
+import { signal } from '@lit-labs/preact-signals';
 
 
 /**
@@ -6,21 +6,37 @@ import { Signal, signal } from '@lit-labs/preact-signals';
  * to tie the use of this property into the signal rerender detection mechanism.
  */
 export function rerender() {
-	type SignalMap = Map<string, Signal>;
+	return (target: Record<keyof any, any>, property: string) => {
+		const hiddenProp = '__' + property;
+		const valueProp  = '_' + property;
 
-	return (target: object, property: string) => {
-		const sig = signal<any>(undefined);
-		const map = ((target as {signals?: SignalMap}).signals
-			??= new Map<string, Signal>());
+		Object.defineProperty(target, valueProp, {
+			get() {
+				if (!this[hiddenProp]) {
+					Object.defineProperty(this, hiddenProp, {
+						writable:     false,
+						enumerable:   false,
+						configurable: false,
+						value:        signal<any>(undefined),
+					});
+				}
 
-		map.set(property, sig);
-		Object.defineProperty(target, property, {
-			get: () => {
-				return sig.value;
+				return this[hiddenProp];
 			},
-			set: (v: any) => {
-				sig.value = v;
+		});
+
+		Object.defineProperty(target, property, {
+			get() {
+				return this[valueProp].value;
+			},
+			set(v: any) {
+				this[valueProp].value = v;
 			},
 		});
 	};
 }
+
+
+export const getSignal = (target: Record<keyof any, any>, property: string) => {
+	return target['_' + property];
+};

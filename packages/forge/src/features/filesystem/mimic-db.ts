@@ -15,20 +15,13 @@ export class MSchema {
 	public static dbKey: string;
 	public static create<T extends object>(
 		this: new () => T,
-		init: {
-			[P in keyof T as P extends keyof MSchema
-				? never
-				: Req extends Extract<T[P], Req>
-					? P
-					: never]: Exclude<T[P], Req>;
-		},
+		init: Partial<T>,
 	): T {
 		const schema = new this() as T & Record<keyof any, any>;
 
 		for (const prop in init) {
 			const descriptor = Object.getOwnPropertyDescriptor(
-				Object.getPrototypeOf(schema),
-				prop,
+				Object.getPrototypeOf(schema), prop,
 			);
 
 			// If there is a descriptor, it means the prop is an accessor.
@@ -36,7 +29,7 @@ export class MSchema {
 			if (descriptor && !descriptor?.set && descriptor.value === undefined)
 				continue;
 
-			schema[prop] = init[prop];
+			schema[prop] = init[prop]!;
 		}
 
 		return schema;

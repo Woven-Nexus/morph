@@ -1,4 +1,4 @@
-import { AegisElement, customElement } from '@roenlie/lit-aegis';
+import { Adapter, AegisComponent, customElement } from '@roenlie/lit-aegis';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { html } from 'lit';
 
@@ -7,6 +7,7 @@ import { MimicDB } from '../features/filesystem/mimic-db.js';
 import { EditorCmp } from '../features/ide/editor.cmp.js';
 import { ExplorerCmp } from '../features/ide/explorer.cmp.js';
 import forgeStyles from './forge.css' with { type: 'css' };
+import { forgeModule } from './forge-module.js';
 
 EditorCmp.register();
 ExplorerCmp.register();
@@ -22,11 +23,18 @@ MimicDB.setup('forge-filesystem', setup => {
 
 
 @customElement('m-forge-page', true)
-export class ForgePageCmp extends AegisElement {
+export class ForgePageCmp extends AegisComponent {
 
+	constructor() { super(ForgePageAdapter, forgeModule); }
 	public static page = true;
+	public static override styles = sharedStyles;
 
-	protected override render(): unknown {
+}
+
+
+export class ForgePageAdapter extends Adapter {
+
+	public  override render(): unknown {
 		return html`
 		<s-primary-sidebar id="primary-sidebar" style="width:200px;">
 			<m-explorer></m-explorer>
@@ -47,6 +55,6 @@ export class ForgePageCmp extends AegisElement {
 		`;
 	}
 
-	public static override styles = [ sharedStyles, forgeStyles ];
+	public static override styles = forgeStyles;
 
 }

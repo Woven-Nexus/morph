@@ -112,7 +112,7 @@ export class FileExplorerCmp extends AegisElement {
 					exItem = node;
 			});
 
-			if (!item.extension && !item.editing) {
+			if (!item.extension && !item.editingName) {
 				if (!exItem) {
 					exItem = {
 						active:   false,
@@ -166,7 +166,7 @@ export class FileExplorerCmp extends AegisElement {
 
 		// open any parent folders that contain an item being edited.
 		for (const file of files) {
-			if (!file.data.editing)
+			if (!file.data.editingName)
 				continue;
 
 			let currentItem = file.parent;
@@ -222,7 +222,7 @@ export class FileExplorerCmp extends AegisElement {
 				item => item.data.id,
 				item => match(item, [
 					[
-						item => item.data.editing,
+						item => item.data.editingName,
 						() => this.renderInput(item),
 					],
 					[

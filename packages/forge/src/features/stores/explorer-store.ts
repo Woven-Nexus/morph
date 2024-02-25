@@ -10,9 +10,18 @@ export class ExplorerStore {
 
 	@rerender() public project = 'test';
 	@rerender() public files: ForgeFile[] = [];
-	@rerender() public activeFile?: ForgeFile;
+	@rerender() public activeScript?: ForgeFile;
+	@rerender() public activeComponent?: ForgeFile;
 
-	public signals: Map<string, Signal>;
+	public signals: Record<
+		'project' | 'files' | 'activeScript' | 'activeComponent',
+		Signal
+	>;
+
+
+	constructor() {
+		console.log('explorer store created');
+	}
 
 }
 
