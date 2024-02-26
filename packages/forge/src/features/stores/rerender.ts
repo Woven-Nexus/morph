@@ -1,42 +1,54 @@
-import { signal } from '@lit-labs/preact-signals';
+import { Signal, signal } from '@lit-labs/preact-signals';
+
+
+const signalProp = '__signals';
 
 
 /**
- * Creates getter setters that access a signal as a way
+ * Creates getter setters that accesses a signal as a way
  * to tie the use of this property into the signal rerender detection mechanism.
  */
-export function rerender() {
+export function signalState() {
 	return (target: Record<keyof any, any>, property: string) => {
-		const hiddenProp = '__' + property;
-		const valueProp  = '_' + property;
+		const initialize = (target: object) => {
+			if (signalProp in target)
+				return;
 
-		Object.defineProperty(target, valueProp, {
-			get() {
-				if (!this[hiddenProp]) {
-					Object.defineProperty(this, hiddenProp, {
-						writable:     false,
-						enumerable:   false,
-						configurable: false,
-						value:        signal<any>(undefined),
-					});
-				}
+			const proxy = new Proxy({} as Record<keyof any, any>, {
+				get(target, p) {
+					target[p] ??= signal<any>(undefined);
 
-				return this[hiddenProp];
-			},
-		});
+					return Reflect.get(target, p);
+				},
+				set() {
+					return true;
+				},
+			});
+
+			Object.defineProperty(target, signalProp, {
+				writable:     false,
+				enumerable:   false,
+				configurable: false,
+				value:        proxy,
+			});
+		};
 
 		Object.defineProperty(target, property, {
 			get() {
-				return this[valueProp].value;
+				initialize(this);
+
+				return this[signalProp][property].value;
 			},
 			set(v: any) {
-				this[valueProp].value = v;
+				initialize(this);
+
+				this[signalProp][property].value = v;
 			},
 		});
 	};
 }
 
 
-export const getSignal = (target: Record<keyof any, any>, property: string) => {
-	return target['_' + property];
-};
+export const getSignal = <T extends Record<keyof any, any>, K extends keyof T>(
+	target: T, property: K,
+): Signal<T[K]> => target[signalProp][property];
