@@ -1,7 +1,7 @@
 import { injectable } from '@roenlie/lit-aegis';
 
+import { signalState } from '../../app/rerender.js';
 import type { ForgeFile } from '../filesystem/forge-file.js';
-import { signalState } from './rerender.js';
 
 
 @injectable()
@@ -11,10 +11,6 @@ export class ExplorerStore {
 	@signalState() public files: ForgeFile[] = [];
 	@signalState() public activeScript?: ForgeFile;
 	@signalState() public activeComponent?: ForgeFile;
-
-	constructor() {
-		console.log('explorer store created');
-	}
 
 }
 

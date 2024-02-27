@@ -14,7 +14,7 @@ import { join, normalize, parse, sep } from 'posix-path-browser';
 import { ForgeFile, ForgeFileDB } from '../filesystem/forge-file.js';
 import { MimicDB } from '../filesystem/mimic-db.js';
 import type { ExplorerStore } from '../stores/explorer-store.js';
-import { StyleController } from '../style-controller/style-controller.js';
+import { StyleController } from '../../app/style-controller.js';
 import explorerStyles from './explorer.css' with { type: 'css' };
 import { type AccordianAction, ExplorerAccordianCmp } from './explorer-accordian.cmp.js';
 import { FileDetailsCmp } from './file-details.cmp.js';

@@ -2,10 +2,10 @@ import { Adapter, AegisComponent, customElement } from '@roenlie/lit-aegis';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { html } from 'lit';
 
-import { ForgeFile } from '../features/filesystem/forge-file.js';
-import { MimicDB } from '../features/filesystem/mimic-db.js';
-import { EditorCmp } from '../features/ide/editor.cmp.js';
-import { ExplorerCmp } from '../features/ide/explorer.cmp.js';
+import { ForgeFile } from '../../features/filesystem/forge-file.js';
+import { MimicDB } from '../../features/filesystem/mimic-db.js';
+import { EditorCmp } from '../../features/ide/editor.cmp.js';
+import { ExplorerCmp } from '../../features/ide/explorer.cmp.js';
 import forgeStyles from './forge.css' with { type: 'css' };
 import { forgeModule } from './forge-module.js';
 

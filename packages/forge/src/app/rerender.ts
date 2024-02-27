@@ -8,7 +8,7 @@ const signalProp = '__signals';
  * Creates getter setters that accesses a signal as a way
  * to tie the use of this property into the signal rerender detection mechanism.
  */
-export function signalState() {
+export const signalState = () => {
 	return (target: Record<keyof any, any>, property: string) => {
 		const initialize = (target: object) => {
 			if (signalProp in target)
@@ -46,7 +46,7 @@ export function signalState() {
 			},
 		});
 	};
-}
+};
 
 
 export const getSignal = <T extends Record<keyof any, any>, K extends keyof T>(

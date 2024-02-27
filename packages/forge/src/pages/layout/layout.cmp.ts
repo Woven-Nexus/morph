@@ -9,7 +9,7 @@ import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { css, html } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 
-import { NavCmp } from '../features/ide/nav.cmp.js';
+import { NavCmp } from '../../features/ide/nav.cmp.js';
 import { layoutModule } from './layout.module.js';
 
 NavCmp.register();

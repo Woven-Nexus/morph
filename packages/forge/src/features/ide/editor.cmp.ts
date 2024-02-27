@@ -7,10 +7,10 @@ import { type editor, MonacoEditorCmp } from '@roenlie/morph-components/monaco';
 import { css, type CSSResultGroup, html } from 'lit';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 
+import { getSignal } from '../../app/rerender.js';
 import { ForgeFile, ForgeFileDB } from '../filesystem/forge-file.js';
 import { MimicDB } from '../filesystem/mimic-db.js';
 import type { ExplorerStore } from '../stores/explorer-store.js';
-import { getSignal } from '../stores/rerender.js';
 import { createTSWorker } from '../tsworker/create-ts-worker.js';
 import editorStyles from './editor.css' with { type: 'css' };
 
