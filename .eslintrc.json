@@ -4,5 +4,8 @@
 	"extends": [
 		"@roenlie/eslint-config"
 	],
-	"rules": {}
+	"rules": {
+		"lit/no-invalid-html": "off",
+		"lit/no-unclosed-tag": "off"
+	}
 }
