@@ -19,6 +19,7 @@
 		"lit": "^3.1.2",
 		"magic-string": "^0.30.7",
 		"posix-path-browser": "workspace:^",
+		"jsxlike-template-plugin": "workspace:^",
 		"tslib": "^2.6.2",
 		"typescript": "^5.3.3"
 	},

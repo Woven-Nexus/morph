@@ -4,19 +4,13 @@ import { html } from 'lit';
 import { dirHtml } from '../../features/forge-element/dir-element.js';
 
 
-//const result = dirHtml`
-//	<div>
-//		${ 'something1' }
-//		<Hello label=${ 'hello' }>
-//		${ '<span></span>' }
-//		</Hello>
-//	</div>
-//	${ 'something2' }
-//	`;
-//const result = dirHtml`<div><Hello></Hello></div>`;
-const result = dirHtml`<div><Hello>${ 'jaman' }</Hello></div>`;
+const Hello = (props: Record<keyof any, any>) => {
+	console.log({ props });
 
-console.log(result);
+	return html`
+	Hello
+	`;
+};
 
 
 @customElement('m-settings-page', true)
@@ -26,7 +20,7 @@ export class EditorPageCmp extends AegisElement {
 
 	protected override render(): unknown {
 		return html`
-		${ result }
+		<Hello label="nei" />
 		`;
 	}
 

@@ -109,6 +109,16 @@
 					]
 				}
 			]
+		},
+		{
+			"splitTerminals": [
+				{
+					"name": "jsx-in-template",
+					"commands": [
+						"cd packages/jsx-in-template-plugin"
+					]
+				}
+			]
 		}
 	],
 }

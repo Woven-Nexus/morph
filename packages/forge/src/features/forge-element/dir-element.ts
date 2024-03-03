@@ -1,4 +1,3 @@
-import { range } from '@roenlie/mimic-core/array';
 import {
 	html as coreHtml,
 	svg as coreSvg,
