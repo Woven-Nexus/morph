@@ -4,11 +4,13 @@ import { html } from 'lit';
 import { dirHtml } from '../../features/forge-element/dir-element.js';
 
 
-const Hello = (props: Record<keyof any, any>) => {
+const Hello = (props: {label: string; click: () => void}) => {
 	console.log({ props });
 
 	return html`
-	Hello
+	<button @click=${ props.click }>
+		${ props.label }
+	</button>
 	`;
 };
 
@@ -20,7 +22,7 @@ export class EditorPageCmp extends AegisElement {
 
 	protected override render(): unknown {
 		return html`
-		<Hello label="nei" />
+		<Hello label="it wurked" @click=${ () => console.log('clickety') } />
 		`;
 	}
 

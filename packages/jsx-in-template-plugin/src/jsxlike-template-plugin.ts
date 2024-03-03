@@ -5,6 +5,8 @@ import * as t from '@babel/types';
 import MagicString from 'magic-string';
 import { type Plugin, type ResolvedConfig } from 'vite';
 
+import { splitAttributes, trimInPlace } from './attribute-handling.js';
+
 const traverse = (_traverse as unknown as {default: typeof _traverse}).default;
 
 
@@ -68,61 +70,69 @@ export const jsxlikeTemplatePlugin = (options?: {
 			plugins:    [ 'importAttributes', 'typescript', 'decorators-legacy' ],
 		});
 
-		const magic = new MagicString(code);
-
+		const nodesToHandle: NodePath<TaggedTemplateExpression>[] = [];
 		traverse(ast, {
-			TaggedTemplateExpression({ node  }) {
-				if (!t.isIdentifier(node.tag))
+			TaggedTemplateExpression(root) {
+				const { node } = root;
+				if (!t.isIdentifier(node.tag) || !tag.includes(node.tag.name))
 					return;
-				if (!tag.includes(node.tag.name))
-					return;
 
-				const quasis = node.quasi.quasis;
-
-				for (let i = 0; i < quasis.length; i++) {
-					const quasi = quasis[i]!;
-					const value = quasi.value.raw;
-
-					for (let j = 0; j < value.length; j++) {
-						const char1 = value[j]!;
-						const char2 = value[j + 1] ?? '';
-
-						// this means, we should search for what type of tag this is.
-						if (!/<[A-Z]/.test(char1 + char2))
-							continue;
-
-						// We need to get the tagname, for use in the
-						// next transform and also if the first condition does not match
-						const [ , tagName ] = /<([A-Z][a-zA-Z]*)/.exec(value.slice(j)) ?? [];
-						if (!tagName)
-							continue;
-
-						// We start another loop, and check if we find a /> or > first, this will determine our next step.
-						const { type, endIndex } = findTagType(quasis, i, j) ?? {};
-						if (!type || endIndex === undefined)
-							throw new Error('Could not get tag type');
-
-						magic.update(quasi.start! + j, quasi.start! + j + 1, '${');
-						magic.appendRight(quasi.start! + j + 1 + tagName.length, '`');
-
-						// If the tag ends with a /> we can convert it into a func immediatly.
-						if (type === 'short')
-							magic.update(endIndex - 2, endIndex, '`}');
-
-						// If it instead give us a >, we need to now search for </Component>
-						if (type === 'long') {
-							const { startIndex, endIndex: realEnd } = findEndOfLongTag(quasis, i, j, tagName) ?? {};
-							if (startIndex === undefined || realEnd === undefined)
-								throw new Error('Could not find real end for long tag.');
-
-							magic.update(startIndex, realEnd, '`}');
-						}
-
-						validTagNames.add(tagName);
-					}
-				}
+				nodesToHandle.push(root);
 			},
 		});
+
+		const magic = new MagicString(code);
+		const parseTaggedTemplateExpression = (root: NodePath<TaggedTemplateExpression>) => {
+			const { node } = root;
+
+			const quasis = node.quasi.quasis;
+
+			for (let i = 0; i < quasis.length; i++) {
+				const quasi = quasis[i]!;
+				const value = quasi.value.raw;
+
+				for (let j = 0; j < value.length; j++) {
+					const char1 = value[j]!;
+					const char2 = value[j + 1] ?? '';
+
+					// this means, we should search for what type of tag this is.
+					if (!/<[A-Z]/.test(char1 + char2))
+						continue;
+
+					// We need to get the tagname, for use in the
+					// next transform and also if the first condition does not match
+					const [ , tagName ] = /<([A-Z][a-zA-Z]*)/.exec(value.slice(j)) ?? [];
+					if (!tagName)
+						continue;
+
+					// We start another loop, and check if we find a /> or > first, this will determine our next step.
+					const { type, endIndex } = findTagType(quasis, i, j) ?? {};
+					if (!type || endIndex === undefined)
+						throw new Error('Could not get tag type');
+
+					magic.update(quasi.start! + j, quasi.start! + j + 1, '${');
+					magic.appendRight(quasi.start! + j + 1 + tagName.length, '`');
+
+					// If the tag ends with a /> we can convert it into a func immediatly.
+					if (type === 'short')
+						magic.update(endIndex - 2, endIndex, '`}');
+
+					// If it instead give us a >, we need to now search for </Component>
+					if (type === 'long') {
+						const { startIndex, endIndex: realEnd } = findEndOfLongTag(quasis, i, j, tagName) ?? {};
+						if (startIndex === undefined || realEnd === undefined)
+							throw new Error('Could not find real end for long tag.');
+
+						magic.update(startIndex, realEnd, '`}');
+					}
+
+					validTagNames.add(tagName);
+				}
+			}
+		};
+
+		for (const root of nodesToHandle)
+			parseTaggedTemplateExpression(root);
 
 		return magic;
 	};
@@ -137,9 +147,7 @@ export const jsxlikeTemplatePlugin = (options?: {
 		traverse(ast, {
 			TaggedTemplateExpression(root) {
 				const { node } = root;
-				if (!t.isIdentifier(node.tag))
-					return;
-				if (!validTagNames.has(node.tag.name))
+				if (!t.isIdentifier(node.tag) || !validTagNames.has(node.tag.name))
 					return;
 
 				nodesToHandle.unshift(root);
@@ -205,31 +213,11 @@ export const jsxlikeTemplatePlugin = (options?: {
 
 							if (i !== quasis.length - 1)
 								child.strings.push('');
-
-							child.strings[child.strings.length - 1] =
-								child.strings[child.strings.length - 1]!.trim();
 						}
 					}
 				}
 			}
 
-			const trimInPlace = (...strings: string[][]) => {
-				const whitespace = '(?: |(?:\t)|(?:\n))';
-				const trimStartWhitespace  = new RegExp('^' + whitespace + '+');
-				const trimEndWhitespace    = new RegExp(whitespace + '+$');
-				const trimEqualsWhitespace = new RegExp(whitespace + '*=' + whitespace + '*', 'g');
-				const trimAttrWhitespace   = new RegExp('(?!["\'])' + whitespace + '+', 'g');
-
-				for (const arr of strings) {
-					for (let i = 0; i < arr.length; i++) {
-						arr[i] = arr[i]!
-							.replace(trimStartWhitespace, '')
-							.replace(trimEndWhitespace, '')
-							.replaceAll(trimEqualsWhitespace, '=')
-							.replaceAll(trimAttrWhitespace, ' ');
-					}
-				}
-			};
 			trimInPlace(tag.strings, child.strings);
 
 			// With the tag and child info in hand, lets make the props.
@@ -238,7 +226,7 @@ export const jsxlikeTemplatePlugin = (options?: {
 
 			for (let i = 0; i < tag.strings.length; i++) {
 				const string = tag.strings[i]!;
-				const props = string.split(' ');
+				const props = splitAttributes(string);
 
 				for (let j = 0; j < props.length; j++) {
 					const prop = props[j]!;
