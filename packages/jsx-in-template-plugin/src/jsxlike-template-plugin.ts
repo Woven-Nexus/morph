@@ -21,7 +21,6 @@ export const jsxlikeTemplatePlugin = (options?: {
 	let { tag = 'html' } = options ?? {};
 	tag = Array.isArray(tag) ? tag : [ tag ];
 
-	const validTagNames = new Set<string>();
 
 	const findTagType = (quasis: t.TemplateElement[], initialString: number, initialChar: number) => {
 		for (let i = initialString; i < quasis.length; i++) {
@@ -64,7 +63,7 @@ export const jsxlikeTemplatePlugin = (options?: {
 		}
 	};
 
-	const parseToTemplateFn = (code: string) => {
+	const parseToTemplateFn = (validTagNames: Set<string>, code: string) => {
 		const ast = parser.parse(code, {
 			sourceType: 'module',
 			plugins:    [ 'importAttributes', 'typescript', 'decorators-legacy' ],
@@ -137,7 +136,7 @@ export const jsxlikeTemplatePlugin = (options?: {
 		return magic;
 	};
 
-	const parseToObject = (code: string) => {
+	const parseToFunction = (validTagNames: Set<string>, code: string) => {
 		const ast = parser.parse(code, {
 			sourceType: 'module',
 			plugins:    [ 'importAttributes', 'typescript', 'decorators-legacy' ],
@@ -275,7 +274,6 @@ export const jsxlikeTemplatePlugin = (options?: {
 		return magic;
 	};
 
-
 	let cfg: ResolvedConfig;
 
 	return {
@@ -288,8 +286,9 @@ export const jsxlikeTemplatePlugin = (options?: {
 			if (!/\.((?:ts)|(?:js)$)/.test(id))
 				return;
 
-			const stage1 = parseToTemplateFn(code);
-			const stage2 = parseToObject(stage1.toString());
+			const validTagNames = new Set<string>();
+			const stage1 = parseToTemplateFn(validTagNames, code);
+			const stage2 = parseToFunction(validTagNames, stage1.toString());
 
 			return {
 				code: stage2.toString(),
