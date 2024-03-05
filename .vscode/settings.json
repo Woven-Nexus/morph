@@ -113,9 +113,19 @@
 		{
 			"splitTerminals": [
 				{
-					"name": "jsx-in-template",
+					"name": "jsxlike-template-plugin",
 					"commands": [
 						"cd packages/jsx-in-template-plugin"
+					]
+				}
+			]
+		},
+		{
+			"splitTerminals": [
+				{
+					"name": "jsxlike-template-eslint",
+					"commands": [
+						"cd packages/jsx-in-template-eslint"
 					]
 				}
 			]
