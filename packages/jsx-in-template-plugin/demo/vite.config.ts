@@ -1,6 +1,6 @@
 import { libConfig } from '@roenlie/package-toolbox/vite-utils/vite-lib-config.js';
 
-import { jsxlikeTemplatePlugin } from '../src/jsxlike-template-plugin.js';
+import { jsxlikeTemplatePlugin } from '../src/plugin.js';
 
 
 export default libConfig({

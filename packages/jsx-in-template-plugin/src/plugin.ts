@@ -21,8 +21,9 @@ export const jsxlikeTemplatePlugin = (options?: {
 	let { tag = 'html' } = options ?? {};
 	tag = Array.isArray(tag) ? tag : [ tag ];
 
+	const tagRegexCache = new Map<string, RegExp>();
 
-	const findTagType = (quasis: t.TemplateElement[], initialString: number, initialChar: number) => {
+	const findEndTag = (quasis: t.TemplateElement[], initialString: number, initialChar: number, tagName: string) => {
 		for (let i = initialString; i < quasis.length; i++) {
 			const quasi = quasis[i]!;
 			const value = quasi.value.raw;
@@ -30,10 +31,17 @@ export const jsxlikeTemplatePlugin = (options?: {
 				const char1 = value[j]!;
 				const char2 = value[j + 1] ?? '';
 
-				if (char1 + char2 === '/>')
-					return { type: 'short', endIndex: quasi.start! + j + 2 };
+				// This is a short tag, we know the start and end of this already.
+				if (char1 + char2 === '/>') {
+					return {
+						endTagFirstIndex: quasi.start! + j,
+						endTagLastIndex:  quasi.start! + j + 2,
+					};
+				}
+
+				// This is a long tag, we do a different type of search to get the </tagname> tag info.
 				if (char1 === '>')
-					return { type: 'long', endIndex: quasi.start! + j };
+					return findEndOfLongTag(quasis, i, j, tagName);
 			}
 		}
 	};
@@ -46,7 +54,11 @@ export const jsxlikeTemplatePlugin = (options?: {
 			for (let j = i === initialString ? initialChar : 0; j < value.length; j++) {
 				const str = value.slice(j);
 
-				const match = new RegExp('</' + tagName + '>').exec(str);
+				const expr = tagRegexCache.get(tagName) ??
+					tagRegexCache.set(tagName, new RegExp('</' + tagName + '>'))
+						.get(tagName)!;
+
+				const match = expr.exec(str);
 				if (!match)
 					continue;
 
@@ -55,36 +67,48 @@ export const jsxlikeTemplatePlugin = (options?: {
 
 				if (match) {
 					return {
-						startIndex: quasi.start! + j + index,
-						endIndex:   quasi.start! + j + index + tag.length,
+						endTagFirstIndex: quasi.start! + j + index,
+						endTagLastIndex:  quasi.start! + j + index + tag.length,
 					};
 				}
 			}
 		}
 	};
 
-	const parseToTemplateFn = (validTagNames: Set<string>, code: string) => {
+	const getAndProccessNodes = (
+		code: string,
+		predicate: (root: NodePath<TaggedTemplateExpression>) => boolean,
+		action: (root: NodePath<TaggedTemplateExpression>) => void,
+		reverse = false,
+	) => {
 		const ast = parser.parse(code, {
 			sourceType: 'module',
 			plugins:    [ 'importAttributes', 'typescript', 'decorators-legacy' ],
 		});
 
-		const nodesToHandle: NodePath<TaggedTemplateExpression>[] = [];
+		const nodes: NodePath<TaggedTemplateExpression>[] = [];
 		traverse(ast, {
 			TaggedTemplateExpression(root) {
-				const { node } = root;
-				if (!t.isIdentifier(node.tag) || !tag.includes(node.tag.name))
+				if (!predicate(root))
 					return;
 
-				nodesToHandle.push(root);
+				if (reverse)
+					nodes.unshift(root);
+				else
+					nodes.push(root);
 			},
 		});
 
+		for (const root of nodes)
+			action(root);
+
+		return nodes;
+	};
+
+	const parseToTemplateFn = (validTagNames: Set<string>, code: string, id: string) => {
 		const magic = new MagicString(code);
 		const parseTaggedTemplateExpression = (root: NodePath<TaggedTemplateExpression>) => {
-			const { node } = root;
-
-			const quasis = node.quasi.quasis;
+			const quasis = root.node.quasi.quasis;
 
 			for (let i = 0; i < quasis.length; i++) {
 				const quasi = quasis[i]!;
@@ -99,66 +123,42 @@ export const jsxlikeTemplatePlugin = (options?: {
 						continue;
 
 					// We need to get the tagname, for use in the
-					// next transform and also if the first condition does not match
+					// next transform and finding the end tag.
 					const [ , tagName ] = /<([A-Z][a-zA-Z]*)/.exec(value.slice(j)) ?? [];
 					if (!tagName)
 						continue;
 
-					// We start another loop, and check if we find a /> or > first, this will determine our next step.
-					const { type, endIndex } = findTagType(quasis, i, j) ?? {};
-					if (!type || endIndex === undefined)
-						throw new Error('Could not get tag type');
+					// We get the first and last index of the end tag. This can either be a /> or </xxx>
+					const endTag = findEndTag(quasis, i, j, tagName);
+					if (!endTag) {
+						console.error('jsxlike-template-plugin: '
+							+ 'Could not get end tag. \ntag: ' + tagName
+							+ '.\nfile: ' + id);
+
+						continue;
+					}
 
 					magic.update(quasi.start! + j, quasi.start! + j + 1, '${');
 					magic.appendRight(quasi.start! + j + 1 + tagName.length, '`');
-
-					// If the tag ends with a /> we can convert it into a func immediatly.
-					if (type === 'short')
-						magic.update(endIndex - 2, endIndex, '`}');
-
-					// If it instead give us a >, we need to now search for </Component>
-					if (type === 'long') {
-						const { startIndex, endIndex: realEnd } = findEndOfLongTag(quasis, i, j, tagName) ?? {};
-						if (startIndex === undefined || realEnd === undefined)
-							throw new Error('Could not find real end for long tag.');
-
-						magic.update(startIndex, realEnd, '`}');
-					}
+					magic.update(endTag.endTagFirstIndex, endTag.endTagLastIndex, '`}');
 
 					validTagNames.add(tagName);
 				}
 			}
 		};
 
-		for (const root of nodesToHandle)
-			parseTaggedTemplateExpression(root);
+		getAndProccessNodes(code,
+			({ node }) => t.isIdentifier(node.tag) && tag.includes(node.tag.name),
+			parseTaggedTemplateExpression);
 
 		return magic;
 	};
 
 	const parseToFunction = (validTagNames: Set<string>, code: string) => {
-		const ast = parser.parse(code, {
-			sourceType: 'module',
-			plugins:    [ 'importAttributes', 'typescript', 'decorators-legacy' ],
-		});
-
-		const nodesToHandle: NodePath<TaggedTemplateExpression>[] = [];
-		traverse(ast, {
-			TaggedTemplateExpression(root) {
-				const { node } = root;
-				if (!t.isIdentifier(node.tag) || !validTagNames.has(node.tag.name))
-					return;
-
-				nodesToHandle.unshift(root);
-			},
-		});
-
 		const magic = new MagicString(code);
 		const parseTaggedTemplateExpression = (root: NodePath<TaggedTemplateExpression>) => {
-			const { node } = root;
-
-			const expressions = node.quasi.expressions;
-			const quasis = node.quasi.quasis;
+			const expressions = root.node.quasi.expressions;
+			const quasis = root.node.quasi.quasis;
 
 			const tag: { strings: string[]; values: any[]; } = {
 				strings: [],
@@ -181,6 +181,7 @@ export const jsxlikeTemplatePlugin = (options?: {
 					if (mode === 'tag') {
 						if (char === '>') {
 							mode = 'child';
+
 							continue;
 						}
 
@@ -219,10 +220,7 @@ export const jsxlikeTemplatePlugin = (options?: {
 
 			trimInPlace(tag.strings, child.strings);
 
-			// With the tag and child info in hand, lets make the props.
 			let propObj = '{';
-			propObj += '';
-
 			for (let i = 0; i < tag.strings.length; i++) {
 				const string = tag.strings[i]!;
 				const props = splitAttributes(string);
@@ -232,10 +230,10 @@ export const jsxlikeTemplatePlugin = (options?: {
 
 					// last prop, and also an assignment from the values array.
 					if (j === props.length - 1 && string.endsWith('=')) {
-						const key = '"' + prop.replaceAll(/(^\W+)|(\W+$)/g, '') + '"';
-						const value = tag.values[i] + ',';
+						const key = `"${ prop.replaceAll(/(^\W+)|(\W+$)/g, '') }"`;
+						const value = `${ tag.values[i] },`;
+						propObj += `${ key }:${ value }`;
 
-						propObj += key + ':' + value;
 						continue;
 					}
 
@@ -243,9 +241,9 @@ export const jsxlikeTemplatePlugin = (options?: {
 
 					// boolean attribute, set to true.
 					if (key && value === undefined)
-						propObj += '"' + key + '"' + ':true,';
+						propObj += `"${ key }":true,`;
 					else if (key && value !== undefined)
-						propObj += '"' + key + '"' + ':' + value + ',';
+						propObj += `"${ key }":${ value },`;
 				}
 			}
 
@@ -256,25 +254,28 @@ export const jsxlikeTemplatePlugin = (options?: {
 
 				childrenProp += str;
 				if (expr)
-					childrenProp += '${' + expr + '}';
+					childrenProp += `\${${ expr }}`;
 			}
 
 			if (childrenProp)
-				propObj += '"children": html`' + childrenProp + '`';
+				propObj += `"children":html\`${ childrenProp }\``;
 
 			propObj += '}';
 
 			// Changes from Name`` to Name({}) with prop object.
-			magic.update(node.tag.end!, node.end!, '(' + propObj + ')');
+			magic.update(root.node.tag.end!, root.node.end!, '(' + propObj + ')');
 		};
 
-		for (const root of nodesToHandle)
-			parseTaggedTemplateExpression(root);
+		getAndProccessNodes(code,
+			({ node }) => t.isIdentifier(node.tag) && validTagNames.has(node.tag.name),
+			parseTaggedTemplateExpression,
+			true);
 
 		return magic;
 	};
 
 	let cfg: ResolvedConfig;
+	const transformExpr = /\.((?:ts)|(?:js)$)/;
 
 	return {
 		name: 'jsxlike-template-string',
@@ -283,11 +284,11 @@ export const jsxlikeTemplatePlugin = (options?: {
 			cfg;
 		},
 		async transform(code, id) {
-			if (!/\.((?:ts)|(?:js)$)/.test(id))
+			if (!transformExpr.test(id))
 				return;
 
 			const validTagNames = new Set<string>();
-			const stage1 = parseToTemplateFn(validTagNames, code);
+			const stage1 = parseToTemplateFn(validTagNames, code, id);
 			const stage2 = parseToFunction(validTagNames, stage1.toString());
 
 			return {

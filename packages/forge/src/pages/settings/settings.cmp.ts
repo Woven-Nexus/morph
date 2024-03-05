@@ -1,8 +1,16 @@
 import { AegisElement, customElement } from '@roenlie/lit-aegis';
-import { html } from 'lit';
+import { html, type TemplateResult } from 'lit';
 
-import { dirHtml } from '../../features/forge-element/dir-element.js';
 
+export function DirComponent(create: () => () => TemplateResult) {
+	//
+
+	return () => html`
+	<div>
+		Hello
+	</div>
+	`;
+}
 
 const Hello = (props: {label: string; click: () => void}) => {
 	console.log({ props });

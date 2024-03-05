@@ -1,1 +1,1 @@
-export { jsxlikeTemplatePlugin } from './jsxlike-template-plugin.js';
+export { jsxlikeTemplatePlugin } from './plugin.js';
