@@ -129,6 +129,16 @@
 					]
 				}
 			]
+		},
+		{
+			"splitTerminals": [
+				{
+					"name": "jsxlike-template-tsplugin",
+					"commands": [
+						"cd packages/jsx-in-template-tsplugin"
+					]
+				}
+			]
 		}
 	],
 }

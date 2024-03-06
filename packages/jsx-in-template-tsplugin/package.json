@@ -1,0 +1,18 @@
+{
+	"name": "jsxlike-template-tsplugin",
+	"description": "Marks variables used as jsx tags as used.",
+	"contributors": [
+		{
+			"name": "Kristoffer Roen-Lie"
+		}
+	],
+	"version": "1.0.0",
+	"type": "module",
+	"main": "./dist/index.cjs",
+	"scripts": {
+		"build": "vite build"
+	},
+	"dependencies": {
+		"typescript": "^5.3.3"
+	}
+}
