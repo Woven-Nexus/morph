@@ -15,7 +15,7 @@
 		"editor.defaultFormatter": "dbaeumer.vscode-eslint"
 	},
 	"typescript.updateImportsOnFileMove.enabled": "always",
-	"typescript.preferences.importModuleSpecifier": "project-relative",
+	"typescript.preferences.importModuleSpecifier": "relative",
 	"typescript.preferences.importModuleSpecifierEnding": "js",
 	"typescript.tsdk": "node_modules\\typescript\\lib",
 	"peacock.color": "rgb(30,30,30)",

@@ -21,6 +21,8 @@ export const jsxlikeTemplatePlugin = (options?: {
 	let { tag = 'html' } = options ?? {};
 	tag = Array.isArray(tag) ? tag : [ tag ];
 
+	const tagStartExpr = /<[A-Z]/;
+	const tagNameExpr = /<([A-Z][\w.]*)/;
 	const tagRegexCache = new Map<string, RegExp>();
 
 	const findEndTag = (quasis: t.TemplateElement[], initialString: number, initialChar: number, tagName: string) => {
@@ -119,12 +121,12 @@ export const jsxlikeTemplatePlugin = (options?: {
 					const char2 = value[j + 1] ?? '';
 
 					// this means, we should search for what type of tag this is.
-					if (!/<[A-Z]/.test(char1 + char2))
+					if (!tagStartExpr.test(char1 + char2))
 						continue;
 
 					// We need to get the tagname, for use in the
 					// next transform and finding the end tag.
-					const [ , tagName ] = /<([A-Z][a-zA-Z]*)/.exec(value.slice(j)) ?? [];
+					const [ , tagName ] = tagNameExpr.exec(value.slice(j)) ?? [];
 					if (!tagName)
 						continue;
 
@@ -267,7 +269,28 @@ export const jsxlikeTemplatePlugin = (options?: {
 		};
 
 		getAndProccessNodes(code,
-			({ node }) => t.isIdentifier(node.tag) && validTagNames.has(node.tag.name),
+			({ node }) => {
+				if ((node as any).tag.name === 'html')
+					return false;
+
+				if (t.isIdentifier(node.tag))
+					return validTagNames.has(node.tag.name);
+
+				if (t.isMemberExpression(node.tag)) {
+					// TODO, this could go deeper we need a recursive traversal here
+					// Too lazy to implement yet.
+
+					let name = '';
+					if (t.isIdentifier(node.tag.object))
+						name = node.tag.object.name;
+					if (t.isIdentifier(node.tag.property))
+						name += '.' + node.tag.property.name;
+
+					return validTagNames.has(name);
+				}
+
+				return false;
+			},
 			parseTaggedTemplateExpression,
 			true);
 

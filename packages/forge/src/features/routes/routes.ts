@@ -1,4 +1,3 @@
-import { sleep } from '@roenlie/mimic-core/async';
 import { AppRouterCmp } from '@roenlie/mimic-elements/router';
 import type { Route } from '@vaadin/router';
 

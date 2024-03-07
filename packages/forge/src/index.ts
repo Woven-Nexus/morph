@@ -1,22 +1,26 @@
 import './app/identifiers.js';
 
-import { AppRouterCmp } from '@roenlie/mimic-elements/router';
 import { initializeStyleTokens } from '@roenlie/mimic-elements/styles';
-import type { Router } from '@vaadin/router';
+import { Router } from '@vaadin/router';
 import { render } from 'lit';
 
 import { routes } from './features/routes/routes.js';
 
 
 initializeStyleTokens();
-AppRouterCmp.register();
 
-const routerEl = document.createElement(AppRouterCmp.tagName) as AppRouterCmp;
-routerEl.routes = routes;
+
+const router = new Router();
+const routerEl = document.createElement('s-router');
+routerEl.style.setProperty('display', 'contents');
+
+router.setOutlet(routerEl);
+router.setRoutes(routes);
 
 Object.assign(window, {
-	router: (routerEl as any).router,
+	router,
 });
+
 
 declare global {
 	// eslint-disable-next-line no-var
