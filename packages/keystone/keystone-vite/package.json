@@ -1,5 +1,5 @@
 {
-	"name": "jsxlike-template-plugin",
+	"name": "keystone-vite",
 	"description": "a vite plugin that enables JSX like syntax in es6 template strings.",
 	"authors": "author",
 	"version": "1.0.0",

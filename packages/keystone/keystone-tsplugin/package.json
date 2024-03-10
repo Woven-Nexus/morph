@@ -1,5 +1,5 @@
 {
-	"name": "jsxlike-template-tsplugin",
+	"name": "keystone-tsplugin",
 	"description": "Marks variables used as jsx tags as used.",
 	"contributors": [
 		{

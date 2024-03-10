@@ -113,9 +113,9 @@
 		{
 			"splitTerminals": [
 				{
-					"name": "jsxlike-template-plugin",
+					"name": "keystone-core",
 					"commands": [
-						"cd packages/jsx-in-template-plugin"
+						"cd packages/keystone/keystone-core"
 					]
 				}
 			]
@@ -123,9 +123,9 @@
 		{
 			"splitTerminals": [
 				{
-					"name": "jsxlike-template-eslint",
+					"name": "keystone-vite",
 					"commands": [
-						"cd packages/jsx-in-template-eslint"
+						"cd packages/keystone/keystone-vite"
 					]
 				}
 			]
@@ -133,12 +133,22 @@
 		{
 			"splitTerminals": [
 				{
-					"name": "jsxlike-template-tsplugin",
+					"name": "keystone-eslint",
 					"commands": [
-						"cd packages/jsx-in-template-tsplugin"
+						"cd packages/keystone/keystone-eslint"
 					]
 				}
 			]
-		}
+		},
+		{
+			"splitTerminals": [
+				{
+					"name": "keystone-tsplugin",
+					"commands": [
+						"cd packages/keystone/keystone-tsplugin"
+					]
+				}
+			]
+		},
 	],
 }

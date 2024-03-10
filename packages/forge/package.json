@@ -19,12 +19,13 @@
 		"lit": "^3.1.2",
 		"magic-string": "^0.30.7",
 		"posix-path-browser": "workspace:^",
-		"jsxlike-template-plugin": "workspace:^",
 		"tslib": "^2.6.2",
-		"typescript": "^5.3.3"
+		"typescript": "^5.3.3",
+		"keystone-core": "workspace:^"
 	},
 	"devDependencies": {
 		"vite-plugin-import-css-sheet": "^1.0.3",
-		"jsxlike-template-tsplugin": "file:../jsx-in-template-tsplugin"
+		"keystone-tsplugin": "file:../keystone/keystone-tsplugin",
+		"keystone-vite": "workspace:^"
 	}
 }

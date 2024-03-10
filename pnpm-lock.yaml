@@ -39,7 +39,7 @@ importers:
         version: 2.29.1(@typescript-eslint/parser@7.1.1)(eslint@8.57.0)
       eslint-plugin-jsxlike-template:
         specifier: workspace:^
-        version: link:packages/jsx-in-template-eslint
+        version: link:packages/keystone/keystone-eslint
       eslint-plugin-lit:
         specifier: ^1.11.0
         version: 1.11.0(eslint@8.57.0)
@@ -158,9 +158,9 @@ importers:
       '@vaadin/router':
         specifier: ^1.7.5
         version: 1.7.5
-      jsxlike-template-plugin:
+      keystone-core:
         specifier: workspace:^
-        version: link:../jsx-in-template-plugin
+        version: link:../keystone/keystone-core
       lit:
         specifier: ^3.1.2
         version: 3.1.2
@@ -177,9 +177,12 @@ importers:
         specifier: ^5.3.3
         version: 5.4.2
     devDependencies:
-      jsxlike-template-tsplugin:
-        specifier: file:../jsx-in-template-tsplugin
-        version: file:packages/jsx-in-template-tsplugin
+      keystone-tsplugin:
+        specifier: file:../keystone/keystone-tsplugin
+        version: file:packages/keystone/keystone-tsplugin
+      keystone-vite:
+        specifier: workspace:^
+        version: link:../keystone/keystone-vite
       vite-plugin-import-css-sheet:
         specifier: ^1.0.3
         version: 1.0.3(@types/node@20.11.25)
@@ -196,7 +199,16 @@ importers:
         specifier: ^2.6.2
         version: 2.6.2
 
-  packages/jsx-in-template-eslint:
+  packages/keystone/keystone-core:
+    dependencies:
+      '@lit-labs/preact-signals':
+        specifier: ^1.0.2
+        version: 1.0.2
+      lit:
+        specifier: ^3.1.2
+        version: 3.1.2
+
+  packages/keystone/keystone-eslint:
     devDependencies:
       '@typescript-eslint/parser':
         specifier: ^7.0.1
@@ -214,7 +226,13 @@ importers:
         specifier: ^1.3.0
         version: 1.3.1(@types/node@20.11.25)
 
-  packages/jsx-in-template-plugin:
+  packages/keystone/keystone-tsplugin:
+    dependencies:
+      typescript:
+        specifier: ^5.3.3
+        version: 5.4.2
+
+  packages/keystone/keystone-vite:
     dependencies:
       '@babel/parser':
         specifier: ^7.23.9
@@ -244,12 +262,6 @@ importers:
       nodemon:
         specifier: ^3.1.0
         version: 3.1.0
-
-  packages/jsx-in-template-tsplugin:
-    dependencies:
-      typescript:
-        specifier: ^5.3.3
-        version: 5.4.2
 
   packages/posix-path-browser:
     dependencies:
@@ -4817,9 +4829,9 @@ packages:
     engines: {node: '>=12.20'}
     dev: true
 
-  file:packages/jsx-in-template-tsplugin:
-    resolution: {directory: packages/jsx-in-template-tsplugin, type: directory}
-    name: jsxlike-template-tsplugin
+  file:packages/keystone/keystone-tsplugin:
+    resolution: {directory: packages/keystone/keystone-tsplugin, type: directory}
+    name: keystone-tsplugin
     dependencies:
       typescript: 5.4.2
     dev: true

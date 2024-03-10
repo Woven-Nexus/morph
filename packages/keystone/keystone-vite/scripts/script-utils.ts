@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
+
 const errors = {
 	configKey: (i: number, key: string) =>
 		new SyntaxError('Config key argument misplaced. index: ' + i + ', key: ' + key),

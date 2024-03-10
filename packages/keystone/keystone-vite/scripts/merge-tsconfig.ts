@@ -26,7 +26,7 @@ const localDir = process.cwd();
 const entrypointPath = join(resolve(localDir, dirname(config)), basename(config));
 const tsConfig = getTSConfigFromPath(entrypointPath);
 if (!tsConfig)
-	throw new Error('Could not get local tsconfig.');
+	throw new Error('Could not get initial tsconfig.');
 
 
 const tsConfigChain: TSConfig[] = [ tsConfig ];
