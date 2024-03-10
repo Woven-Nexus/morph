@@ -1,1 +1,1 @@
-export { jsxlikeTemplatePlugin } from './plugin.js';
+export { keystone } from './plugin.js';

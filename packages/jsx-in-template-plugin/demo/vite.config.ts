@@ -1,6 +1,6 @@
 import { libConfig } from '@roenlie/package-toolbox/vite-utils/vite-lib-config.js';
 
-import { jsxlikeTemplatePlugin } from '../src/plugin.js';
+import { keystone } from '../src/plugin.js';
 
 
 export default libConfig({
@@ -12,5 +12,5 @@ export default libConfig({
 			formats: [ 'es' ],
 		},
 	},
-	plugins: [ jsxlikeTemplatePlugin() ],
+	plugins: [ keystone() ],
 });

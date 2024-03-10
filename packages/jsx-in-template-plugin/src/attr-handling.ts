@@ -1,3 +1,11 @@
+const splitExpr            = /(?<!["'][\d\w ]) (?![\d\w ]*["'])/g;
+const whitespace           = '(?: |(?:\t)|(?:\n))';
+const trimStartWhitespace  = new RegExp('^' + whitespace + '+');
+const trimEndWhitespace    = new RegExp(whitespace + '+$');
+const trimEqualsWhitespace = new RegExp(whitespace + '*=' + whitespace + '*', 'g');
+const trimAttrWhitespace   = new RegExp('(?!["\'])' + whitespace + '+', 'g');
+
+
 /**
  * Removes the following from arrays of strings.
  *
@@ -8,12 +16,6 @@
  * empty space, newlines and tabs in the beginning and end of a quote.
  */
 export const trimInPlace = (...strings: string[][]) => {
-	const whitespace = '(?: |(?:\t)|(?:\n))';
-	const trimStartWhitespace  = new RegExp('^' + whitespace + '+');
-	const trimEndWhitespace    = new RegExp(whitespace + '+$');
-	const trimEqualsWhitespace = new RegExp(whitespace + '*=' + whitespace + '*', 'g');
-	const trimAttrWhitespace   = new RegExp('(?!["\'])' + whitespace + '+', 'g');
-
 	for (const arr of strings) {
 		for (let i = 0; i < arr.length; i++) {
 			arr[i] = arr[i]!
@@ -36,10 +38,5 @@ export const trimInPlace = (...strings: string[][]) => {
  * const output = ['id="1"', 'label="label goes here"', 'checked', 'count=4', 'final=']
  */
 export const splitAttributes = (rawAttributes: string) => {
-	const expr = /(?<!["'][\d\w ]) (?![\d\w ]*["'])/g;
-
-	const prepareForSplit = rawAttributes.replaceAll(expr, '<>');
-	const split = prepareForSplit.split('<>');
-
-	return split;
+	return rawAttributes.split(splitExpr);
 };

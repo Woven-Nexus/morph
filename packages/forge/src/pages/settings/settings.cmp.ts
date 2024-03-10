@@ -1,8 +1,10 @@
 import { AegisElement, customElement } from '@roenlie/lit-aegis';
-import { css, html } from 'lit';
+import { html } from 'lit';
+import { createRef, ref } from 'lit/directives/ref.js';
 
 import { Keystone, type KeystoneComponent, type SubProps } from '../../features/keystone/keystone.js';
 import { useStyle } from '../../features/keystone/use-style.js';
+import cardStyle from './card.css' with {type: 'css'};
 
 
 interface Card {
@@ -14,29 +16,18 @@ interface Card {
 
 
 const Card = Keystone(props => {
-	useStyle(css`
-	s-card {
-		display: block;
-		height: 200px;
-		aspect-ratio: 1/1;
-		border: 2px solid green;
-	}
-	`);
+	useStyle(cardStyle, 'card');
+	const el = createRef();
+	console.log(el);
 
 	return () => html`
-	<s-card class="card">
+	<s-card class="card" ${ ref(el) }>
 		${ props.children }
 	</s-card>
 	`;
 }) as Card;
 
 Card.Header = Keystone<SubProps<Card['Header']>>(props => {
-	useStyle(css`
-	s-card-header {
-		display: block;
-	}
-	`);
-
 	return () => html`
 	<s-card-header>
 		${ props.text }
@@ -45,12 +36,6 @@ Card.Header = Keystone<SubProps<Card['Header']>>(props => {
 });
 
 Card.Body = Keystone<SubProps<Card['Body']>>(props => {
-	useStyle(css`
-	s-card-body {
-		display: block;
-	}
-	`);
-
 	return () => html`
 	<s-card-body>
 		${ props.text }
@@ -59,12 +44,6 @@ Card.Body = Keystone<SubProps<Card['Body']>>(props => {
 });
 
 Card.Footer = Keystone<SubProps<Card['Footer']>>(props => {
-	useStyle(css`
-	s-card-footer {
-		display: block;
-	}
-	`);
-
 	return () => html`
 	<s-card-footer>
 		${ props.text }

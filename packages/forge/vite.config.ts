@@ -1,5 +1,5 @@
 import { viteCopy } from '@roenlie/package-toolbox/vite-utils';
-import { jsxlikeTemplatePlugin } from 'jsxlike-template-plugin';
+import { keystone } from 'jsxlike-template-plugin';
 import { defineConfig } from 'vite';
 import { viteImportCssSheet } from 'vite-plugin-import-css-sheet';
 
@@ -8,7 +8,7 @@ export default defineConfig((env) => ({
 	root:      './src',
 	publicDir: '../public',
 	plugins:   [
-		jsxlikeTemplatePlugin(),
+		keystone(),
 		viteImportCssSheet(),
 		viteCopy({
 			targets: [

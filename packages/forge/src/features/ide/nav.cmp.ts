@@ -14,7 +14,6 @@ import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { html } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { map } from 'lit/directives/map.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import navStyles from './nav.css' with { type: 'css' };
 
@@ -47,6 +46,7 @@ export class NavCmp extends AegisComponent {
 
 }
 
+
 export class NavAdapter extends Adapter {
 
 	@inject('show-info-center') protected showInfoCenter: Signal<boolean>;
@@ -78,7 +78,7 @@ export class NavAdapter extends Adapter {
 	];
 
 	public override connectedCallback(): void {
-		this.active = this.topLinks[0]!.id;
+		this.active = router.location.pathname;
 	}
 
 	protected handleClickNav(ev: MouseEvent) {
@@ -86,7 +86,9 @@ export class NavAdapter extends Adapter {
 		if (this.active === id)
 			return;
 
-		const link = forOf(this.topLinks, this.bottomLinks).find(l => l.id === id)!;
+		const link = forOf(this.topLinks, this.bottomLinks)
+			.find(l => 'path' in l ? l.path === id : l.id === id)!;
+
 		if (!('path' in link))
 			return;
 
@@ -98,7 +100,8 @@ export class NavAdapter extends Adapter {
 
 	protected handleClickAction(ev: MouseEvent) {
 		const id = (ev.currentTarget as HTMLElement).id;
-		const link = forOf(this.topLinks, this.bottomLinks).find(l => l.id === id)!;
+		const link = forOf(this.topLinks, this.bottomLinks)
+			.find(l => 'path' in l ? l.path === id : l.id === id)!;
 		if ('action' in link)
 			link.action();
 	}
@@ -117,10 +120,10 @@ export class NavAdapter extends Adapter {
 	protected renderLink(link: Link) {
 		return html`
 		<a
-			id=${ link.id }
+			id=${ link.path }
 			href=${ link.path }
-			style=${ this.active === link.id ? 'view-transition-name:activenav;' : '' }
-			class=${ classMap({ active: this.active === link.id }) }
+			style=${ this.active === link.path ? 'view-transition-name:activenav;' : '' }
+			class=${ classMap({ active: this.active === link.path }) }
 			@click=${ this.handleClickNav.bind(this) }
 			${ tooltip(link.tooltip, { placement: 'right' }) }
 		>
