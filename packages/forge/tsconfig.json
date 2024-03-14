@@ -5,6 +5,11 @@
 		"baseUrl": ".",
 		"types": [
 			"vite/client",
+		],
+		"plugins": [
+			{
+				"name": "keystone-tsplugin",
+			}
 		]
 	},
 	"include": [
