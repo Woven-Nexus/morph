@@ -5,11 +5,11 @@
 		"@roenlie/eslint-config"
 	],
 	"plugins": [
-		"jsxlike-template"
+		"eslint-plugin-keystone"
 	],
 	"rules": {
 		"lit/no-invalid-html": "off",
 		"lit/no-unclosed-tag": "off",
-		"jsxlike-template/mark-as-used": "warn"
+		"keystone/mark-as-used": "warn"
 	}
 }

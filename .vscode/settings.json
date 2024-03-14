@@ -109,46 +109,6 @@
 					]
 				}
 			]
-		},
-		{
-			"splitTerminals": [
-				{
-					"name": "keystone-core",
-					"commands": [
-						"cd packages/keystone/keystone-core"
-					]
-				}
-			]
-		},
-		{
-			"splitTerminals": [
-				{
-					"name": "keystone-vite",
-					"commands": [
-						"cd packages/keystone/keystone-vite"
-					]
-				}
-			]
-		},
-		{
-			"splitTerminals": [
-				{
-					"name": "keystone-eslint",
-					"commands": [
-						"cd packages/keystone/keystone-eslint"
-					]
-				}
-			]
-		},
-		{
-			"splitTerminals": [
-				{
-					"name": "keystone-tsplugin",
-					"commands": [
-						"cd packages/keystone/keystone-tsplugin"
-					]
-				}
-			]
-		},
+		}
 	],
 }

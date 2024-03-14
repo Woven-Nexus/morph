@@ -17,15 +17,15 @@
 		"@roenlie/morph-components": "workspace:^",
 		"@vaadin/router": "^1.7.5",
 		"lit": "^3.1.2",
-		"magic-string": "^0.30.7",
 		"posix-path-browser": "workspace:^",
 		"tslib": "^2.6.2",
 		"typescript": "^5.3.3",
-		"keystone-core": "workspace:^"
+		"keystone-core": "file:../../../../keystone/packages/keystone-core"
 	},
 	"devDependencies": {
 		"vite-plugin-import-css-sheet": "^1.0.3",
-		"keystone-tsplugin": "file:../keystone/keystone-tsplugin",
-		"keystone-vite": "workspace:^"
+		"eslint-plugin-keystone": "file:../../../../keystone/packages/keystone-eslint",
+		"keystone-tsplugin": "file:../../../../keystone/packages/keystone-tsplugin",
+		"keystone-vite": "file:../../../../keystone/packages/keystone-vite"
 	}
 }
