@@ -18,8 +18,8 @@
 	},
 	"scripts": {
 		"build": "pnpm run \"/^build::.+/\"",
-		"build::indexes": "package-toolbox build-indexes",
-		"build::exports": "package-toolbox build-exports"
+		"build::indexes": "pkg-toolbox build-indexes",
+		"build::exports": "pkg-toolbox build-exports"
 	},
 	"dependencies": {
 		"@roenlie/mimic-core": "^0.0.83",

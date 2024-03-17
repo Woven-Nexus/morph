@@ -3,9 +3,9 @@ import { defineToolbox } from '@roenlie/package-toolbox/toolbox';
 
 export default defineToolbox(async () => {
 	const exclude = (path: string) =>
-		['.demo', '.test', '.bench'].every(seg => !path.includes(seg));
+		[ '.demo', '.test', '.bench' ].every(seg => !path.includes(seg));
 
-	const entrypoints = createEntrypointsFromDirectories(['/src']).map(entry => {
+	const entrypoints = createEntrypointsFromDirectories([ '/src' ]).map(entry => {
 		entry.packageExport = false;
 
 		return entry;
@@ -13,15 +13,15 @@ export default defineToolbox(async () => {
 
 	return {
 		indexBuilder: {
-			entrypoints: [...entrypoints],
-			defaultFilters: [exclude],
+			entrypoints:    [ ...entrypoints ],
+			defaultFilters: [ exclude ],
 		},
 		exportsBuilder: {
 			entries: entrypoints.map(entry => {
 				return {
-					path: entry.packagePath,
+					path:    entry.packagePath,
 					default: entry.path,
-					types: entry.path,
+					types:   entry.path,
 				};
 			}),
 			options: {

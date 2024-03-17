@@ -1,7 +1,7 @@
 import { viteCopy } from '@roenlie/package-toolbox/vite-utils';
-import { keystone } from 'jsxlike-template-plugin';
+import { keystone } from 'keystone-vite';
 import { defineConfig } from 'vite';
-import { viteImportCssSheet } from 'vite-plugin-import-css-sheet';
+import { importCSSSheet } from 'vite-plugin-import-css-sheet';
 
 
 export default defineConfig((env) => ({
@@ -9,7 +9,7 @@ export default defineConfig((env) => ({
 	publicDir: '../public',
 	plugins:   [
 		keystone(),
-		viteImportCssSheet(),
+		importCSSSheet(),
 		viteCopy({
 			targets: [
 				{
@@ -22,6 +22,7 @@ export default defineConfig((env) => ({
 		}),
 	],
 	resolve: {
-		conditions: env.mode === 'development' ? [ 'morph-workspace' ] : [],
+		conditions: env.mode === 'development'
+			? [ 'morph-workspace' ] : [],
 	},
 }));

@@ -60,6 +60,12 @@ export class NavAdapter extends Adapter {
 		},
 		{
 			id:      domId(),
+			tooltip: 'diary',
+			icon:    'https://icons.getbootstrap.com/assets/icons/journal-richtext.svg',
+			path:    router.urlForName('diary'),
+		},
+		{
+			id:      domId(),
 			tooltip: 'settings',
 			icon:    'https://icons.getbootstrap.com/assets/icons/sliders2.svg',
 			path:    router.urlForName('settings'),

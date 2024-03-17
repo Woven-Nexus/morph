@@ -1,5 +1,6 @@
 import { AppRouterCmp } from '@roenlie/mimic-elements/router';
 import type { Route } from '@vaadin/router';
+import { html, render } from 'lit';
 
 import { LayoutPageCmp } from '../../pages/layout/layout.cmp.js';
 
@@ -30,6 +31,18 @@ export const routes: Route[] = [
 					return AppRouterCmp.routeComponent(
 						() => import('../../pages/forge/forge.cmp.js'),
 					)(ctx);
+				},
+			},
+			{
+				name:   'diary',
+				path:   '/diary',
+				action: async () => {
+					const div = document.createElement('div');
+
+					const cmp = (await import('../../pages/diary/diary-page.cmp.js')).DiaryPage;
+					render(cmp({}), div);
+
+					return div.firstElementChild as HTMLElement;
 				},
 			},
 			{

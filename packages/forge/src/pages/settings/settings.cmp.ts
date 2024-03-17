@@ -23,32 +23,31 @@ const Card = Keystone(props => {
 		${ props.children }
 	</s-card>
 	`;
+}) as Card;
+
+Card.Header = Keystone<SubProps<Card['Header']>>(props => {
+	return () => html`
+	<s-card-header>
+		${ props.text }
+	</s-card-header>
+	`;
 });
 
+Card.Body = Keystone<SubProps<Card['Body']>>(props => {
+	return () => html`
+	<s-card-body>
+		${ props.text }
+	</s-card-body>
+	`;
+});
 
-//Card.Header = Keystone<SubProps<Card['Header']>>(props => {
-//	return () => html`
-//	<s-card-header>
-//		${ props.text }
-//	</s-card-header>
-//	`;
-//});
-
-//Card.Body = Keystone<SubProps<Card['Body']>>(props => {
-//	return () => html`
-//	<s-card-body>
-//		${ props.text }
-//	</s-card-body>
-//	`;
-//});
-
-//Card.Footer = Keystone<SubProps<Card['Footer']>>(props => {
-//	return () => html`
-//	<s-card-footer>
-//		${ props.text }
-//	</s-card-footer>
-//	`;
-//});
+Card.Footer = Keystone<SubProps<Card['Footer']>>(props => {
+	return () => html`
+	<s-card-footer>
+		${ props.text }
+	</s-card-footer>
+	`;
+});
 
 
 @customElement('m-settings-page', true)
