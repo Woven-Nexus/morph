@@ -11,6 +11,7 @@ import betrayal from './features/betrayal/get-tile.js';
 import codemodules from './features/code-modules/code-module-routes.js';
 
 
+app.use('/', express.static(join(resolve(), 'public')));
 app.use('/api/code-modules', codemodules);
 app.use('/api/betrayal', betrayal);
 app.use('/assets/betrayal/tiles', express.static(join(resolve(), 'src/features/betrayal/assets/tiles')));
@@ -20,7 +21,6 @@ const port = process.env['PORT'];
 
 io.on('connection', socket => {
 	console.log('a user connected');
-
 	socket.on('disconnect', () => {
 		console.log('user disconnected');
 	});

@@ -1,12 +1,13 @@
-import express, { type Router } from 'express';
+import './index.js';
 
 import { createResponse } from '../../utilities/create-response.js';
 import { Query } from '../db-utils/query.js';
 import type { Module } from './modules-table.js';
+import router from './router.js';
 
 
-const router: Router = express.Router();
 export default router;
+
 
 //app.get('/code1', (req, res) => {
 //	res.send(`
@@ -39,9 +40,6 @@ export default router;
 //	res.send(result);
 //});
 
-router.get('/', async (req, res) => {
-	res.send('CODE MODULES!');
-});
 
 router.get('/all', async (req, res) => {
 	const query = new Query('./database/main.db');

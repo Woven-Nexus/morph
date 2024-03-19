@@ -1,4 +1,5 @@
-const parseTag = (strings: TemplateStringsArray, ...values: unknown[]) => {
+/* eslint-disable lit/binding-positions */
+const parseTag = async (strings: TemplateStringsArray, ...values: unknown[]) => {
 	let aggregator = '';
 
 	for (let i = 0; i < strings.length; i++) {
@@ -6,10 +7,18 @@ const parseTag = (strings: TemplateStringsArray, ...values: unknown[]) => {
 		aggregator += string;
 
 		const expr = values[i];
-		if (typeof expr === 'function')
-			aggregator += expr();
-		else if (expr !== undefined)
-			aggregator += expr;
+		if (expr === undefined)
+			continue;
+
+		let value: unknown = expr;
+
+		if (typeof value === 'function')
+			value = value();
+
+		if (value instanceof Promise)
+			value = await value;
+
+		aggregator += value;
 	}
 
 	return aggregator;
@@ -17,3 +26,24 @@ const parseTag = (strings: TemplateStringsArray, ...values: unknown[]) => {
 
 export const html = parseTag;
 export const css = parseTag;
+
+
+export const template = async (
+	tag: string,
+	template: string | Promise<string>,
+	style: string | Promise<string>,
+) => {
+	template = await template;
+	style = await style;
+
+	const script = `<script type="module">
+registerStyle('${ tag }', \`${ style.replaceAll(/[\t\n ]/g, '') }\`);
+</script>`.replaceAll(/ +/g, ' ').replaceAll(/\t+/g, '\t').replaceAll(/\n+/g, ' ');
+
+	return html`
+	<${ tag }>
+		${ script }
+		${ template }
+	</${ tag }>
+	`;
+};
