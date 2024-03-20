@@ -1,7 +1,6 @@
-import './index.js';
-
 import { createResponse } from '../../utilities/create-response.js';
 import { Query } from '../db-utils/query.js';
+import { content } from './index.js';
 import type { Module } from './modules-table.js';
 import router from './router.js';
 
@@ -123,8 +122,5 @@ router.get(`/:namespace/:id`, async (req, res) => {
 	const modules: Module[] = [];
 	results.forEach(res => modules.push(res.item));
 
-	res.send(createResponse(
-		modules[0],
-		'No code module with id: ' + params.id,
-	));
+	res.send(await content(modules.at(0)?.code ?? ''));
 });

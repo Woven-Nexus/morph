@@ -1,0 +1,17 @@
+<script type="module" where="server">
+	const test: string[] = ['test'];
+</script>
+
+<script type="module" where="client" lang="typescript">
+	const test: string[] = ['test'];
+</script>
+
+<template>
+	<div>
+		${ test.map(str => str) }
+	</div>
+</template>
+
+<style>
+
+</style>

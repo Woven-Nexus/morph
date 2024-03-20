@@ -1,5 +1,7 @@
 /* eslint-disable lit/binding-positions */
 import { css, html, template } from '../../utilities/template-tag.js';
+import { Query } from '../db-utils/query.js';
+import type { Module } from './modules-table.js';
 import router from './router.js';
 
 
@@ -43,8 +45,7 @@ router.get('/', async (req, res) => {
 	<body>
 		${ sidebar() }
 
-		<div hx-get="/api/code-modules/button-content" hx-trigger="load">
-			Hello
+		<div id="content">
 		</div>
 	</body>
 	</html>
@@ -66,15 +67,49 @@ router.get('/button-content', async (req, res) => {
 
 
 const sidebar = async () => {
+	const query = new Query('./database/main.db');
+	const results = query
+		.get<Module>('modules')
+		.orderBy('active', 'asc')
+		.orderBy('name', 'asc')
+		.query();
+
+	const modules: Module[] = [];
+	results.forEach(res => modules.push(res.item));
+
 	return template('s-sidebar', html`
-	<!--<div>Hello?</div>-->
-	${ button() }
-	`, await css`
+	<ol>
+		${ modules.map(module => html`
+		<li>
+			<button
+				hx-get="/api/code-modules/${ module.namespace }/${ module.module_id }"
+				hx-target="#content"
+			>
+				${ module.name }
+			</button>
+		</li>
+		`) }
+	</ol>
+	`, css`
 		s-sidebar {
 			display: block;
 			background-color: teal;
 			width: 200px;
 		}
+	`);
+};
+
+
+export const content = async (code: string) => {
+	return template('s-content', html`
+	<pre>
+		${ code }
+	</pre>
+	`, css`
+	s-content {
+		width: 400px;
+		height: 500px;
+	}
 	`);
 };
 

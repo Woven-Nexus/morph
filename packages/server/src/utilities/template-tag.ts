@@ -18,6 +18,9 @@ const parseTag = async (strings: TemplateStringsArray, ...values: unknown[]) => 
 		if (value instanceof Promise)
 			value = await value;
 
+		if (Array.isArray(value))
+			value = (await Promise.all(value)).join('');
+
 		aggregator += value;
 	}
 
