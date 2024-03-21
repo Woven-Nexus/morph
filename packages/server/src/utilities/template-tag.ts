@@ -39,9 +39,10 @@ export const template = async (
 	template = await template;
 	style = await style;
 
-	const script = `<script type="module">
-registerStyle('${ tag }', \`${ style.replaceAll(/[\t\n ]/g, '') }\`);
-</script>`.replaceAll(/ +/g, ' ').replaceAll(/\t+/g, '\t').replaceAll(/\n+/g, ' ');
+	const id = crypto.randomUUID();
+	const script = `<script id="${ id }" type="module">`
+		+ `registerStyle('${ id }', '${ tag }', \`${ style.replaceAll(/[\t\n ]/g, '') }\`);`
+		+ `</script>`;
 
 	return html`
 	<${ tag }>

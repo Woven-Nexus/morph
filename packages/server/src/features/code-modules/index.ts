@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 		<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 		<script src="https://unpkg.com/htmx.org@1.9.11"></script>
 		<script type="module">
-			window.registerStyle = (tag, style) => {
+			window.registerStyle = (id, tag, style) => {
 				if (document.head.querySelector('#' + tag))
 					return;
 
@@ -25,6 +25,8 @@ router.get('/', async (req, res) => {
 				styleEl.innerHTML = style
 				styleEl.id = tag;
 				document.head.appendChild(styleEl);
+
+				document.getElementById(id).remove();
 			}
 		</script>
 
