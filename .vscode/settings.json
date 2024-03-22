@@ -93,6 +93,16 @@
 		{
 			"splitTerminals": [
 				{
+					"name": "editor",
+					"commands": [
+						"cd packages/editor"
+					]
+				}
+			]
+		},
+		{
+			"splitTerminals": [
+				{
 					"name": "html-module",
 					"commands": [
 						"cd packages/html-module-plugin"

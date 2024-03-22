@@ -10,7 +10,7 @@ import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { when } from 'lit/directives/when.js';
 import { editor } from 'monaco-editor';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
-import editorStyleUrl from 'monaco-editor/min/vs/editor/editor.main.css?url';
+import editorStyle from 'monaco-editor/min/vs/editor/editor.main.css?raw';
 
 import { updateLangConfig } from './lang-config-extender.js';
 
@@ -47,6 +47,8 @@ export class MonacoEditorCmp extends MimicElement {
 	}
 
 	@property() public placeholder: string;
+	@property() public code: string;
+	@property() public language: string;
 
 	public get monaco() { return editor; }
 	public get editor() { return this._editor; }
@@ -134,11 +136,22 @@ export class MonacoEditorCmp extends MimicElement {
 
 		this.editorReady.resolve();
 		emitEvent(this, 'editor-ready', { bubbles: false });
+
+		if (this.code !== undefined)
+			this.createModel(this.code, this.language ?? 'typescript');
+	}
+
+	public async createModel(code: string, language: string) {
+		await this.editorReady;
+
+		const model = this.monaco.createModel(code, language);
+		this.editor?.setModel(model);
+		this.editor?.restoreViewState(null);
+		this.editor?.focus();
 	}
 
 	protected override render(): unknown {
 		return html`
-		<link rel="stylesheet" href=${ editorStyleUrl }></link>
 		<div
 			${ ref(this.monacoRef) }
 			class=${ classMap({ editor: true, visible: this.visible }) }
@@ -151,25 +164,34 @@ export class MonacoEditorCmp extends MimicElement {
 		`;
 	}
 
-	public static override styles = css`
-	:host {
-		display: grid;
-		overflow: hidden;
-	}
-	.editor {
-		opacity: 0;
-	}
-	.editor.visible {
-		opacity: 1;
-	}
-	s-editor-placeholder {
-		display: grid;
-		place-items: center;
-	}
-	.editor, s-editor-placeholder {
-		grid-row: 1/2;
-		grid-column: 1/2;
-	}
-	`;
+	public static override styles = [
+		(() => {
+			const sheet = new CSSStyleSheet();
+			sheet.replaceSync(editorStyle);
+
+			return sheet;
+		})(),
+		css`
+		:host {
+			display: grid;
+			overflow: hidden;
+		}
+		.editor {
+			opacity: 0;
+		}
+		.editor.visible {
+			opacity: 1;
+		}
+		s-editor-placeholder {
+			display: grid;
+			place-items: center;
+		}
+		.editor, s-editor-placeholder {
+			grid-row: 1/2;
+			grid-column: 1/2;
+		}
+		`,
+	];
 
 }
+MonacoEditorCmp.register();

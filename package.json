@@ -27,7 +27,7 @@
 	},
 	"pnpm": {
 		"patchedDependencies": {
-			"monaco-editor@0.46.0": "patches/monaco-editor@0.44.0.patch"
+			"monaco-editor@0.47.0": "patches/monaco-editor@0.44.0.patch"
 		},
 		"allowNonAppliedPatches": true
 	}

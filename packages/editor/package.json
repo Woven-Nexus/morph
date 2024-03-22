@@ -1,5 +1,5 @@
 {
-	"name": "@roenlie/morph-components",
+	"name": "@roenlie/monaco-editor",
 	"description": "description",
 	"authors": "author",
 	"version": "1.0.0",
@@ -7,10 +7,6 @@
 	"main": "./dist/index.ts",
 	"types": "./dist/index.ts",
 	"exports": {
-		"./infinite-scroller": {
-			"types": "./src/infinite-scroller/index.ts",
-			"default": "./src/infinite-scroller/index.ts"
-		},
 		"./monaco": {
 			"types": "./src/monaco/index.ts",
 			"default": "./src/monaco/index.ts"
@@ -23,9 +19,10 @@
 		"build::js": "vite build"
 	},
 	"dependencies": {
-		"@roenlie/mimic-core": "^0.0.83",
-		"@roenlie/mimic-lit": "^0.0.93",
+		"@roenlie/mimic-core": "^0.0.86",
+		"@roenlie/mimic-lit": "^0.0.96",
 		"lit": "^3.1.2",
+		"monaco-editor": "^0.47.0",
 		"tslib": "^2.6.2"
 	}
 }

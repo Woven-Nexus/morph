@@ -4,7 +4,7 @@ import { domId } from '@roenlie/mimic-core/dom';
 import { debounce } from '@roenlie/mimic-core/timing';
 import { sharedStyles } from '@roenlie/mimic-lit/styles';
 import { type editor, MonacoEditorCmp } from '@roenlie/morph-components/monaco';
-import { css, type CSSResultGroup, html } from 'lit';
+import { css, html } from 'lit';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 
 import { getSignal } from '../../app/rerender.js';

@@ -1,9 +1,5 @@
 import * as monaco from 'monaco-editor';
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
-import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
+
 
 export const setUserWorker = (() => {
 	let initialized = false;
@@ -16,18 +12,18 @@ export const setUserWorker = (() => {
 		self.MonacoEnvironment = {
 			getWorker(_: unknown, label: string) {
 				if (label === 'json')
-					return new jsonWorker();
+					return import('monaco-editor/esm/vs/language/json/json.worker?worker').then(w => new w.default());
 
 				if (label === 'css' || label === 'scss' || label === 'less')
-					return new cssWorker();
+					return import('monaco-editor/esm/vs/language/css/css.worker?worker').then(w => new w.default());
 
 				if (label === 'html' || label === 'handlebars' || label === 'razor')
-					return new htmlWorker();
+					return import('monaco-editor/esm/vs/language/html/html.worker?worker').then(w => new w.default());
 
 				if (label === 'typescript' || label === 'javascript')
-					return new tsWorker();
+					return import('monaco-editor/esm/vs/language/typescript/ts.worker?worker').then(w => new w.default());
 
-				return new editorWorker();
+				return import('monaco-editor/esm/vs/editor/editor.worker?worker').then(w => new w.default());
 			},
 		};
 

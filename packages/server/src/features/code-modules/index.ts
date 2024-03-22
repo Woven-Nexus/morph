@@ -13,17 +13,21 @@ router.get('/', async (req, res) => {
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Forge</title>
+
 		<link rel="preconnect" href="https://rsms.me/">
 		<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+		<link rel="stylesheet" href="/monaco/style.css">
+
 		<script src="https://unpkg.com/htmx.org@1.9.11"></script>
+		<script type="module" src="/monaco/index.js"></script>
 		<script type="module">
 			window.registerStyle = (id, tag, style) => {
 				if (document.head.querySelector('#' + tag))
-					return;
+					return document.getElementById(id).remove();
 
 				const styleEl = document.createElement('style');
-				styleEl.innerHTML = style
 				styleEl.id = tag;
+				styleEl.innerHTML = style
 				document.head.appendChild(styleEl);
 
 				document.getElementById(id).remove();
@@ -31,6 +35,10 @@ router.get('/', async (req, res) => {
 		</script>
 
 		<style>
+			:root { font-family: Inter, sans-serif; }
+			@supports (font-variation-settings: normal) {
+				:root { font-family: InterVariable, sans-serif; }
+			}
 			body {
 				height: 100svh;
 				width: 100vw;
@@ -41,30 +49,24 @@ router.get('/', async (req, res) => {
 
 				display: grid;
 				grid-template-columns: max-content 1fr;
+				grid-template-rows: 1fr;
+				grid-auto-rows: 0px;
+			}
+			#content {
+				display: grid;
 			}
 		</style>
 	</head>
 	<body>
 		${ sidebar() }
-
 		<div id="content">
+			<monaco-editor placeholder="no file selected"></monaco-editor>
 		</div>
 	</body>
 	</html>
 	`;
 
 	res.send(template);
-});
-
-router.get('/button-content', async (req, res) => {
-	res.send(await html`
-	<div>
-		HERE I AM PUTTING SOME NEW CONTENT :O
-		<button>
-			Another Button
-		</button>
-	</div>
-	`);
 });
 
 
@@ -104,13 +106,10 @@ const sidebar = async () => {
 
 export const content = async (code: string) => {
 	return template('s-content', html`
-	<pre>
-		${ code }
-	</pre>
+	<monaco-editor code="${ code }" language="typescript"></monaco-editor>
 	`, css`
 	s-content {
-		width: 400px;
-		height: 500px;
+		display: contents;
 	}
 	`);
 };
