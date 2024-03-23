@@ -19,20 +19,9 @@ router.get('/', async (req, res) => {
 		<link rel="stylesheet" href="/monaco/style.css">
 
 		<script src="https://unpkg.com/htmx.org@1.9.11"></script>
+		<script type="module" src="/module.js"></script>
 		<script type="module" src="/monaco/index.js"></script>
-		<script type="module">
-			window.registerStyle = (id, tag, style) => {
-				if (document.head.querySelector('#' + tag))
-					return document.getElementById(id).remove();
-
-				const styleEl = document.createElement('style');
-				styleEl.id = tag;
-				styleEl.innerHTML = style
-				document.head.appendChild(styleEl);
-
-				document.getElementById(id).remove();
-			}
-		</script>
+		<script type="module" src="/register-style.js"></script>
 
 		<style>
 			:root { font-family: Inter, sans-serif; }
@@ -52,16 +41,31 @@ router.get('/', async (req, res) => {
 				grid-template-rows: 1fr;
 				grid-auto-rows: 0px;
 			}
-			#content {
+			main {
 				display: grid;
+				grid-template-rows: max-content 1fr;
 			}
 		</style>
 	</head>
 	<body>
 		${ sidebar() }
-		<div id="content">
-			<monaco-editor placeholder="no file selected"></monaco-editor>
-		</div>
+		<main>
+			<script type="module">
+				module.define('editor', () => {
+					const save = () => {
+						const editor = document.querySelector('monaco-editor');
+						console.log(editor)
+						console.log('saving');
+					}
+
+					module.export('save', save);
+				});
+			</script>
+
+			<s-content>
+				<monaco-editor placeholder="no file selected"></monaco-editor>
+			</s-content>
+		</main>
 	</body>
 	</html>
 	`;
@@ -81,56 +85,57 @@ const sidebar = async () => {
 	const modules: Module[] = [];
 	results.forEach(res => modules.push(res.item));
 
-	return template('s-sidebar', html`
-	<ol>
-		${ modules.map(module => html`
-		<li>
-			<button
-				hx-get="/api/code-modules/${ module.namespace }/${ module.module_id }"
-				hx-target="#content"
-			>
-				${ module.name }
-			</button>
-		</li>
-		`) }
-	</ol>
-	`, css`
-		s-sidebar {
-			display: block;
-			background-color: teal;
-			width: 200px;
-		}
-	`);
+	return template({
+		tag:      's-sidebar',
+		template: html`
+			<ol>
+				${ modules.map(module => html`
+				<li>
+					<button
+						hx-get="/api/code-modules/${ module.namespace }/${ module.module_id }"
+						hx-target="s-content"
+						hx-swap="outerHTML"
+					>
+						${ module.name }
+					</button>
+				</li>
+				`) }
+			</ol>
+		`,
+		style: css`
+			s-sidebar {
+				display: block;
+				background-color: teal;
+				width: 200px;
+			}
+		`,
+	});
 };
 
 
 export const content = async (code: string) => {
-	return template('s-content', html`
-	<monaco-editor code="${ code }" language="typescript"></monaco-editor>
-	`, css`
-	s-content {
-		display: contents;
-	}
-	`);
-};
-
-
-const button = () => {
-	return template('s-button', html`
-		<button>
-			CLICK ME!?
-		</button>
-	`, css`
-		s-button {
-			width: 100px;
-			height: 100px;
-			color: green;
-			background-color: hotpink;
-			font-size: 24px;
-
-			button {
-				all: unset;
+	return template({
+		tag:      's-content',
+		template: html`
+			<button>
+				Save
+			</button>
+			<monaco-editor
+				code="${ code }"
+				language="typescript"
+			></monaco-editor>
+		`,
+		style: css`
+			s-content {
+				display: contents;
 			}
-		}
-	`);
+		`,
+		// Make this use esbuild internally to strip typescript types out.
+		script: () => {
+			const save = module.import('editor', 'save');
+			const button = document.querySelector('s-content button');
+			button?.addEventListener('click', () => save());
+		},
+		immediate: true,
+	});
 };
