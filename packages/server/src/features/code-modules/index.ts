@@ -1,5 +1,5 @@
-/* eslint-disable lit/binding-positions */
-import { css, html, template } from '../../utilities/template-tag.js';
+import { template } from '../../utilities/template.js';
+import { css, html } from '../../utilities/template-tag.js';
 import { Query } from '../db-utils/query.js';
 import type { Module } from './modules-table.js';
 import router from './router.js';
@@ -42,6 +42,7 @@ router.get('/', async (req, res) => {
 				grid-auto-rows: 0px;
 			}
 			main {
+				overflow: hidden;
 				display: grid;
 				grid-template-rows: max-content 1fr;
 			}
@@ -50,18 +51,6 @@ router.get('/', async (req, res) => {
 	<body>
 		${ sidebar() }
 		<main>
-			<script type="module">
-				module.define('editor', () => {
-					const save = () => {
-						const editor = document.querySelector('monaco-editor');
-						console.log(editor)
-						console.log('saving');
-					}
-
-					module.export('save', save);
-				});
-			</script>
-
 			<s-content>
 				<monaco-editor placeholder="no file selected"></monaco-editor>
 			</s-content>
@@ -77,7 +66,7 @@ router.get('/', async (req, res) => {
 const sidebar = async () => {
 	const query = new Query('./database/main.db');
 	const results = query
-		.get<Module>('modules')
+		.from<Module>('modules')
 		.orderBy('active', 'asc')
 		.orderBy('name', 'asc')
 		.query();
@@ -104,16 +93,25 @@ const sidebar = async () => {
 		`,
 		style: css`
 			s-sidebar {
-				display: block;
+				overflow: hidden;
+				display: grid;
 				background-color: teal;
 				width: 200px;
+			}
+			ol {
+				all: unset;
+				display: block;
+				overflow: hidden;
+				overflow-y: auto;
+				padding-inline-start: 24px;
+				padding-block: 24px;
 			}
 		`,
 	});
 };
 
 
-export const content = async (code: string) => {
+export const content = async (id: string, code: string) => {
 	return template({
 		tag:      's-content',
 		template: html`
@@ -121,6 +119,7 @@ export const content = async (code: string) => {
 				Save
 			</button>
 			<monaco-editor
+				id="${ id }"
 				code="${ code }"
 				language="typescript"
 			></monaco-editor>
@@ -130,11 +129,21 @@ export const content = async (code: string) => {
 				display: contents;
 			}
 		`,
-		// Make this use esbuild internally to strip typescript types out.
 		script: () => {
-			const save = module.import('editor', 'save');
 			const button = document.querySelector('s-content button');
-			button?.addEventListener('click', () => save());
+			button?.addEventListener('click', async () => {
+				const editor = document.querySelector('monaco-editor') as any;
+				const value = editor.editor.getValue();
+				const body = JSON.stringify({ id: editor.id, code: value });
+
+				await fetch('/api/code-modules/save', {
+					method:  'post',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body,
+				});
+			});
 		},
 		immediate: true,
 	});

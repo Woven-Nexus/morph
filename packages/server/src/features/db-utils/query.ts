@@ -16,13 +16,18 @@ export class Query {
 		this.#db.pragma('journal_mode = WAL');
 	}
 
-	public get<T extends object = object>(table: string) {
-		return new GetBuilder<T>(this.#db, table);
+	public from<T extends object = object>(table: string) {
+		return new SelectBuilder<T>(this.#db, table);
+	}
+
+	public update<T extends object = object>(table: string) {
+		return new UpdateBuilder<T>(this.#db, table);
 	}
 
 }
 
-class GetBuilder<T extends object = object> {
+
+class SelectBuilder<T extends object = object> {
 
 	#select: string[] = [];
 	#where = '';
@@ -33,15 +38,14 @@ class GetBuilder<T extends object = object> {
 
 	constructor(
 		protected db: SQLite.Database,
-		public table: string,
-
+		protected table: string,
 	) {}
 
-	public fields<K extends Extract<keyof T, string>>(...field: K[]) {
+	public select<K extends Extract<keyof T, string>>(...field: K[]) {
 		this.#select ??= [];
-		field.forEach(field => this.#select?.push(field));
+		field.forEach(field => this.#select.push(field));
 
-		return this as GetBuilder<Pick<T, K>>;
+		return this as SelectBuilder<Pick<T, K>>;
 	}
 
 	public where(filter: (filter: Filter<T>) => FilterCondition) {
@@ -111,6 +115,100 @@ class GetBuilder<T extends object = object> {
 
 	public query() {
 		return new Results(this.db.prepare(this.build()).all() as T[]);
+	}
+
+}
+
+
+class UpdateBuilder<T extends object = object> {
+
+	#set: [name: string, value: any][] = [];
+	#where = '';
+	#orderBy: string[] = [];
+	#limit?: number;
+	#offset?: number;
+
+	constructor(
+		protected db: SQLite.Database,
+		protected table: string,
+	) {}
+
+	public set<K extends Extract<keyof T, string>>(...field: [name: K, value: any][]) {
+		field.forEach(field => this.#set.push(field));
+
+		return this as UpdateBuilder<T>;
+	}
+
+	public where(filter: (filter: Filter<T>) => FilterCondition) {
+		this.#where = filter(new Filter());
+
+		return this;
+	}
+
+	public orderBy(
+		field: Extract<keyof T, string>,
+		order: 'asc' | 'desc' = 'asc',
+		nullsLast?: true,
+	) {
+		this.#orderBy.push(
+			`${ field } ${ order.toUpperCase() }` +
+			`${ nullsLast ? ' NULLS LAST' : '' }`,
+		);
+
+		return this;
+	}
+
+	public limit(limit: number) {
+		this.#limit = limit;
+
+		return this;
+	}
+
+
+	public offset(offset: number) {
+		this.#offset = offset;
+
+		return this;
+	}
+
+	protected build() {
+		const update = 'UPDATE ' + this.table;
+
+		const set = 'SET ' + this.#set
+			.map(([ name, value ]) => `${ name } = '${ value }'`)
+			.join(',\n');
+
+		const where = this.#where
+			? 'WHERE ' + this.#where
+			: '';
+
+		const order = this.#orderBy.length
+			? 'ORDER ' + this.#orderBy.join(',')
+			: '';
+
+		const limit = !exists(this.#limit) && exists(this.#offset)
+			? 'LIMIT -1 OFFSET ' + this.#offset
+			: exists(this.#limit) && !exists(this.#offset)
+				? 'LIMIT ' + this.#limit
+				: exists(this.#limit) && exists(this.#offset)
+					? 'LIMIT ' + this.#limit + ' OFFSET ' + this.#offset
+					: '';
+
+		const qry = [
+			update,
+			set,
+			where,
+			order,
+			limit,
+		].join('\n');
+
+		return qry;
+	}
+
+	public query() {
+		console.log(this.build());
+
+		return this.db.prepare(this.build()).run();
 	}
 
 }

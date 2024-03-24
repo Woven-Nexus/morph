@@ -1,7 +1,6 @@
 import { join, resolve } from 'node:path';
 
 import { randomUUID } from 'crypto';
-import dotenv from 'dotenv';
 import express from 'express';
 
 import { app, io, server } from './app.js';
@@ -15,9 +14,6 @@ app.use('/', express.static(join(resolve(), 'public')));
 app.use('/api/code-modules', codemodules);
 app.use('/api/betrayal', betrayal);
 app.use('/assets/betrayal/tiles', express.static(join(resolve(), 'src/features/betrayal/assets/tiles')));
-
-dotenv.config();
-const port = process.env['PORT'];
 
 io.on('connection', socket => {
 	console.log('a user connected');
@@ -51,6 +47,8 @@ io.of('/betrayal').on('connection', socket => {
 	});
 });
 
+
+const port = process.env['PORT'];
 server.listen(port, () => {
 	console.log(`⚡️[server]: Server is running at http://localhost:${ port }`);
 });

@@ -43,7 +43,7 @@ export default router;
 router.get('/all', async (req, res) => {
 	const query = new Query('./database/main.db');
 	const results = query
-		.get<Module>('modules')
+		.from<Module>('modules')
 		.orderBy('active', 'asc')
 		.orderBy('name', 'asc')
 		.query();
@@ -64,8 +64,8 @@ router.get('/namespaces', async (req, res) => {
 	interface NamespaceDefinition extends Pick<Module, 'namespace'> {}
 
 	const results = query
-		.get<Module>('modules')
-		.fields('namespace')
+		.from<Module>('modules')
+		.select('namespace')
 		.where(filter => filter.exists('namespace'))
 		.groupBy('namespace')
 		.orderBy('namespace', 'asc')
@@ -87,8 +87,8 @@ router.get(`/:namespace`, async (req, res) => {
 
 	const query = new Query('./database/main.db');
 	const results = query
-		.get<Module>('modules')
-		.fields('namespace', 'name', 'module_id', 'active', 'description')
+		.from<Module>('modules')
+		.select('namespace', 'name', 'module_id', 'active', 'description')
 		.where(filter => filter.and(
 			filter.eq('namespace', params.namespace),
 		))
@@ -110,7 +110,7 @@ router.get(`/:namespace/:id`, async (req, res) => {
 
 	const query = new Query('./database/main.db');
 	const results = query
-		.get<Module>('modules')
+		.from<Module>('modules')
 		.where(filter => filter.and(
 			filter.eq('module_id', params.id),
 		))
@@ -122,5 +122,21 @@ router.get(`/:namespace/:id`, async (req, res) => {
 	const modules: Module[] = [];
 	results.forEach(res => modules.push(res.item));
 
-	res.send(await content(modules.at(0)?.code ?? ''));
+	res.send(await content(params.id, modules.at(0)?.code ?? ''));
+});
+
+
+router.post<any, any, any, {id: string; code: string;}>(`/save`, async (req, res) => {
+	const { id, code } = req.body;
+
+	const query = new Query('./database/main.db');
+	const results = query
+		.update<Module>('modules')
+		.set([ 'code', code ])
+		.where(filter => filter.eq('module_id', id))
+		.query();
+
+	res.sendStatus(200);
+
+	console.log(results);
 });
