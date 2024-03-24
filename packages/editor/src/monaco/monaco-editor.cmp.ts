@@ -145,6 +145,8 @@ export class MonacoEditorCmp extends MimicElement {
 		await this.editorReady;
 
 		const model = this.monaco.createModel(code, language);
+		this.disposables.push(model);
+
 		this.editor?.setModel(model);
 		this.editor?.restoreViewState(null);
 		this.editor?.focus();
