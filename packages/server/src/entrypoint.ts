@@ -48,7 +48,8 @@ io.of('/betrayal').on('connection', socket => {
 });
 
 
-const port = process.env['PORT'];
-server.listen(port, () => {
+const port = Number(process.env['PORT']);
+const host = process.env['HOST'];
+server.listen(port, host, () => {
 	console.log(`⚡️[server]: Server is running at http://localhost:${ port }`);
 });

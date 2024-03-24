@@ -44,6 +44,22 @@ async function createModuleFromURL(url: URL, context: Context): Promise<Module> 
 			{ identifier, context },
 		);
 	}
+	else if (url.protocol === 'db:') {
+		const port = Number(process.env['PORT']);
+		const host = process.env['HOST'];
+		const path = 'http://'
+			+ host + ':' + port
+			+ '/api/code-modules/'
+			+ identifier.split('db:')[1]!;
+
+		const source = await fetchCode(path);
+
+		// Instantiate a ES module from raw source code.
+		return new SourceTextModule(source, {
+			identifier: path,
+			context,
+		});
+	}
 	else {
 		// Other possible schemes could be file: and data:
 		// See https://nodejs.org/api/esm.html#esm_urls
@@ -88,6 +104,7 @@ async function linkWithImportMap({ imports }: {imports: Record<string, string>})
 		);
 	};
 }
+
 
 /**
  * @returns Result of the evaluated code.

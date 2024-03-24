@@ -1,5 +1,6 @@
 import { createResponse } from '../../utilities/create-response.js';
 import { Query } from '../db-utils/query.js';
+import dImport from './dynamic-import.js';
 import { content } from './index.js';
 import type { Module } from './modules-table.js';
 import router from './router.js';
@@ -8,36 +9,45 @@ import router from './router.js';
 export default router;
 
 
-//app.get('/code1', (req, res) => {
-//	res.send(`
-//	console.log('I AM FROM /CODE1');
+router.get('/code1', (req, res) => {
+	res.send(`
+	console.log('I AM FROM /api/code-modules/code1');
 
-//	export const secrets = 'this is a secret';
-//	`);
-//});
+	export const secrets = 'this is a secret';
+	`);
+});
 
-//app.get('/code2', (req, res) => {
-//	res.send(`
-//	const { secrets } = await dImport('http://localhost:42069/code1');
+router.get('/code2', (req, res) => {
+	res.send(`
+	import { secrets } from 'db:code1';
 
-//	export const test = () => {
-//		console.log('If you see this, this code has access to local scope');
+	export const test = () => {
+		console.log('If you see this, this code has access to local scope');
 
-//		return 'I am a function from the server' + secrets;
-//	};
-//	`);
-//});
+		throw('THIS IS A THROW');
 
-//app.get('/code-test', async (req, res) => {
-//	const testModule = await dImport(
-//		'http://localhost:42069/code2',
-//		{ sandbox },
-//	);
+		return 'I am a function from the server. ' + secrets;
+	};
+	`);
+});
 
-//	const result = testModule.test();
+router.get('/code-test', async (req, res) => {
+	const port = Number(process.env['PORT']);
+	const host = process.env['HOST'];
+	const path = 'http://' + host + ':' + port;
 
-//	res.send(result);
-//});
+	try {
+		const testModule = await dImport(
+			path + '/api/code-modules/code2',
+		);
+
+		const result = testModule.test();
+		res.send(result);
+	}
+	catch (error) {
+		res.sendStatus(500);
+	}
+});
 
 
 router.get('/all', async (req, res) => {
