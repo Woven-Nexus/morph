@@ -4,7 +4,7 @@ window.registerStyle = (id, tag, style) => {
 
 	const styleEl = document.createElement('style');
 	styleEl.id = tag;
-	styleEl.innerHTML = style;
+	styleEl.innerHTML = '@layer ' + tag + ' {' + style + '}';
 	document.head.appendChild(styleEl);
 
 	document.getElementById(id).remove();
