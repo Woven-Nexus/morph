@@ -70,12 +70,13 @@ export const getAllModules = () => {
 	return modules;
 };
 
-export const updateModuleCodeByID = (id: string, code: string) => {
+export const updateModule = (module: Module) => {
 	const query = new Query('./database/main.db');
+	const keyvalues = Object.entries(module) as [keyof Module, string][];
 
 	return query
 		.update<Module>('modules')
-		.set([ 'code', code ])
-		.where(filter => filter.eq('module_id', id))
+		.set(...keyvalues)
+		.where(filter => filter.eq('module_id', module.module_id))
 		.query();
 };

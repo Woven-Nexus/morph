@@ -1,8 +1,11 @@
+import bodyParser from 'body-parser';
+
 import { createResponse } from '../../utilities/create-response.js';
 import {
 	getAllInNamespace, getAllModules, getAllNamespaces,
-	getByNamespaceAndID, updateModuleCodeByID,
+	getByNamespaceAndID, updateModule,
 } from './db-actions/modules-behavior.js';
+import type { Module } from './db-actions/modules-create-table.js';
 import dImport from './dynamic-import.js';
 import { serverCtrlCodeModules as router } from './router.js';
 
@@ -80,11 +83,18 @@ router.get(`/:namespace/:moduleId`, async (req, res) => {
 	res.send(createResponse(modules, ''));
 });
 
+const urlencodedParser = bodyParser.urlencoded({ extended: false });
+
 router.post<
-	any, any, any, {id: string; code: string;}
->('/save', async (req, res) => {
-	const { id, code } = req.body;
-	updateModuleCodeByID(id, code);
+	any, any, any, Module
+>('/save', urlencodedParser, async (req, res) => {
+	const module = req.body;
+
+	// In a form, a checkbox value is not sent if it is unchecked.
+	// therefor we need to check if active is included or not.
+	module.active = !('active' in module) ? 0 : 1;
+
+	updateModule(module);
 
 	res.sendStatus(200);
 });

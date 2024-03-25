@@ -22,6 +22,8 @@ clientCtrlCodeModules.get('/', async (req, res) => {
 		<link rel="stylesheet" href="/assets/code-modules/monaco/style.css">
 
 		<script src="https://unpkg.com/htmx.org@1.9.11"></script>
+
+		<script type="module" src="/assets/code-modules/htmx-ext.js"></script>
 		<script type="module" src="/assets/code-modules/module.js"></script>
 		<script type="module" src="/assets/code-modules/monaco/index.js"></script>
 		<script type="module" src="/assets/code-modules/register-style.js"></script>
@@ -47,16 +49,14 @@ clientCtrlCodeModules.get('/', async (req, res) => {
 			main {
 				overflow: hidden;
 				display: grid;
-				grid-template-rows: max-content 1fr;
+				grid-template-rows: 1fr;
 			}
 		</style>
 	</head>
 	<body>
 		${ sidebar() }
 		<main>
-			<s-content>
-				<monaco-editor placeholder="no file selected"></monaco-editor>
-			</s-content>
+			<span style="place-self:center;">Select file to start editing.</span>
 		</main>
 	</body>
 	</html>
@@ -83,7 +83,7 @@ clientCtrlCodeModules.get(`/:namespace/:id`, async (req, res) => {
 	const modules: Module[] = [];
 	results.forEach(res => modules.push(res.item));
 
-	res.send(await content(params.id, modules.at(0)?.code ?? ''));
+	res.send(await content(modules.at(0)!));
 });
 
 
@@ -106,8 +106,8 @@ const sidebar = async () => {
 				<li>
 					<button
 						hx-get="/clientapi/code-modules/${ module.namespace }/${ module.module_id }"
-						hx-target="s-content"
-						hx-swap="outerHTML"
+						hx-target="main"
+						hx-swap="innerHTML"
 					>
 						${ module.name }
 					</button>
@@ -135,40 +135,71 @@ const sidebar = async () => {
 };
 
 
-const content = async (id: string, code: string) => {
+const content = async (module: Module) => {
 	return template({
 		tag:      's-content',
 		template: html`
-			<button>
-				Save
-			</button>
-			<monaco-editor
-				id="${ id }"
-				code="${ code }"
-				language="typescript"
-			></monaco-editor>
+			<form
+				hx-boost="true"
+				action="/api/code-modules/save"
+				method="post"
+				hx-swap="none"
+				hx-push-url="false"
+			>
+				<div>
+					<input
+						id="module_id"
+						name="module_id"
+						style="display: none;"
+						value="${ module.module_id ?? '' }"
+					>
+
+					<label>
+						<span>namespace</span>
+						<input id="namespace" name="namespace" value="${ module.namespace }">
+					</label>
+					<label>
+						<span>name</span>
+						<input id="name" name="name" value="${ module.name }">
+					</label>
+					<label>
+						<span>description</span>
+						<input id="description" name="description" value="${ module.description }">
+					</label>
+					<label>
+						<span>active</span>
+						<input
+							id="active"
+							name="active"
+							type="checkbox"
+							${ module.active ? 'checked' : '' }
+							value="${ module.active }"
+						>
+					</label>
+				</div>
+
+				<button>
+					Save
+				</button>
+
+				<monaco-editor
+					id="code"
+					name="code"
+					value="${ module.code }"
+					language="typescript"
+				></monaco-editor>
+			</form>
 		`,
 		style: css`
 			s-content {
 				display: contents;
 			}
+			form {
+				display: grid;
+				grid-template-rows: max-content max-content 1fr;
+			}
 		`,
-		script: () => {
-			const button = document.querySelector('s-content button');
-			button?.addEventListener('click', async () => {
-				const editor = document.querySelector('monaco-editor') as any;
-				const value = editor.editor.getValue();
-				const body = JSON.stringify({ id: editor.id, code: value });
-
-				await fetch('/api/code-modules/save', {
-					method:  'post',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body,
-				});
-			});
-		},
+		script:    () => {},
 		immediate: true,
 	});
 };

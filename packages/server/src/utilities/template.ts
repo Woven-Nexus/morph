@@ -26,7 +26,11 @@ export const template = async (options: {
 		+ `registerStyle(`
 		+ `'${ styleScriptId }',`
 		+ `'${ tag }',`
-		+ `\`${ style.replaceAll(/[\t\n ]/g, '') }\`);` +
+		+ '`' + style
+			.replaceAll(/\n+/g, ' ')
+			.replaceAll(/\t+/g, ' ')
+			.replaceAll(/ {2,}/g, ' ')
+			+ '`);' +
 	`</script>`;
 
 	let clientScript = '';

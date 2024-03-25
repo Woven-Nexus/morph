@@ -20,6 +20,8 @@ export type { editor };
 @customElement('monaco-editor')
 export class MonacoEditorCmp extends MimicElement {
 
+	public static readonly formAssociated = true;
+
 	protected static modifyLangConfig: Promise<any>;
 	static {
 		this.modifyLangConfig = updateLangConfig('typescript', {
@@ -46,12 +48,25 @@ export class MonacoEditorCmp extends MimicElement {
 		});
 	}
 
+	/** Value of the editor. */
+	@property() public set value(v: string) {
+		if (!this.editorReady.done)
+			this.createModel(v, this.language ?? 'typescript');
+		else if (this.editor?.getValue() !== v)
+			this.editor?.setValue(v);
+	}
+
+	public get value() { return this.editor?.getValue() ?? ''; }
+
+	/** Value that will be displayed before a model is assigned. */
 	@property() public placeholder: string;
-	@property() public code: string;
+
+	/** Language that will be used when auto creating a model. */
 	@property() public language: string;
 
 	public get monaco() { return editor; }
 	public get editor() { return this._editor; }
+
 	@state() protected _editor?: monaco.editor.IStandaloneCodeEditor;
 	@state() protected visible = false;
 	public editorReady = (() => {
@@ -59,18 +74,30 @@ export class MonacoEditorCmp extends MimicElement {
 
 		const resolveablePromise = promise as Promise<any> & {
 			resolve: (value?: any) => void;
+			done: boolean;
 		};
-		resolveablePromise.resolve = resolve;
+		resolveablePromise.resolve = () => {
+			resolveablePromise.done = true;
+			resolve();
+		};
+		resolveablePromise.done = false;
 
 		return resolveablePromise;
 	})();
 
+	protected internals: ElementInternals;
 	protected disposables: monaco.IDisposable[] = [];
+	protected disposableModels: monaco.IDisposable[] = [];
 	protected monacoRef: Ref<HTMLDivElement> = createRef();
 	protected resizeObs = new ResizeObserver(([ entry ]) => {
 		const rect = entry!.contentRect;
 		this.editor?.layout({ height: rect.height, width: rect.width });
 	});
+
+	constructor() {
+		super();
+		this.internals = this.attachInternals();
+	}
 
 	public override connectedCallback(): void {
 		super.connectedCallback();
@@ -80,6 +107,7 @@ export class MonacoEditorCmp extends MimicElement {
 	public override disconnectedCallback(): void {
 		super.disconnectedCallback();
 		this.disposables.forEach(d => d.dispose());
+		this.disposableModels.forEach(d => d.dispose());
 		this._editor?.dispose();
 		this.resizeObs.unobserve(this);
 	}
@@ -126,9 +154,45 @@ export class MonacoEditorCmp extends MimicElement {
 			minimap:              { enabled: false },
 		});
 
+		let valueOnFocus = '';
+
 		this.disposables.push(
 			this._editor.onDidChangeModel(() => {
 				this.visible = !!this._editor?.getModel();
+
+				const value = this.value;
+				this.internals.setFormValue(value);
+
+				const ev = new Event('change', {
+					bubbles:  true,
+					composed: true,
+				});
+				this.dispatchEvent(ev);
+			}),
+			this._editor.onDidFocusEditorText(() => {
+				valueOnFocus = this.value;
+			}),
+			this._editor.onDidBlurEditorText(() => {
+				if (valueOnFocus === this.value)
+					return;
+
+				const value = this.value;
+				this.internals.setFormValue(value);
+
+				this.dispatchEvent(new Event('change', {
+					bubbles:  true,
+					composed: true,
+				}));
+			}),
+			this._editor.onDidChangeModelContent(() => {
+				const value = this.value;
+				this.internals.setFormValue(value);
+
+				this.dispatchEvent(new InputEvent('input', {
+					bubbles:  true,
+					composed: true,
+					data:     value,
+				}));
 			}),
 		);
 
@@ -136,16 +200,14 @@ export class MonacoEditorCmp extends MimicElement {
 
 		this.editorReady.resolve();
 		emitEvent(this, 'editor-ready', { bubbles: false });
-
-		if (this.code !== undefined)
-			this.createModel(this.code, this.language ?? 'typescript');
 	}
 
 	public async createModel(code: string, language: string) {
 		await this.editorReady;
 
 		const model = this.monaco.createModel(code, language);
-		this.disposables.push(model);
+		this.disposableModels.forEach(d => d.dispose());
+		this.disposableModels.push(model);
 
 		this.editor?.setModel(model);
 		this.editor?.restoreViewState(null);

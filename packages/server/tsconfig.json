@@ -7,7 +7,15 @@
 			"vite/client",
 			"node"
 		],
-		"useDefineForClassFields": true
+		"useDefineForClassFields": true,
+		"plugins": [
+			{
+				"name": "ts-lit-plugin",
+				"rules": {
+					"no-incompatible-type-binding": "off"
+				}
+			}
+		]
 	},
 	"exclude": [
 		"dist",
