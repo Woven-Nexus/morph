@@ -45,6 +45,13 @@ async function createModuleFromURL(url: URL, context: Context): Promise<Module> 
 		);
 	}
 	else if (url.protocol === 'db:') {
+		const [ namespace, name ] = url.pathname.split('/');
+
+		if (!namespace)
+			throw new Error('Invalid namespace: ' + namespace);
+		if (!name)
+			throw new Error('Invalid name: ' + name);
+
 		const port = Number(process.env['PORT']);
 		const host = process.env['HOST'];
 		const path = 'http://'

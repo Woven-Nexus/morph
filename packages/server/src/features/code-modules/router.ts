@@ -1,5 +1,7 @@
 import express, { Router } from 'express';
 
 
-const router: Router = express.Router();
-export default router;
+export const serverCtrlCodeModules: Router = express.Router();
+
+
+export const clientCtrlCodeModules: Router = express.Router();

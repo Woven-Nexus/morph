@@ -88,8 +88,12 @@ class SelectBuilder<T extends object = object> {
 	protected build() {
 		const select = 'SELECT ' + (this.#select.length ? this.#select.join(',') : '*');
 		const from = 'FROM ' + this.table;
-		const where = this.#where ? 'WHERE ' + this.#where : '';
-		const groupBy = this.#groupBy.length ? 'GROUP BY ' + this.#groupBy.join(',') : '';
+		const where = this.#where
+			? 'WHERE ' + this.#where
+			: '';
+		const groupBy = this.#groupBy.length
+			? 'GROUP BY ' + this.#groupBy.join(',')
+			: '';
 		const orderby = this.#orderBy.length
 			? 'ORDER BY ' + this.#orderBy.join(',')
 			: '';
@@ -101,14 +105,14 @@ class SelectBuilder<T extends object = object> {
 					? 'LIMIT ' + this.#limit + ' OFFSET ' + this.#offset
 					: '';
 
-		const qry = `
-		${ select }
-		${ from }
-		${ where }
-		${ groupBy }
-		${ orderby }
-		${ limit }
-		`;
+		const qry = [
+			select,
+			from,
+			where,
+			groupBy,
+			orderby,
+			limit,
+		].join('\n');
 
 		return qry;
 	}
@@ -206,8 +210,6 @@ class UpdateBuilder<T extends object = object> {
 	}
 
 	public query() {
-		console.log(this.build());
-
 		return this.db.prepare(this.build()).run();
 	}
 
@@ -290,6 +292,7 @@ export class Filter<T = Record<string, string | number>> {
 
 }
 
+
 export class Results<T extends Record<string, any> = Record<string, any>> {
 
 	#items: (T | Result<T>)[] = [];
@@ -313,6 +316,7 @@ export class Results<T extends Record<string, any> = Record<string, any>> {
 	}
 
 }
+
 
 class Result<T extends Record<string, any> = Record<string, any>> {
 
