@@ -4,14 +4,7 @@
 	"authors": "author",
 	"version": "1.0.0",
 	"type": "module",
-	"main": "./dist/index.ts",
-	"types": "./dist/index.ts",
-	"exports": {
-		"./monaco": {
-			"types": "./src/monaco/index.ts",
-			"default": "./src/monaco/index.ts"
-		}
-	},
+	"main": "./dist/monaco/index.cjs",
 	"scripts": {
 		"build": "pnpm run \"/^build::.+/\"",
 		"build::indexes": "pkg-toolbox build-indexes",

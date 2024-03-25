@@ -23,9 +23,9 @@ clientCtrlCodeModules.get('/', async (req, res) => {
 
 		<script src="https://unpkg.com/htmx.org@1.9.11"></script>
 
+		<script src="/assets/code-modules/monaco/index.cjs"></script>
 		<script type="module" src="/assets/code-modules/htmx-ext.js"></script>
 		<script type="module" src="/assets/code-modules/module.js"></script>
-		<script type="module" src="/assets/code-modules/monaco/index.js"></script>
 		<script type="module" src="/assets/code-modules/register-style.js"></script>
 
 		<style>
