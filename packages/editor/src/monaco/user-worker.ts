@@ -12,18 +12,18 @@ export const setUserWorker = (() => {
 		self.MonacoEnvironment = {
 			getWorker(_: unknown, label: string) {
 				if (label === 'json')
-					return import('monaco-editor/esm/vs/language/json/json.worker?worker').then(w => new w.default());
+					return import('monaco-editor/esm/vs/language/json/json.worker?worker&inline').then(w => new w.default());
 
 				if (label === 'css' || label === 'scss' || label === 'less')
-					return import('monaco-editor/esm/vs/language/css/css.worker?worker').then(w => new w.default());
+					return import('monaco-editor/esm/vs/language/css/css.worker?worker&inline').then(w => new w.default());
 
 				if (label === 'html' || label === 'handlebars' || label === 'razor')
-					return import('monaco-editor/esm/vs/language/html/html.worker?worker').then(w => new w.default());
+					return import('monaco-editor/esm/vs/language/html/html.worker?worker&inline').then(w => new w.default());
 
 				if (label === 'typescript' || label === 'javascript')
-					return import('monaco-editor/esm/vs/language/typescript/ts.worker?worker').then(w => new w.default());
+					return import('monaco-editor/esm/vs/language/typescript/ts.worker?worker&inline').then(w => new w.default());
 
-				return import('monaco-editor/esm/vs/editor/editor.worker?worker').then(w => new w.default());
+				return import('monaco-editor/esm/vs/editor/editor.worker?worker&inline').then(w => new w.default());
 			},
 		};
 

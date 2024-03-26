@@ -84,7 +84,6 @@ router.get(`/:namespace/:moduleId`, async (req, res) => {
 });
 
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
-
 router.post<
 	any, any, any, Module
 >('/save', urlencodedParser, async (req, res) => {

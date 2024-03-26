@@ -1,14 +1,19 @@
 {
-	"name": "@roenlie/monaco-editor",
-	"description": "description",
-	"authors": "author",
-	"version": "1.0.0",
+	"name": "@roenlie/monaco-editor-wc",
+	"description": "Web component wrapping the monaco editor.",
+	"author": {
+		"name": "Kristoffer Roen-Lie"
+	},
+	"files": [
+		"dist"
+	],
+	"license": "MIT",
+	"version": "1.0.4",
 	"type": "module",
-	"main": "./dist/monaco/index.cjs",
+	"main": "./dist/monaco-editor-wc.js",
 	"scripts": {
 		"build": "pnpm run \"/^build::.+/\"",
 		"build::indexes": "pkg-toolbox build-indexes",
-		"build::exports": "pkg-toolbox build-exports",
 		"build::js": "vite build"
 	},
 	"dependencies": {
@@ -17,5 +22,8 @@
 		"lit": "^3.1.2",
 		"monaco-editor": "^0.47.0",
 		"tslib": "^2.6.2"
+	},
+	"exports": {
+		".": "./dist/monaco-editor-wc.js"
 	}
 }

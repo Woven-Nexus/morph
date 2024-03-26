@@ -8,12 +8,13 @@ import { defineConfig, type LibraryOptions, type Plugin, type ResolvedConfig } f
 export default defineConfig(async (env) => {
 	const cfg = await libConfig({
 		build: {
-			emptyOutDir: true,
-			outDir:      './dist/monaco',
-			lib:         {
+			reportCompressedSize: false,
+			emptyOutDir:          true,
+			outDir:               './dist',
+			lib:                  {
 				entry:    './src/index.ts',
-				name:     'index',
-				fileName: () => 'index.cjs',
+				name:     'monaco-editor-wc',
+				fileName: () => 'monaco-editor-wc.js',
 				formats:  [ 'umd' ],
 			},
 			rollupOptions: {
@@ -25,47 +26,30 @@ export default defineConfig(async (env) => {
 			},
 		},
 		plugins: [
-			// This plugin makes the vitejs generated web worker wrappers
-			// point to the relative /assets location instead of the root url.
-			(() => {
-				return {
-					name:    'relative-worker-wrapper',
-					enforce: 'post',
-					transform(code, id) {
-						if (!id.includes('.worker'))
-							return;
-
-						const index = code.indexOf('"__VITE_WORKER_ASSET');
-						if (index < 0)
-							return;
-
-						const chars = [ ...code ];
-						chars.splice(
-							index, 0, 'import.meta.url.split("/").slice(0, -1).join("/") + ',
-						);
-
-						return chars.join('');
-					},
-				} as Plugin;
-			})(),
+			// For some reason, worker sourcemaps are always generated.
 			(() => {
 				let cfg: ResolvedConfig;
 
 				return {
-					name:    'remove sourcemaps',
+					name:    'remove-worker-sourcemaps',
 					enforce: 'post',
 					configResolved(config) {
 						cfg = config;
 					},
 					async closeBundle() {
-						console.log('bundle closed');
-
 						const path = resolve(resolve(), cfg.build.outDir).replaceAll('\\', '/');
-						await rimraf(path + '/**/*.js.map', { glob: true });
+						await rimraf(path + '/assets');
 					},
 				} as Plugin;
 			})(),
 		],
+		worker: {
+			rollupOptions: {
+				output: {
+					sourcemap: false,
+				},
+			},
+		},
 	})(env);
 
 	// libConfig seems to be merging arrays, which makes it include the default ['es'].

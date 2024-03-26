@@ -179,7 +179,12 @@ class UpdateBuilder<T extends object = object> {
 		const update = 'UPDATE ' + this.table;
 
 		const set = 'SET ' + this.#set
-			.map(([ name, value ]) => `${ name } = '${ value }'`)
+			.map(([ name, value ]) => {
+				if (typeof value === 'string')
+					value = value.replaceAll("'", "''");
+
+				return `${ name } = '${ value }'`;
+			})
 			.join(',\n');
 
 		const where = this.#where
