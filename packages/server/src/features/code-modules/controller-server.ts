@@ -2,6 +2,7 @@ import bodyParser from 'body-parser';
 
 import { createResponse } from '../../utilities/create-response.js';
 import {
+	deleteModule,
 	getAllInNamespace, getAllModules, getAllNamespaces,
 	getByNamespaceAndID, updateModule,
 } from './db-actions/modules-behavior.js';
@@ -94,6 +95,15 @@ router.post<
 	module.active = !('active' in module) ? 0 : 1;
 
 	updateModule(module);
+
+	res.sendStatus(200);
+});
+
+
+router.delete('/delete', urlencodedParser, async (req, res) => {
+	const module = req.body as Module;
+
+	deleteModule(module);
 
 	res.sendStatus(200);
 });

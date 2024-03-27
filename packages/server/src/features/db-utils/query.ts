@@ -24,6 +24,10 @@ export class Query {
 		return new UpdateBuilder<T>(this.#db, table);
 	}
 
+	public delete<T extends object = object>(table: string) {
+		return new DeleteBuilder<T>(this.#db, table);
+	}
+
 }
 
 
@@ -85,40 +89,64 @@ class SelectBuilder<T extends object = object> {
 		return this;
 	}
 
-	protected build() {
-		const select = 'SELECT ' + (this.#select.length ? this.#select.join(',') : '*');
-		const from = 'FROM ' + this.table;
-		const where = this.#where
-			? 'WHERE ' + this.#where
-			: '';
-		const groupBy = this.#groupBy.length
-			? 'GROUP BY ' + this.#groupBy.join(',')
-			: '';
-		const orderby = this.#orderBy.length
-			? 'ORDER BY ' + this.#orderBy.join(',')
-			: '';
-		const limit = !exists(this.#limit) && exists(this.#offset)
-			? 'LIMIT -1 OFFSET ' + this.#offset
-			: exists(this.#limit) && !exists(this.#offset)
-				? 'LIMIT ' + this.#limit
-				: exists(this.#limit) && exists(this.#offset)
-					? 'LIMIT ' + this.#limit + ' OFFSET ' + this.#offset
-					: '';
+	protected getLimitOffset() {
+		const limitExists = exists(this.#limit);
+		const offsetExists = exists(this.#offset);
+		const bothExist = limitExists && offsetExists;
+		const limitOnly = limitExists && !offsetExists;
+		const offsetOnly = !limitExists && offsetExists;
 
-		const qry = [
-			select,
-			from,
-			where,
-			groupBy,
-			orderby,
-			limit,
-		].join('\n');
+		return bothExist
+			? `LIMIT ${ this.#limit } OFFSET ${ this.#offset }` : limitOnly
+				? `LIMIT ${ this.#limit }` : offsetOnly
+					? `LIMIT -1 OFFSET ${ this.#offset }` : '';
+	}
+
+	protected build() {
+		const qry = `
+		SELECT ${ this.#select.length ? this.#select.join(',') : '*' }
+		FROM ${ this.table }
+		${ this.#where ? `WHERE ${ this.#where }` : '' }
+		${ this.#groupBy.length ? `GROUP BY ${ this.#groupBy.join(',') }` : '' }
+		${ this.#orderBy.length ? `ORDER BY ${ this.#orderBy.join(',') }` : '' }
+		${ this.getLimitOffset() }
+		`;
 
 		return qry;
 	}
 
 	public query() {
 		return new Results(this.db.prepare(this.build()).all() as T[]);
+	}
+
+}
+
+class DeleteBuilder<T extends object = object> {
+
+	#where = '';
+
+	constructor(
+		protected db: SQLite.Database,
+		protected table: string,
+	) {}
+
+	public where(filter: (filter: Filter<T>) => FilterCondition) {
+		this.#where = filter(new Filter());
+
+		return this;
+	}
+
+	protected build() {
+		const qry = `
+		DELETE FROM ${ this.table }
+		WHERE ${ this.#where }
+		`;
+
+		return qry;
+	}
+
+	public query() {
+		return this.db.prepare(this.build()).run();
 	}
 
 }
@@ -149,30 +177,45 @@ class UpdateBuilder<T extends object = object> {
 		return this;
 	}
 
+	/** Using this requires https://www.sqlite.org/compile.html#enable_update_delete_limit */
 	public orderBy(
-		field: Extract<keyof T, string>,
-		order: 'asc' | 'desc' = 'asc',
-		nullsLast?: true,
+		_field: Extract<keyof T, string>,
+		_order: 'asc' | 'desc' = 'asc',
+		_nullsLast?: true,
 	) {
-		this.#orderBy.push(
-			`${ field } ${ order.toUpperCase() }` +
-			`${ nullsLast ? ' NULLS LAST' : '' }`,
-		);
+		//this.#orderBy.push(
+		//	`${ field } ${ order.toUpperCase() }` +
+		//	`${ nullsLast ? ' NULLS LAST' : '' }`,
+		//);
 
 		return this;
 	}
 
-	public limit(limit: number) {
-		this.#limit = limit;
+	/** Using this requires https://www.sqlite.org/compile.html#enable_update_delete_limit */
+	public limit(_limit: number) {
+		//this.#limit = limit;
 
 		return this;
 	}
 
-
-	public offset(offset: number) {
-		this.#offset = offset;
+	/** Using this requires https://www.sqlite.org/compile.html#enable_update_delete_limit */
+	public offset(_offset: number) {
+		//this.#offset = offset;
 
 		return this;
+	}
+
+	protected getLimitOffset() {
+		const limitExists = exists(this.#limit);
+		const offsetExists = exists(this.#offset);
+		const bothExist = limitExists && offsetExists;
+		const limitOnly = limitExists && !offsetExists;
+		const offsetOnly = !limitExists && offsetExists;
+
+		return bothExist
+			? `LIMIT ${ this.#limit } OFFSET ${ this.#offset }` : limitOnly
+				? `LIMIT ${ this.#limit }` : offsetOnly
+					? `LIMIT -1 OFFSET ${ this.#offset }` : '';
 	}
 
 	protected build() {
@@ -195,13 +238,8 @@ class UpdateBuilder<T extends object = object> {
 			? 'ORDER ' + this.#orderBy.join(',')
 			: '';
 
-		const limit = !exists(this.#limit) && exists(this.#offset)
-			? 'LIMIT -1 OFFSET ' + this.#offset
-			: exists(this.#limit) && !exists(this.#offset)
-				? 'LIMIT ' + this.#limit
-				: exists(this.#limit) && exists(this.#offset)
-					? 'LIMIT ' + this.#limit + ' OFFSET ' + this.#offset
-					: '';
+		const limit = this.getLimitOffset();
+
 
 		const qry = [
 			update,

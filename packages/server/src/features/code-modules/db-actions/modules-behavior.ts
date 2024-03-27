@@ -1,9 +1,10 @@
+import { dbPath } from '../../../constants.js';
 import { Query } from '../../db-utils/query.js';
 import type { Module } from './modules-create-table.js';
 
 
 export const getByNamespaceAndID = (namespace: string, id: string) => {
-	const query = new Query('./database/main.db');
+	const query = new Query(dbPath);
 	const results = query
 		.from<Module>('modules')
 		.where(filter => filter.and(
@@ -23,7 +24,7 @@ export const getByNamespaceAndID = (namespace: string, id: string) => {
 
 
 export const getAllInNamespace = (namespace: string) => {
-	const query = new Query('./database/main.db');
+	const query = new Query(dbPath);
 	const results = query
 		.from<Module>('modules')
 		.where(filter => filter.and(
@@ -40,7 +41,7 @@ export const getAllInNamespace = (namespace: string) => {
 export const getAllNamespaces = () => {
 	type NamespaceDefinition = Pick<Module, 'namespace'>;
 
-	const query = new Query('./database/main.db');
+	const query = new Query(dbPath);
 	const results = query
 		.from<Module>('modules')
 		.select('namespace')
@@ -57,7 +58,7 @@ export const getAllNamespaces = () => {
 
 
 export const getAllModules = () => {
-	const query = new Query('./database/main.db');
+	const query = new Query(dbPath);
 	const results = query
 		.from<Module>('modules')
 		.orderBy('active', 'asc')
@@ -71,12 +72,20 @@ export const getAllModules = () => {
 };
 
 export const updateModule = (module: Module) => {
-	const query = new Query('./database/main.db');
+	const query = new Query(dbPath);
 	const keyvalues = Object.entries(module) as [keyof Module, string][];
 
 	return query
 		.update<Module>('modules')
 		.set(...keyvalues)
+		.where(filter => filter.eq('module_id', module.module_id))
+		.query();
+};
+
+export const deleteModule = (module: Pick<Module, 'module_id'>) => {
+	const query = new Query(dbPath);
+
+	return query.delete<Module>('modules')
 		.where(filter => filter.eq('module_id', module.module_id))
 		.query();
 };

@@ -8,52 +8,43 @@ const trimExpr = /(?:^[\n\t ]+)|(?:[\n\t ]+$)/g;
 
 
 export const template = async (options: {
-	tag: string,
+	name: string,
 	template: string | Promise<string>,
 	style: string | Promise<string>,
 	script?: () => void,
 	immediate?: boolean,
 }) => {
-	const { tag, script, immediate } = options;
+	const { name, script, immediate } = options;
 	let { template, style  } = options;
 
 	template = await template;
-	style = await style;
+	style = (await style)
+		.replaceAll(/\n+/g, ' ')
+		.replaceAll(/\t+/g, ' ')
+		.replaceAll(/ {2,}/g, ' ');
 
-	const styleScriptId = crypto.randomUUID();
-	const styleScript =
-	`<script id="${ styleScriptId }" type="module">`
-		+ `registerStyle(`
-		+ `'${ styleScriptId }',`
-		+ `'${ tag }',`
-		+ '`' + style
-			.replaceAll(/\n+/g, ' ')
-			.replaceAll(/\t+/g, ' ')
-			.replaceAll(/ {2,}/g, ' ')
-			+ '`);' +
-	`</script>`;
+	const scriptId = crypto.randomUUID();
+	const scriptContent: string[] =
+		[ `registerStyle('${ scriptId }','${ name }', \`${ style }\`);` ];
 
-	let clientScript = '';
 	if (script) {
-		const clientScriptId = crypto.randomUUID();
 		let stringScript = script?.toString();
 		stringScript = (await esbuild.transform(stringScript, { loader: 'ts' })).code;
 		stringScript = stringScript.replaceAll(trimExpr, '');
 		stringScript = stringScript.slice(0, -1);
 
-		clientScript =
-		`<script id=${ clientScriptId } type="module">`
-			+ `module.define('${ tag }', ${ stringScript });`
-			+ (immediate ? `module.import('${ tag }');` : '')
-			+ `document.getElementById('${ clientScriptId }').remove();` +
-		'</script>';
+		scriptContent.push(
+			`module.define('${ name }', ${ stringScript });`,
+			(immediate ? `module.import('${ name }');` : ''),
+		);
 	}
 
-	return html`
-	<${ tag }>
-		${ styleScript }
-		${ template }
-		${ clientScript }
-	</${ tag }>
-	`;
+	scriptContent.push(`document.getElementById('${ scriptId }').remove();`);
+
+	const scriptTag =
+	`<script id="${ scriptId }" type="module">`
+		+ scriptContent.join('\n') +
+	`</script>`;
+
+	return html`${ scriptTag }${ template }`;
 };

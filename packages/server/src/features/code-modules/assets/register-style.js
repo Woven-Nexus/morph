@@ -1,11 +1,9 @@
-window.registerStyle = (id, tag, style) => {
-	if (document.head.querySelector('#' + tag))
-		return document.getElementById(id)?.remove();
+window.registerStyle = (id, name, style) => {
+	if (document.head.querySelector('#' + name))
+		return;
 
 	const styleEl = document.createElement('style');
-	styleEl.id = tag;
-	styleEl.innerHTML = '@layer ' + tag + ' {' + style + '}';
+	styleEl.id = name;
+	styleEl.innerHTML = style;
 	document.head.appendChild(styleEl);
-
-	document.getElementById(id)?.remove();
 };
