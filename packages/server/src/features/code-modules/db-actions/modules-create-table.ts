@@ -6,7 +6,7 @@ import { escapeSQLiteString } from '../../db-utils/escape-string.js';
 
 
 export interface Module {
-	module_id?: string;
+	module_id?: string | number | bigint;
 	code: string;
 	name: string;
 	namespace: string;

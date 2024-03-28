@@ -4,7 +4,7 @@ import { createResponse } from '../../utilities/create-response.js';
 import {
 	deleteModule,
 	getAllInNamespace, getAllModules, getAllNamespaces,
-	getByNamespaceAndID, updateModule,
+	getByNamespaceAndID, insertModule, updateModule,
 } from './db-actions/modules-behavior.js';
 import type { Module } from './db-actions/modules-create-table.js';
 import dImport from './dynamic-import.js';
@@ -85,25 +85,26 @@ router.get(`/:namespace/:moduleId`, async (req, res) => {
 });
 
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
-router.post<
-	any, any, any, Module
->('/save', urlencodedParser, async (req, res) => {
-	const module = req.body;
-
-	// In a form, a checkbox value is not sent if it is unchecked.
-	// therefor we need to check if active is included or not.
-	module.active = !('active' in module) ? 0 : 1;
+router.post('/save', urlencodedParser, async (req, res) => {
+	const module = req.body as Module;
 
 	updateModule(module);
 
 	res.sendStatus(200);
 });
 
-
 router.delete('/delete', urlencodedParser, async (req, res) => {
 	const module = req.body as Module;
 
 	deleteModule(module);
+
+	res.sendStatus(200);
+});
+
+router.delete('/insert', urlencodedParser, async (req, res) => {
+	const module = req.body as Module;
+
+	insertModule(module);
 
 	res.sendStatus(200);
 });

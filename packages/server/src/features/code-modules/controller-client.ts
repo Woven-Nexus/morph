@@ -3,7 +3,10 @@ import bodyParser from 'body-parser';
 import { template } from '../../utilities/template.js';
 import { css, html } from '../../utilities/template-tag.js';
 import { Query } from '../db-utils/query.js';
-import { deleteModule, getByNamespaceAndID, updateModule } from './db-actions/modules-behavior.js';
+import {
+	deleteModule, getByNamespaceAndID,
+	insertModule, updateModule,
+} from './db-actions/modules-behavior.js';
 import type { Module } from './db-actions/modules-create-table.js';
 import { clientCtrlCodeModules as router } from './router.js';
 
@@ -27,7 +30,6 @@ const head = () => html`
 
 	<script type="module" src="/assets/code-modules/htmx-ext.js"></script>
 	<script type="module" src="/assets/code-modules/module.js"></script>
-	<script type="module" src="/assets/code-modules/register-style.js"></script>
 
 	<style>
 		:root { font-family: Inter, sans-serif; }
@@ -46,6 +48,10 @@ const head = () => html`
 			grid-template-columns: max-content 1fr;
 			grid-template-rows: 1fr;
 			grid-auto-rows: 0px;
+		}
+		ol, ul, li {
+			all: unset;
+			display: block;
 		}
 		aside {
 			overflow: hidden;
@@ -117,7 +123,7 @@ router.get(`/:namespace/:id`, async (req, res) => {
 	const params = req.params;
 
 	const query = new Query('./database/main.db');
-	const results = query
+	const modules = query
 		.from<Module>('modules')
 		.where(filter => filter.and(
 			filter.eq('module_id', params.id),
@@ -126,9 +132,6 @@ router.get(`/:namespace/:id`, async (req, res) => {
 		.orderBy('active', 'asc')
 		.orderBy('name', 'asc')
 		.query();
-
-	const modules: Module[] = [];
-	results.forEach(res => modules.push(res.item));
 
 	res.send(await html`
 	${ sidebar(modules.at(0)!) }
@@ -139,14 +142,11 @@ router.get(`/:namespace/:id`, async (req, res) => {
 
 const sidebar = async (module?: Module) => {
 	const query = new Query('./database/main.db');
-	const results = query
+	const modules = query
 		.from<Module>('modules')
 		.orderBy('active', 'asc')
 		.orderBy('name', 'asc')
 		.query();
-
-	const modules: Module[] = [];
-	results.forEach(res => modules.push(res.item));
 
 	return template({
 		name:     'sidebar',
@@ -206,7 +206,6 @@ const form = async (module?: Module) => {
 		template: module ? html`
 		<form
 			hx-boost="true"
-			method="post"
 			hx-push-url="false"
 			hx-target="main"
 			hx-swap="innerHTML"
@@ -234,11 +233,16 @@ const form = async (module?: Module) => {
 
 			<div class="actions">
 				${ module.module_id ? html`
-				<button formaction="/clientapi/code-modules/save">
+				<button
+					hx-post="/clientapi/code-modules/save"
+				>
 					Save
 				</button>
 
-				<button formaction="/clientapi/code-modules/delete" formmethod="delete">
+				<button
+					hx-confirm="Are you sure you wish to delete this module?"
+					hx-delete="/clientapi/code-modules/delete"
+				>
 					Delete
 				</button>
 				` : html`
@@ -260,6 +264,7 @@ const form = async (module?: Module) => {
 		`,
 		style: css`
 			form {
+				overflow: hidden;
 				display: grid;
 				grid-template-columns: 1fr max-content;
 				grid-template-rows: max-content 1fr;
@@ -313,8 +318,8 @@ router.post('/save', urlencodedParser, async (req, res) => {
 	const modules = getByNamespaceAndID(module.namespace, module.module_id ?? '');
 
 	res.send(await html`
-	${ sidebar(modules.at(0)!) }
-	${ form(modules.at(0)!) }
+	${ sidebar(modules) }
+	${ form(modules) }
 	`);
 });
 
@@ -327,5 +332,18 @@ router.delete('/delete', urlencodedParser, async (req, res) => {
 	res.send(await html`
 	${ sidebar() }
 	${ form() }
+	`);
+});
+
+
+router.post('/insert', urlencodedParser, async (req, res) => {
+	const module = req.body as Module;
+
+	const result = insertModule(module);
+	const actualModule = getByNamespaceAndID(module.namespace, result.lastInsertRowid);
+
+	res.send(await html`
+	${ sidebar(actualModule) }
+	${ form(actualModule) }
 	`);
 });

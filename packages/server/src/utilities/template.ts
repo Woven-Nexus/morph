@@ -1,8 +1,6 @@
 /* eslint-disable lit/binding-positions */
 import * as esbuild from 'esbuild';
 
-import { html } from './template-tag.js';
-
 
 const trimExpr = /(?:^[\n\t ]+)|(?:[\n\t ]+$)/g;
 
@@ -23,9 +21,15 @@ export const template = async (options: {
 		.replaceAll(/\t+/g, ' ')
 		.replaceAll(/ {2,}/g, ' ');
 
+	const styleId = 'style-' + name;
 	const scriptId = crypto.randomUUID();
-	const scriptContent: string[] =
-		[ `registerStyle('${ scriptId }','${ name }', \`${ style }\`);` ];
+	const scriptContent: string[] = [
+		`const __styleEl = document.body.querySelector('#${ styleId }')`,
+		`if (!document.head.querySelector('#${ styleId }'))`,
+		`document.head.appendChild(__styleEl);`,
+		`else __styleEl.remove();`,
+		`document.getElementById('${ scriptId }').remove();`,
+	];
 
 	if (script) {
 		let stringScript = script?.toString();
@@ -39,12 +43,15 @@ export const template = async (options: {
 		);
 	}
 
-	scriptContent.push(`document.getElementById('${ scriptId }').remove();`);
+	const styleTag =
+	`<style id="${ styleId }">`
+		+ style +
+	`</style>`;
 
 	const scriptTag =
 	`<script id="${ scriptId }" type="module">`
 		+ scriptContent.join('\n') +
 	`</script>`;
 
-	return html`${ scriptTag }${ template }`;
+	return styleTag + scriptTag + template;
 };

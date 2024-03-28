@@ -20,6 +20,10 @@ export class Query {
 		return new SelectBuilder<T>(this.#db, table);
 	}
 
+	public insert<T extends object  = object>(table: string) {
+		return new InsertBuilder<T>(this.#db, table);
+	}
+
 	public update<T extends object = object>(table: string) {
 		return new UpdateBuilder<T>(this.#db, table);
 	}
@@ -31,7 +35,21 @@ export class Query {
 }
 
 
-class SelectBuilder<T extends object = object> {
+abstract class Builder {
+
+	constructor(
+		protected db: SQLite.Database,
+		protected table: string,
+	) {}
+
+	protected abstract build(): string;
+
+	public abstract query(): unknown;
+
+}
+
+
+class SelectBuilder<T extends object = object> extends Builder {
 
 	#select: string[] = [];
 	#where = '';
@@ -39,11 +57,6 @@ class SelectBuilder<T extends object = object> {
 	#orderBy: string[] = [];
 	#limit?: number;
 	#offset?: number;
-
-	constructor(
-		protected db: SQLite.Database,
-		protected table: string,
-	) {}
 
 	public select<K extends Extract<keyof T, string>>(...field: K[]) {
 		this.#select ??= [];
@@ -103,7 +116,7 @@ class SelectBuilder<T extends object = object> {
 	}
 
 	protected build() {
-		const qry = `
+		return `
 		SELECT ${ this.#select.length ? this.#select.join(',') : '*' }
 		FROM ${ this.table }
 		${ this.#where ? `WHERE ${ this.#where }` : '' }
@@ -111,24 +124,17 @@ class SelectBuilder<T extends object = object> {
 		${ this.#orderBy.length ? `ORDER BY ${ this.#orderBy.join(',') }` : '' }
 		${ this.getLimitOffset() }
 		`;
-
-		return qry;
 	}
 
 	public query() {
-		return new Results(this.db.prepare(this.build()).all() as T[]);
+		return this.db.prepare(this.build()).all() as T[];
 	}
 
 }
 
-class DeleteBuilder<T extends object = object> {
+class DeleteBuilder<T extends object = object> extends Builder {
 
 	#where = '';
-
-	constructor(
-		protected db: SQLite.Database,
-		protected table: string,
-	) {}
 
 	public where(filter: (filter: Filter<T>) => FilterCondition) {
 		this.#where = filter(new Filter());
@@ -137,12 +143,10 @@ class DeleteBuilder<T extends object = object> {
 	}
 
 	protected build() {
-		const qry = `
+		return `
 		DELETE FROM ${ this.table }
 		WHERE ${ this.#where }
 		`;
-
-		return qry;
 	}
 
 	public query() {
@@ -152,21 +156,24 @@ class DeleteBuilder<T extends object = object> {
 }
 
 
-class UpdateBuilder<T extends object = object> {
+class UpdateBuilder<T extends object = object> extends Builder {
 
-	#set: [name: string, value: any][] = [];
+	#set = '';
 	#where = '';
-	#orderBy: string[] = [];
+	#orderBy?: string;
 	#limit?: number;
 	#offset?: number;
 
-	constructor(
-		protected db: SQLite.Database,
-		protected table: string,
-	) {}
-
 	public set<K extends Extract<keyof T, string>>(...field: [name: K, value: any][]) {
-		field.forEach(field => this.#set.push(field));
+		field.forEach(([ name, value ]) => {
+			if (this.#set)
+				this.#set += ',';
+
+			if (typeof value === 'string')
+				value = value.replaceAll("'", "''");
+
+			this.#set += `${ name } = '${ value }'`;
+		});
 
 		return this as UpdateBuilder<T>;
 	}
@@ -177,30 +184,37 @@ class UpdateBuilder<T extends object = object> {
 		return this;
 	}
 
-	/** Using this requires https://www.sqlite.org/compile.html#enable_update_delete_limit */
 	public orderBy(
-		_field: Extract<keyof T, string>,
-		_order: 'asc' | 'desc' = 'asc',
-		_nullsLast?: true,
+		field: Extract<keyof T, string>,
+		order: 'asc' | 'desc' = 'asc',
+		nullsLast?: true,
 	) {
-		//this.#orderBy.push(
-		//	`${ field } ${ order.toUpperCase() }` +
-		//	`${ nullsLast ? ' NULLS LAST' : '' }`,
-		//);
+		throw new Error('Using this requires '
+			+ 'https://www.sqlite.org/compile.html#enable_update_delete_limit');
+
+		if (this.#orderBy)
+			this.#orderBy += ',';
+
+		this.#orderBy += `${ field } ${ order.toUpperCase() }`
+			+ `${ nullsLast ? ' NULLS LAST' : '' }`;
 
 		return this;
 	}
 
-	/** Using this requires https://www.sqlite.org/compile.html#enable_update_delete_limit */
-	public limit(_limit: number) {
-		//this.#limit = limit;
+	public limit(limit: number) {
+		throw new Error('Using this requires '
+			+ 'https://www.sqlite.org/compile.html#enable_update_delete_limit');
+
+		this.#limit = limit;
 
 		return this;
 	}
 
-	/** Using this requires https://www.sqlite.org/compile.html#enable_update_delete_limit */
-	public offset(_offset: number) {
-		//this.#offset = offset;
+	public offset(offset: number) {
+		throw new Error('Using this requires '
+			+ 'https://www.sqlite.org/compile.html#enable_update_delete_limit');
+
+		this.#offset = offset;
 
 		return this;
 	}
@@ -219,37 +233,57 @@ class UpdateBuilder<T extends object = object> {
 	}
 
 	protected build() {
-		const update = 'UPDATE ' + this.table;
+		return `
+		UPDATE ${ this.table }
+		SET ${ this.#set }
+		${ this.#where ? `WHERE ${ this.#where }` : '' }
+		${ this.#orderBy ? `ORDER ${ this.#orderBy }` : '' }
+		${ this.getLimitOffset() }
+		`;
+	}
 
-		const set = 'SET ' + this.#set
-			.map(([ name, value ]) => {
-				if (typeof value === 'string')
-					value = value.replaceAll("'", "''");
+	public query() {
+		return this.db.prepare(this.build()).run();
+	}
 
-				return `${ name } = '${ value }'`;
-			})
-			.join(',\n');
-
-		const where = this.#where
-			? 'WHERE ' + this.#where
-			: '';
-
-		const order = this.#orderBy.length
-			? 'ORDER ' + this.#orderBy.join(',')
-			: '';
-
-		const limit = this.getLimitOffset();
+}
 
 
-		const qry = [
-			update,
-			set,
-			where,
-			order,
-			limit,
-		].join('\n');
+class InsertBuilder<T extends object = object> extends Builder {
 
-		return qry;
+	#columns = '';
+	#values = '';
+
+	public values<K extends Extract<keyof T, string>>(...field: [name: K, value: any][]) {
+		field.forEach(([ name, value ]) => {
+			if (typeof value === 'string')
+				value = "'" + value.replaceAll("'", "''") + "'";
+
+			this.#values += (this.#values ? ',' : '') + value;
+			this.#columns += (this.#columns ? ',' : '') + name;
+		});
+
+		return this;
+	}
+
+	protected build() {
+		if (!this.#columns && !this.#values)
+			return `INSERT INTO ${ this.table } DEFAULT VALUES`;
+
+		console.log({
+			columns: this.#columns,
+			values:  this.#values,
+			query:   `
+			INSERT INTO ${ this.table } (${ this.#columns })
+			VALUES (${ this.#values })
+			`,
+		});
+
+
+		return `
+		INSERT INTO ${ this.table } (${ this.#columns })
+		VALUES (${ this.#values })
+		`;
 	}
 
 	public query() {
@@ -331,46 +365,6 @@ export class Filter<T = Record<string, string | number>> {
 
 	protected finalize(value: string, escape: boolean) {
 		return value + (escape ? ` ESCAPE '\\'` : '') as FilterCondition;
-	}
-
-}
-
-
-export class Results<T extends Record<string, any> = Record<string, any>> {
-
-	#items: (T | Result<T>)[] = [];
-
-	constructor(items: T[]) {
-		this.#items = items;
-	}
-
-	public forEach(func: (result: Result<T>) => any) {
-		for (let i = 0; i < this.#items.length; i++) {
-			let item = this.#items[i]!;
-			if (!(item instanceof Result))
-				item = this.#items[i] = new Result(item);
-
-			func(item);
-		}
-	}
-
-	public at(index = 0) {
-		return this.#items.at(index);
-	}
-
-}
-
-
-class Result<T extends Record<string, any> = Record<string, any>> {
-
-	#item: T;
-
-	public get item() {
-		return this.#item;
-	}
-
-	constructor(item: T) {
-		this.#item = item;
 	}
 
 }
