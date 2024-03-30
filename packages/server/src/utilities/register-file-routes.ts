@@ -50,7 +50,10 @@ const sortValue = (str: string) => {
 };
 
 
-export const registerFileRoutes = async (dir: string) => {
+export const registerFileRoutes = async (dir: string, prefix = '') => {
+	if (prefix && !prefix.startsWith('/'))
+		prefix = '/' + prefix;
+
 	const dirPaths = await globby(dir, { onlyDirectories: true });
 	const filePaths = await globby(dir, { onlyFiles: true });
 
@@ -78,7 +81,7 @@ export const registerFileRoutes = async (dir: string) => {
 	);
 
 	for (const { path, exports } of imports) {
-		let route = '/' + path
+		let route = prefix + '/' + path
 			.replace(dir, '')
 			.replace(/^\/+/, '')
 			.replace(/\.[^/.]+$/, '');

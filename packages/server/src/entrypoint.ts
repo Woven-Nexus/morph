@@ -13,7 +13,7 @@ import { registerFileRoutes } from './utilities/register-file-routes.js';
 // Root
 app.use('/', express.static(join(resolve(), 'public')));
 
-await registerFileRoutes('src/api');
+await registerFileRoutes('src/api', 'api');
 await registerFileRoutes('src/client');
 
 // Betrayal game
