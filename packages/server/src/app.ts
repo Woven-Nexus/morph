@@ -1,10 +1,11 @@
 import { createServer } from 'node:http';
 
-import bodyParser from 'body-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { type Express } from 'express';
 import { Server } from 'socket.io';
+
+import { jsonParser } from './utilities/body-parser.js';
 
 
 dotenv.config();
@@ -12,7 +13,7 @@ dotenv.config();
 
 export const app: Express = express()
 	.use(cors())
-	.use(bodyParser.json());
+	.use(jsonParser);
 
 
 export const server = createServer(app);

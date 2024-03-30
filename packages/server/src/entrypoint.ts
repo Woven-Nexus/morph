@@ -7,17 +7,14 @@ import { app, io, server } from './app.js';
 import { allTiles } from './features/betrayal/all-tiles.js';
 import { type GameState, gameState } from './features/betrayal/gamestate.js';
 import betrayal from './features/betrayal/get-tile.js';
-import clientCodeModules from './features/code-modules/controller-client.js';
-import serverCodeModules from './features/code-modules/controller-server.js';
+import { registerFileRoutes } from './utilities/register-file-routes.js';
 
 
 // Root
 app.use('/', express.static(join(resolve(), 'public')));
 
-// Code-modules
-app.use('/api/code-modules', serverCodeModules);
-app.use('/clientapi/code-modules', clientCodeModules);
-app.use('/assets/code-modules', express.static(join(resolve(), 'src/features/code-modules/assets')));
+await registerFileRoutes('src/api');
+await registerFileRoutes('src/client');
 
 // Betrayal game
 app.use('/api/betrayal', betrayal);

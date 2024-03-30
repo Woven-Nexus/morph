@@ -5,13 +5,40 @@ import { db } from '../../../database.js';
 import { escapeSQLiteString } from '../../db-utils/escape-string.js';
 
 
-export interface Module {
+export interface IModule {
 	module_id?: string | number | bigint;
 	code: string;
 	name: string;
 	namespace: string;
 	description: string;
 	active: 0 | 1;
+}
+
+
+export class Module {
+
+	public module_id?: string | number | bigint;
+	public code: string;
+	public name: string;
+	public namespace: string;
+	public description: string;
+	public active: 0 | 1;
+
+	constructor(values: IModule) {
+		this.module_id = values.module_id;
+		this.code = values.code;
+		this.name = values.name;
+		this.namespace = values.namespace;
+		this.description = values.description;
+
+		// In a form, a checkbox value is not sent if it is unchecked.
+		// therefor we need to check if active is included or not.
+		const active = values.active;
+		this.active = active === 0 || active === 1 ? active
+			: active === '0' || active === '1' ? (Number(active) as 1 | 0)
+				: ('active' in values) ? 1 : 0;
+	}
+
 }
 
 
@@ -29,7 +56,7 @@ export const createModulesTable = () => {
 
 
 export const createModulesDemoData = () => {
-	const createCodeModule = (): Module => {
+	const createCodeModule = (): IModule => {
 		return {
 			active:      1,
 			namespace:   escapeSQLiteString(faker.hacker.adjective()),

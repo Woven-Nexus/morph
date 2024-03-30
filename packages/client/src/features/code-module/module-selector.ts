@@ -1,6 +1,6 @@
-import { type ContextProp, consume } from '@roenlie/lit-context';
+import { consume, type ContextProp } from '@roenlie/lit-context';
 import { maybe } from '@roenlie/mimic-core/async';
-import { MimicElement, customElement } from '@roenlie/mimic-lit/element';
+import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
 import { css, html } from 'lit';
 import { state } from 'lit/decorators.js';
 import { map } from 'lit/directives/map.js';
@@ -12,6 +12,7 @@ import type { ModuleNamespace } from './namespace-model.js';
 
 @customElement('m-module-selector')
 export class ModuleSelectorCmp extends MimicElement {
+
 	@consume('store') protected store: ContextProp<StudioStore>;
 	@state() protected moduleList: ModuleNamespace[];
 
@@ -26,16 +27,18 @@ export class ModuleSelectorCmp extends MimicElement {
 		const store = this.store.value;
 		if (!store.activeNamespace) {
 			this.moduleList = [];
+
 			return;
 		}
 
 		const url = new URL(
-			`${serverUrl}/api/code-modules/${store.activeNamespace}`,
+			`${ serverUrl }/api/code-modules/${ store.activeNamespace }`,
 		);
-		const [result] = await maybe<DbResponse<ModuleNamespace[]>>(
+		const [ result ] = await maybe<DbResponse<ModuleNamespace[]>>(
 			(await fetch(url)).json(),
 		);
-		if (!result) return;
+		if (!result)
+			return;
 
 		this.moduleList = result.data;
 	};
@@ -43,18 +46,18 @@ export class ModuleSelectorCmp extends MimicElement {
 	protected override render(): unknown {
 		return html`
 		<ul>
-			${map(
+			${ map(
 				this.moduleList,
 				item => html`
 			<li
-				@click=${() => {
+				@click=${ () => {
 					this.store.value.activeModuleId = String(item.module_id);
-				}}
+				} }
 			>
-				${item.name}
+				${ item.name }
 			</li>
 			`,
-			)}
+			) }
 		</ul>
 		`;
 	}
@@ -74,4 +77,5 @@ export class ModuleSelectorCmp extends MimicElement {
 
 		`,
 	];
+
 }

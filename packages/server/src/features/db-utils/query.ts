@@ -51,18 +51,22 @@ abstract class Builder {
 
 class SelectBuilder<T extends object = object> extends Builder {
 
-	#select: string[] = [];
+	#select = '';
 	#where = '';
-	#groupBy: string[] = [];
-	#orderBy: string[] = [];
+	#groupBy = '';
+	#orderBy = '';
 	#limit?: number;
 	#offset?: number;
 
-	public select<K extends Extract<keyof T, string>>(...field: K[]) {
-		this.#select ??= [];
-		field.forEach(field => this.#select.push(field));
+	public select(...field: Extract<keyof T, string>[]) {
+		field.forEach((name) => {
+			if (this.#select)
+				this.#select += ',';
 
-		return this as SelectBuilder<Pick<T, K>>;
+			this.#select += name;
+		});
+
+		return this as SelectBuilder<T>;
 	}
 
 	public where(filter: (filter: Filter<T>) => FilterCondition) {
@@ -72,7 +76,12 @@ class SelectBuilder<T extends object = object> extends Builder {
 	}
 
 	public groupBy(...field: Extract<keyof T, string>[]) {
-		this.#groupBy = field;
+		field.forEach(field => {
+			if (this.#groupBy)
+				this.#groupBy += ',';
+
+			this.#groupBy += field;
+		});
 
 		return this;
 	}
@@ -82,10 +91,11 @@ class SelectBuilder<T extends object = object> extends Builder {
 		order: 'asc' | 'desc' = 'asc',
 		nullsLast?: true,
 	) {
-		this.#orderBy.push(
-			`${ field } ${ order.toUpperCase() }` +
-			`${ nullsLast ? ' NULLS LAST' : '' }`,
-		);
+		if (this.#orderBy)
+			this.#orderBy += ',';
+
+		this.#orderBy += `${ field } ${ order.toUpperCase() }`
+			+ `${ nullsLast ? ' NULLS LAST' : '' }`;
 
 		return this;
 	}
@@ -109,48 +119,35 @@ class SelectBuilder<T extends object = object> extends Builder {
 		const limitOnly = limitExists && !offsetExists;
 		const offsetOnly = !limitExists && offsetExists;
 
-		return bothExist
-			? `LIMIT ${ this.#limit } OFFSET ${ this.#offset }` : limitOnly
-				? `LIMIT ${ this.#limit }` : offsetOnly
-					? `LIMIT -1 OFFSET ${ this.#offset }` : '';
+		return bothExist   ? `LIMIT ${ this.#limit } OFFSET ${ this.#offset }`
+			: limitOnly	    ? `LIMIT ${ this.#limit }`
+				: offsetOnly ? `LIMIT -1 OFFSET ${ this.#offset }`
+					: '';
 	}
 
 	protected build() {
 		return `
-		SELECT ${ this.#select.length ? this.#select.join(',') : '*' }
+		SELECT ${ this.#select ? this.#select : '*' }
 		FROM ${ this.table }
 		${ this.#where ? `WHERE ${ this.#where }` : '' }
-		${ this.#groupBy.length ? `GROUP BY ${ this.#groupBy.join(',') }` : '' }
-		${ this.#orderBy.length ? `ORDER BY ${ this.#orderBy.join(',') }` : '' }
+		${ this.#groupBy ? `GROUP BY ${ this.#groupBy }` : '' }
+		${ this.#orderBy ? `ORDER BY ${ this.#orderBy }` : '' }
 		${ this.getLimitOffset() }
 		`;
 	}
 
-	public query() {
-		return this.db.prepare(this.build()).all() as T[];
-	}
+	public query(): T[] {
+		try {
+			return this.db.prepare(this.build()).all() as T[];
+		}
+		catch (error) {
+			console.error(error);
 
-}
-
-class DeleteBuilder<T extends object = object> extends Builder {
-
-	#where = '';
-
-	public where(filter: (filter: Filter<T>) => FilterCondition) {
-		this.#where = filter(new Filter());
-
-		return this;
-	}
-
-	protected build() {
-		return `
-		DELETE FROM ${ this.table }
-		WHERE ${ this.#where }
-		`;
-	}
-
-	public query() {
-		return this.db.prepare(this.build()).run();
+			return [];
+		}
+		finally {
+			this.db.close();
+		}
 	}
 
 }
@@ -158,21 +155,21 @@ class DeleteBuilder<T extends object = object> extends Builder {
 
 class UpdateBuilder<T extends object = object> extends Builder {
 
-	#set = '';
+	#values = '';
 	#where = '';
 	#orderBy?: string;
 	#limit?: number;
 	#offset?: number;
 
-	public set<K extends Extract<keyof T, string>>(...field: [name: K, value: any][]) {
-		field.forEach(([ name, value ]) => {
-			if (this.#set)
-				this.#set += ',';
+	public values(fields: Partial<T>) {
+		Object.entries(fields).forEach(([ name, value ]) => {
+			if (this.#values)
+				this.#values += ',';
 
 			if (typeof value === 'string')
-				value = value.replaceAll("'", "''");
+				value = `'${ value.replaceAll("'", "''") }'`;
 
-			this.#set += `${ name } = '${ value }'`;
+			this.#values += `${ name } = ${ value }`;
 		});
 
 		return this as UpdateBuilder<T>;
@@ -226,16 +223,16 @@ class UpdateBuilder<T extends object = object> extends Builder {
 		const limitOnly = limitExists && !offsetExists;
 		const offsetOnly = !limitExists && offsetExists;
 
-		return bothExist
-			? `LIMIT ${ this.#limit } OFFSET ${ this.#offset }` : limitOnly
-				? `LIMIT ${ this.#limit }` : offsetOnly
-					? `LIMIT -1 OFFSET ${ this.#offset }` : '';
+		return bothExist   ? `LIMIT ${ this.#limit } OFFSET ${ this.#offset }`
+			: limitOnly	    ? `LIMIT ${ this.#limit }`
+				: offsetOnly ? `LIMIT -1 OFFSET ${ this.#offset }`
+					: '';
 	}
 
 	protected build() {
 		return `
 		UPDATE ${ this.table }
-		SET ${ this.#set }
+		SET ${ this.#values }
 		${ this.#where ? `WHERE ${ this.#where }` : '' }
 		${ this.#orderBy ? `ORDER ${ this.#orderBy }` : '' }
 		${ this.getLimitOffset() }
@@ -243,7 +240,15 @@ class UpdateBuilder<T extends object = object> extends Builder {
 	}
 
 	public query() {
-		return this.db.prepare(this.build()).run();
+		try {
+			return this.db.prepare(this.build()).run();
+		}
+		catch (error) {
+			console.error(error);
+		}
+		finally {
+			this.db.close();
+		}
 	}
 
 }
@@ -254,10 +259,10 @@ class InsertBuilder<T extends object = object> extends Builder {
 	#columns = '';
 	#values = '';
 
-	public values<K extends Extract<keyof T, string>>(...field: [name: K, value: any][]) {
-		field.forEach(([ name, value ]) => {
+	public values(fields: T) {
+		Object.entries(fields).forEach(([ name, value ]) => {
 			if (typeof value === 'string')
-				value = "'" + value.replaceAll("'", "''") + "'";
+				value = `'${ value.replaceAll("'", "''") }'`;
 
 			this.#values += (this.#values ? ',' : '') + value;
 			this.#columns += (this.#columns ? ',' : '') + name;
@@ -270,16 +275,6 @@ class InsertBuilder<T extends object = object> extends Builder {
 		if (!this.#columns && !this.#values)
 			return `INSERT INTO ${ this.table } DEFAULT VALUES`;
 
-		console.log({
-			columns: this.#columns,
-			values:  this.#values,
-			query:   `
-			INSERT INTO ${ this.table } (${ this.#columns })
-			VALUES (${ this.#values })
-			`,
-		});
-
-
 		return `
 		INSERT INTO ${ this.table } (${ this.#columns })
 		VALUES (${ this.#values })
@@ -287,7 +282,47 @@ class InsertBuilder<T extends object = object> extends Builder {
 	}
 
 	public query() {
-		return this.db.prepare(this.build()).run();
+		try {
+			return this.db.prepare(this.build()).run();
+		}
+		catch (error) {
+			console.error(error);
+		}
+		finally {
+			this.db.close();
+		}
+	}
+
+}
+
+
+class DeleteBuilder<T extends object = object> extends Builder {
+
+	#where = '';
+
+	public where(filter: (filter: Filter<T>) => FilterCondition) {
+		this.#where = filter(new Filter());
+
+		return this;
+	}
+
+	protected build() {
+		return `
+		DELETE FROM ${ this.table }
+		WHERE ${ this.#where }
+		`;
+	}
+
+	public query() {
+		try {
+			return this.db.prepare(this.build()).run();
+		}
+		catch (error) {
+			console.error(error);
+		}
+		finally {
+			this.db.close();
+		}
 	}
 
 }

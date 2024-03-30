@@ -56,7 +56,7 @@ async function createModuleFromURL(url: URL, context: Context): Promise<Module> 
 		const host = process.env['HOST'];
 		const path = 'http://'
 			+ host + ':' + port
-			+ '/api/code-modules/'
+			+ '/api/modules/'
 			+ identifier.split('db:')[1]!;
 
 		const source = await fetchCode(path);

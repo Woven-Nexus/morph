@@ -1,22 +1,24 @@
-import bodyParser from 'body-parser';
+import type { Router } from 'express';
+import express from 'express';
 
-import { createResponse } from '../../utilities/create-response.js';
+import { urlencodedParser } from '../../../utilities/body-parser.js';
+import { createResponse } from '../../../utilities/create-response.js';
 import {
 	deleteModule,
 	getAllInNamespace, getAllModules, getAllNamespaces,
 	getByNamespaceAndID, insertModule, updateModule,
-} from './db-actions/modules-behavior.js';
-import type { Module } from './db-actions/modules-create-table.js';
-import dImport from './dynamic-import.js';
-import { serverCtrlCodeModules as router } from './router.js';
+} from '../database/modules-behavior.js';
+import type { IModule } from '../database/modules-create-table.js';
+import dImport from '../dynamic-import.js';
 
 
+export const router: Router = express.Router();
 export default router;
 
 
 router.get('/code1', (req, res) => {
 	res.send(`
-	console.log('I AM FROM /api/code-modules/code1');
+	console.log('I AM FROM /api/modules/code1');
 
 	export const secrets = 'this is a secret';
 	`);
@@ -43,7 +45,7 @@ router.get('/code-test', async (req, res) => {
 
 	try {
 		const testModule = await dImport(
-			path + '/api/code-modules/code2',
+			path + '/api/modules/code2',
 		);
 
 		const result = testModule.test();
@@ -84,9 +86,8 @@ router.get(`/:namespace/:moduleId`, async (req, res) => {
 	res.send(createResponse(modules, ''));
 });
 
-const urlencodedParser = bodyParser.urlencoded({ extended: false });
 router.post('/save', urlencodedParser, async (req, res) => {
-	const module = req.body as Module;
+	const module = req.body as IModule;
 
 	updateModule(module);
 
@@ -94,7 +95,7 @@ router.post('/save', urlencodedParser, async (req, res) => {
 });
 
 router.delete('/delete', urlencodedParser, async (req, res) => {
-	const module = req.body as Module;
+	const module = req.body as IModule;
 
 	deleteModule(module);
 
@@ -102,7 +103,7 @@ router.delete('/delete', urlencodedParser, async (req, res) => {
 });
 
 router.delete('/insert', urlencodedParser, async (req, res) => {
-	const module = req.body as Module;
+	const module = req.body as IModule;
 
 	insertModule(module);
 
