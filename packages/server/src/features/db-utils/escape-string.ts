@@ -1,3 +1,3 @@
-export const escapeSQLiteString = (str: string) => {
+export const escapeString = (str: string) => {
 	return str.replaceAll("'", "''");
 };

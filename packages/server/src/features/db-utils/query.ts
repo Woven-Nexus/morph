@@ -2,6 +2,7 @@ import SQLite from 'better-sqlite3';
 
 import type { Branded } from '../../utilities/brand.js';
 import { exists } from '../../utilities/exists.js';
+import { escapeString } from './escape-string.js';
 
 
 // Wrapper around Better SQLite3
@@ -167,7 +168,7 @@ class UpdateBuilder<T extends object = object> extends Builder {
 				this.#values += ',';
 
 			if (typeof value === 'string')
-				value = `'${ value.replaceAll("'", "''") }'`;
+				value = `'${ escapeString(value) }'`;
 
 			this.#values += `${ name } = ${ value }`;
 		});
@@ -262,7 +263,7 @@ class InsertBuilder<T extends object = object> extends Builder {
 	public values(fields: T) {
 		Object.entries(fields).forEach(([ name, value ]) => {
 			if (typeof value === 'string')
-				value = `'${ value.replaceAll("'", "''") }'`;
+				value = `'${ escapeString(value) }'`;
 
 			this.#values += (this.#values ? ',' : '') + value;
 			this.#columns += (this.#columns ? ',' : '') + name;

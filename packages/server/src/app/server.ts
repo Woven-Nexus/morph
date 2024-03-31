@@ -3,11 +3,11 @@ import { join, resolve } from 'node:path';
 import { randomUUID } from 'crypto';
 import express from 'express';
 
-import { app, io, server } from './app.js';
-import { allTiles } from './features/betrayal/all-tiles.js';
-import { type GameState, gameState } from './features/betrayal/gamestate.js';
-import betrayal from './features/betrayal/get-tile.js';
-import { registerFileRoutes } from './utilities/register-file-routes.js';
+import { allTiles } from '../features/betrayal/all-tiles.js';
+import { type GameState, gameState } from '../features/betrayal/gamestate.js';
+import betrayal from '../features/betrayal/get-tile.js';
+import { registerFileRoutes } from '../utilities/register-file-routes.js';
+import { app, io, server } from './main.js';
 
 
 // Root
@@ -53,8 +53,6 @@ io.of('/betrayal').on('connection', socket => {
 });
 
 
-const port = Number(process.env['PORT']);
-const host = process.env['HOST'];
-server.listen(port, host, () => {
-	console.log(`⚡️[server]: Server is running at http://localhost:${ port }`);
+server.listen(Number(process.env.PORT), process.env.HOST, () => {
+	console.log(`⚡️[server]: Server is running at http://localhost:${ Number(process.env.PORT) }`);
 });

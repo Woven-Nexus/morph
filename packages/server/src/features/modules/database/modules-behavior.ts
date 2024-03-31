@@ -1,10 +1,11 @@
-import { dbPath } from '../../../constants.js';
 import { Query } from '../../db-utils/query.js';
 import { type IModule, Module } from './modules-create-table.js';
 
 
-export const getByNamespaceAndID = (namespace: string, id: string | number | bigint) => {
-	const query = new Query(dbPath);
+export const getByNamespaceAndID = (
+	namespace: string, id: string | number | bigint,
+) => {
+	const query = new Query(process.env.SQLITE_URL);
 	const results = query
 		.from<IModule>('modules')
 		.where(filter => filter.and(
@@ -21,7 +22,7 @@ export const getByNamespaceAndID = (namespace: string, id: string | number | big
 
 
 export const getAllInNamespace = (namespace: string) => {
-	const query = new Query(dbPath);
+	const query = new Query(process.env.SQLITE_URL);
 	const results = query
 		.from<IModule>('modules')
 		.where(filter => filter.eq('namespace', namespace))
@@ -33,7 +34,7 @@ export const getAllInNamespace = (namespace: string) => {
 
 
 export const getAllNamespaces = () => {
-	const query = new Query(dbPath);
+	const query = new Query(process.env.SQLITE_URL);
 	const results = query
 		.from<IModule>('modules')
 		.select('namespace')
@@ -47,7 +48,7 @@ export const getAllNamespaces = () => {
 
 
 export const getAllModules = () => {
-	const query = new Query(dbPath);
+	const query = new Query(process.env.SQLITE_URL);
 	const results = query
 		.from<IModule>('modules')
 		.orderBy('active', 'asc')
@@ -60,7 +61,7 @@ export const getAllModules = () => {
 
 export const updateModule = (module: IModule) => {
 	module = new Module(module);
-	const query = new Query(dbPath);
+	const query = new Query(process.env.SQLITE_URL);
 
 	return query
 		.update<IModule>('modules')
@@ -71,7 +72,7 @@ export const updateModule = (module: IModule) => {
 
 
 export const deleteModule = (module: Pick<IModule, 'module_id'>) => {
-	const query = new Query(dbPath);
+	const query = new Query(process.env.SQLITE_URL);
 
 	return query.delete<IModule>('modules')
 		.where(filter => filter.eq('module_id', module.module_id))
@@ -83,7 +84,7 @@ export const insertModule = (module: IModule) => {
 	delete module.module_id;
 
 	module = new Module(module);
-	const query = new Query(dbPath);
+	const query = new Query(process.env.SQLITE_URL);
 
 	return query.insert<IModule>('modules')
 		.values(module)

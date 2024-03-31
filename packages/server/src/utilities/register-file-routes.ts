@@ -4,7 +4,7 @@ import type { RequestHandler } from 'express';
 import express from 'express';
 import { globby } from 'globby';
 
-import { app } from '../app.js';
+import { app } from '../app/main.js';
 
 
 interface Exports {

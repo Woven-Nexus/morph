@@ -1,1 +1,1 @@
-import './entrypoint.js';
+import './app/server.js';
