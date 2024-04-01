@@ -1,9 +1,9 @@
-import { Query } from '../../db-utils/query.js';
-import type { IUser } from './user-create-table.js';
+import { Query } from '../../sqlite/query.js';
+import type { IUser } from './user-table.js';
 
 
 export const getAllUsers = () => {
-	const query = new Query(process.env.SQLITE_URL);
+	const query = new Query();
 	const users = query.from<IUser>('users')
 		.query();
 

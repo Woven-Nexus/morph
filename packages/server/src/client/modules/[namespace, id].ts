@@ -1,9 +1,9 @@
 import type { RequestHandler } from 'express';
 
-import { Query } from '../../features/db-utils/query.js';
 import { form } from '../../features/modules/components/form.js';
 import { sidebar } from '../../features/modules/components/sidebar.js';
-import type { IModule } from '../../features/modules/database/modules-create-table.js';
+import type { IModule } from '../../features/modules/database/modules-table.js';
+import { Query } from '../../features/sqlite/query.js';
 import { html } from '../../utilities/template-tag.js';
 
 

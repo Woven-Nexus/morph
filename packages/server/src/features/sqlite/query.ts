@@ -1,7 +1,6 @@
-import SQLite from 'better-sqlite3';
-
 import type { Branded } from '../../utilities/brand.js';
 import { exists } from '../../utilities/exists.js';
+import { SQLite } from './database.js';
 import { escapeString } from './escape-string.js';
 
 
@@ -10,9 +9,9 @@ import { escapeString } from './escape-string.js';
 // all interactions with the actual DB.
 export class Query {
 
-	#db: SQLite.Database;
+	#db: SQLite;
 
-	constructor(filename: string) {
+	constructor(filename?: string) {
 		this.#db = new SQLite(filename);
 		this.#db.pragma('journal_mode = WAL');
 	}
@@ -33,19 +32,93 @@ export class Query {
 		return new DeleteBuilder<T>(this.#db, table);
 	}
 
+	public define<T extends object = object>(table: string) {
+		return new DefineBuilder<T>(this.#db, table);
+	}
+
+	public [Symbol.dispose] = () => {
+		this.#db.close();
+	};
+
 }
 
 
 abstract class Builder {
 
 	constructor(
-		protected db: SQLite.Database,
+		protected db: SQLite,
 		protected table: string,
 	) {}
 
 	protected abstract build(): string;
 
 	public abstract query(): unknown;
+
+}
+
+class DefineBuilder<T extends object, Exluded extends keyof T = never> extends Builder {
+
+	#override = false;
+	#primaryKey = '';
+	#columns = '';
+
+	/** WARNING! This will drop the existing table and recreate it. */
+	public override() {
+		this.#override = true;
+
+		return this;
+	}
+
+	public primaryKey<N extends Extract<keyof Omit<T, Exluded>, string | number>>(
+		name: N,
+	) {
+		this.#primaryKey = `${ name } INTEGER PRIMARY KEY`;
+
+		return this as Omit<DefineBuilder<T, Exluded | N>, 'primaryKey'>;
+	}
+
+	public column<N extends Extract<keyof Omit<T, Exluded>, string | number>>(
+		name: N,
+		type: 'INTEGER' | 'TEXT' | 'REAL',
+		options: {
+			value?: string | boolean;
+			nullable?: boolean;
+		} = {},
+	) {
+		const { nullable } = options;
+		let { value } = options;
+
+		if (typeof value === 'string') {
+			if (!/^\(.+?\)/.test(value))
+				value = `'${ value }'`;
+		}
+		else if (typeof value === 'boolean') {
+			value = String(value).toUpperCase();
+		}
+
+		if (this.#columns)
+			this.#columns += ',';
+
+		this.#columns += `${ name } ${ type }`
+			+ ` ${ value !== undefined ? `DEFAULT ${ value }` : '' }`
+			+ ` ${ !nullable ? 'NOT NULL' : '' }`;
+
+		return this as DefineBuilder<T, Exluded | N>;
+	}
+
+	protected override build(): string {
+		return `
+		${ this.#override ? `DROP TABLE ${ this.table }` : '' }
+		CREATE TABLE IF NOT EXISTS ${ this.table } (
+			${ this.#primaryKey ? this.#primaryKey + ',' : '' }
+			${ this.#columns }
+		)
+		`;
+	}
+
+	public override query() {
+		return this.db.prepare(this.build()).run();
+	}
 
 }
 
@@ -146,9 +219,6 @@ class SelectBuilder<T extends object = object> extends Builder {
 
 			return [];
 		}
-		finally {
-			this.db.close();
-		}
 	}
 
 }
@@ -247,9 +317,6 @@ class UpdateBuilder<T extends object = object> extends Builder {
 		catch (error) {
 			console.error(error);
 		}
-		finally {
-			this.db.close();
-		}
 	}
 
 }
@@ -289,9 +356,6 @@ class InsertBuilder<T extends object = object> extends Builder {
 		catch (error) {
 			console.error(error);
 		}
-		finally {
-			this.db.close();
-		}
 	}
 
 }
@@ -320,9 +384,6 @@ class DeleteBuilder<T extends object = object> extends Builder {
 		}
 		catch (error) {
 			console.error(error);
-		}
-		finally {
-			this.db.close();
 		}
 	}
 

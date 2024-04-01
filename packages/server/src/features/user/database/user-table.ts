@@ -1,11 +1,14 @@
 import { faker } from '@faker-js/faker';
 import { range } from '@roenlie/mimic-core/array';
 
-import { escapeString } from '../../db-utils/escape-string.js';
-import { db } from '../../sqlite/database.js';
+import type { Optional } from '../../../utilities/optional.js';
+import { SQLite } from '../../sqlite/database.js';
+import { escapeString } from '../../sqlite/escape-string.js';
+import { Query } from '../../sqlite/query.js';
 
 
 export interface IUser {
+	user_id: number;
 	username: string;
 	name: string;
 	email: string;
@@ -16,13 +19,15 @@ export interface IUser {
 
 export class User implements IUser {
 
+	public user_id: number;
 	public username: string;
 	public name: string;
 	public email: string;
 	public password: string;
 	public role: 'Guest' | 'User' | 'Admin';
 
-	constructor(values: IUser) {
+	constructor(values: Optional<IUser, 'user_id'>) {
+		this.user_id = values.user_id ?? 0;
 		this.username = values.username;
 		this.name = values.name;
 		this.email = values.email;
@@ -34,19 +39,32 @@ export class User implements IUser {
 
 
 export const createUsersTable = () => {
-	db.prepare(/* sql */`
-	CREATE TABLE IF NOT EXISTS users (
-		username TEXT DEFAULT '' NOT NULL,
-		name     TEXT DEFAULT '' NOT NULL,
-		email    TEXT DEFAULT '' NOT NULL,
-		password TEXT DEFAULT '' NOT NULL,
-		role     TEXT DEFAULT '' NOT NULL
-	)
-	`).run();
+	using query = new Query();
+
+	query.define<IUser>('users')
+		.primaryKey('user_id')
+		.column('username', 'TEXT', { value: '', nullable: false })
+		.column('name',     'TEXT', { value: '', nullable: false })
+		.column('email',    'TEXT', { value: '', nullable: false })
+		.column('password', 'TEXT', { value: '', nullable: false })
+		.column('role',     'TEXT', { value: '', nullable: false })
+		.query();
+
+	//db.prepare(/* sql */`
+	//CREATE TABLE IF NOT EXISTS users (
+	//	user_id  INTEGER PRIMARY KEY,
+	//	username TEXT DEFAULT '' NOT NULL,
+	//	name     TEXT DEFAULT '' NOT NULL,
+	//	email    TEXT DEFAULT '' NOT NULL,
+	//	password TEXT DEFAULT '' NOT NULL,
+	//	role     TEXT DEFAULT '' NOT NULL
+	//)
+	//`).run();
 };
 
 
 export const createUsersWithDemoData = () => {
+	using db = new SQLite();
 	const roles: IUser['role'][] = [ 'User', 'Guest', 'Admin' ];
 
 	const insertUsers = db.transaction(() => {

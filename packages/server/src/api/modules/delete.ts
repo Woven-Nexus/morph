@@ -1,7 +1,7 @@
 import type { RequestHandler } from 'express';
 
 import { deleteModule } from '../../features/modules/database/modules-behavior.js';
-import type { IModule } from '../../features/modules/database/modules-create-table.js';
+import type { IModule } from '../../features/modules/database/modules-table.js';
 
 
 export const post: RequestHandler[] = [

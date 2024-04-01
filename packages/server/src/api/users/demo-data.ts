@@ -1,6 +1,6 @@
 import type { RequestHandler } from 'express';
 
-import { createUsersWithDemoData } from '../../features/user/database/user-create-table.js';
+import { createUsersWithDemoData } from '../../features/user/database/user-table.js';
 import { getAllUsers } from '../../features/user/database/users-behavior.js';
 import { createResponse } from '../../utilities/create-response.js';
 

@@ -1,6 +1,6 @@
 import { template } from '../../../utilities/template.js';
 import { css, html } from '../../../utilities/template-tag.js';
-import type { IModule } from '../database/modules-create-table.js';
+import type { IModule } from '../database/modules-table.js';
 
 
 export const form = async (module?: IModule) => {
