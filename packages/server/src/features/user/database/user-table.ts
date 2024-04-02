@@ -26,13 +26,23 @@ export class User implements IUser {
 	public password: string;
 	public role: 'Guest' | 'User' | 'Admin';
 
-	constructor(values: Optional<IUser, 'user_id'>) {
-		this.user_id = values.user_id ?? 0;
+	private constructor(values: Optional<IUser, 'user_id'>) {
+		if (values.user_id !== undefined)
+			this.user_id = values.user_id;
+
 		this.username = values.username;
 		this.name = values.name;
 		this.email = values.email;
 		this.password = values.password;
 		this.role = values.role;
+	}
+
+	public static parse(values: IUser) {
+		return new User(values);
+	}
+
+	public static initialize(values: Omit<IUser, 'user_id'>) {
+		return new User(values);
 	}
 
 }
@@ -49,55 +59,25 @@ export const createUsersTable = () => {
 		.column('password', 'TEXT', { value: '', nullable: false })
 		.column('role',     'TEXT', { value: '', nullable: false })
 		.query();
-
-	//db.prepare(/* sql */`
-	//CREATE TABLE IF NOT EXISTS users (
-	//	user_id  INTEGER PRIMARY KEY,
-	//	username TEXT DEFAULT '' NOT NULL,
-	//	name     TEXT DEFAULT '' NOT NULL,
-	//	email    TEXT DEFAULT '' NOT NULL,
-	//	password TEXT DEFAULT '' NOT NULL,
-	//	role     TEXT DEFAULT '' NOT NULL
-	//)
-	//`).run();
 };
 
 
-export const createUsersWithDemoData = () => {
+export const createUsersDemoData = () => {
 	using db = new SQLite();
 	const roles: IUser['role'][] = [ 'User', 'Guest', 'Admin' ];
 
-	const insertUsers = db.transaction(() => {
-		range(5).forEach(() => {
-			const user = new User({
-				username: escapeString(faker.internet.userName()),
-				name:     escapeString(faker.person.fullName()),
-				email:    escapeString(faker.internet.email()),
-				password: escapeString(faker.internet.password()),
-				role:     roles[Math.floor(Math.random() * 3)]!,
-			});
-
-			const statement = /* sql */`
-			INSERT INTO users (
-				'username',
-				'name',
-				'email',
-				'password',
-				'role'
-			)
-			VALUES (
-				'${ user.username }',
-				'${ user.name }',
-				'${ user.email }',
-				'${ user.password }',
-				'${ user.role }'
-			)
-			`;
-
-			db.prepare(statement).run();
+	using query = new Query();
+	db.transaction(() => range(5).forEach(() => {
+		const user = User.initialize({
+			username: escapeString(faker.internet.userName()),
+			name:     escapeString(faker.person.fullName()),
+			email:    escapeString(faker.internet.email()),
+			password: escapeString(faker.internet.password()),
+			role:     roles[Math.floor(Math.random() * 3)]!,
 		});
-	});
 
-	createUsersTable();
-	insertUsers();
+		query.insert<IUser>('users')
+			.values(user)
+			.query();
+	}))();
 };

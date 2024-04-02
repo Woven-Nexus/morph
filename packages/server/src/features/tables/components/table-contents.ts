@@ -1,12 +1,21 @@
 import { template } from '../../../utilities/template.js';
 import { css, html } from '../../../utilities/template-tag.js';
+import { Query } from '../../sqlite/query.js';
+import { tableExists } from '../../sqlite/table-exists.js';
 
 
-export const tableContents = (name?: string, items?: Record<keyof any, any>[]) => {
+export const tableContents = (name?: string) => {
+	let items: object[] = [];
+	if (name && tableExists(name)) {
+		using query = new Query();
+		items = query.from(name).query();
+	}
+
 	return template({
 		name:     'table-contents',
-		template: !name ? html`` : html`
+		template: html`
 		<section id="table-content">
+			${ name ? html`
 			<ul>
 				<h1>${ name }</h1>
 				${ items?.map(item => html`
@@ -18,6 +27,7 @@ export const tableContents = (name?: string, items?: Record<keyof any, any>[]) =
 				</li>
 				`) ?? '' }
 			</ul>
+			` : '' }
 		</section>
 		`,
 		style: css`
@@ -47,6 +57,7 @@ export const tableContents = (name?: string, items?: Record<keyof any, any>[]) =
 		#table-content li {
 			display: grid;
 			grid-template-columns: max-content 1fr;
+			column-gap: 8px;
 
 			.key {
 				grid-column-start: 1;

@@ -234,6 +234,9 @@ class UpdateBuilder<T extends object = object> extends Builder {
 
 	public values(fields: Partial<T>) {
 		Object.entries(fields).forEach(([ name, value ]) => {
+			if (value === undefined)
+				return;
+
 			if (this.#values)
 				this.#values += ',';
 
@@ -329,6 +332,9 @@ class InsertBuilder<T extends object = object> extends Builder {
 
 	public values(fields: T) {
 		Object.entries(fields).forEach(([ name, value ]) => {
+			if (value === undefined)
+				return;
+
 			if (typeof value === 'string')
 				value = `'${ escapeString(value) }'`;
 

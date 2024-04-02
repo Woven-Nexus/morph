@@ -36,8 +36,8 @@ export const tableList = () => {
 			<li>
 				<button
 					hx-get="/tables/${ table.name }"
-					hx-target="main"
-					hx-swap="innerHTML"
+					hx-target="#table-content"
+					hx-swap="outerHTML"
 				>
 					${ table.name }
 				</button>
@@ -52,12 +52,18 @@ export const tableList = () => {
 				` : '' }
 				${ table.exists() ? html`
 				${ table.demoData ? html`
-				<button>Add demo data</button>
+				<button
+					hx-get="/tables/demo/${ table.name }"
+					hx-swap="multi:#table-list:outerHTML,#table-content:outerHTML"
+					hx-confirm="Confirm adding demo data to table: ${ table.name }"
+				>
+					Add demo data
+				</button>
 				` : '' }
 				<button
 					hx-get="/tables/drop/${ table.name }"
-					hx-target="#table-list"
-					hx-swap="outerHTML"
+					hx-swap="multi:#table-list:outerHTML,#table-content:outerHTML"
+					hx-confirm="Confirm deleting table: ${ table.name }"
 				>Drop</button>
 				` : '' }
 			</li>

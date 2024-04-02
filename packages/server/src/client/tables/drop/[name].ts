@@ -1,15 +1,13 @@
 import type { RequestHandler } from 'express';
 
 import { SQLite } from '../../../features/sqlite/database.js';
+import { tableContents } from '../../../features/tables/components/table-contents.js';
 import { tableList } from '../../../features/tables/components/table-list.js';
 
 
 export const get: RequestHandler[] = [
 	async (req, res) => {
 		const { name } = req.params as { name: string; };
-
-		console.log('asking to drop:', name);
-
 
 		const validTables = [ 'users', 'OTP', 'modules' ];
 
@@ -20,6 +18,6 @@ export const get: RequestHandler[] = [
 			`).run();
 		}
 
-		res.send(await tableList());
+		res.send(await tableList() + await tableContents());
 	},
 ];

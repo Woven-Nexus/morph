@@ -8,7 +8,8 @@ import { createUsersTable } from '../../../features/user/database/user-table.js'
 
 export const get: RequestHandler[] = [
 	async (req, res) => {
-		const { name } = req.params as { name: string; };
+		type ValidName = 'users' | 'OTP' | 'modules';
+		const { name } = req.params as { name: ValidName; };
 
 		if (name === 'users')
 			createUsersTable();

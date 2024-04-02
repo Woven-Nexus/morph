@@ -19,15 +19,17 @@ export interface IModule {
 
 export class Module implements IModule {
 
-	public module_id: number;
+	public readonly module_id: number;
 	public code: string;
 	public name: string;
 	public namespace: string;
 	public description: string;
 	public active: 0 | 1;
 
-	constructor(values: Optional<IModule, 'module_id'>) {
-		this.module_id = values.module_id ?? 0;
+	private constructor(values: Optional<IModule, 'module_id'>) {
+		if (values.module_id !== undefined)
+			this.module_id = values.module_id;
+
 		this.code = values.code;
 		this.name = values.name;
 		this.namespace = values.namespace;
@@ -40,6 +42,15 @@ export class Module implements IModule {
 			: active === '0' || active === '1' ? (Number(active) as 1 | 0)
 				: ('active' in values) ? 1 : 0;
 	}
+
+	public static parse(values: IModule) {
+		return new Module(values);
+	}
+
+	public static initialize(values: Omit<IModule, 'module_id'>) {
+		return new Module(values);
+	}
+
 
 }
 
@@ -55,54 +66,30 @@ export const createModulesTable = () => {
 		.column('namespace',   'TEXT',    { value: '',    nullable: false })
 		.column('active',      'INTEGER', { value: false, nullable: false })
 		.query();
-
-	//using db = new SQLite();
-	//db.prepare(/* sql */`
-	//CREATE TABLE IF NOT EXISTS modules (
-	//	module_id   INTEGER PRIMARY KEY,
-	//	code        TEXT    DEFAULT ''    NOT NULL,
-	//	name        TEXT    DEFAULT ''    NOT NULL,
-	//	description TEXT    DEFAULT ''    NOT NULL,
-	//	namespace   TEXT    DEFAULT ''    NOT NULL,
-	//	active      INTEGER DEFAULT FALSE NOT NULL
-	//)`).run();
 };
 
 
-export const createModulesWithDemoData = () => {
+export const createModulesDemoData = () => {
 	using db = new SQLite();
 
 	const createCodeModule = (): IModule => {
-		return new Module({
+		const module = Module.initialize({
 			active:      1,
 			namespace:   escapeString(faker.hacker.adjective()),
 			name:        escapeString(faker.hacker.verb()),
 			description: escapeString(faker.hacker.phrase()),
 			code:        escapeString(faker.lorem.paragraph()),
 		});
+
+		return module;
 	};
 
-	const insertCode = db.transaction(() => {
-		range(20).forEach(() => {
-			const mod = createCodeModule();
+	using query = new Query();
+	db.transaction(() => range(20).forEach(() => {
+		const mod = createCodeModule();
 
-			db.prepare(/* sql */`
-			INSERT INTO modules (
-				'active',
-				'code',
-				'description',
-				'name',
-				'namespace'
-			)
-			VALUES (
-				${ mod.active },
-				'${ mod.code }',
-				'${ mod.description }',
-				'${ mod.name }',
-				'${ mod.namespace }'
-			)
-			`).run();
-		});
-	});
-	insertCode();
+		query.insert<IModule>('modules')
+			.values(mod)
+			.query();
+	}))();
 };

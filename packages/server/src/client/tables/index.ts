@@ -11,17 +11,13 @@ import { css, html } from '../../utilities/template-tag.js';
 
 export const get: RequestHandler[] = [
 	async (req, res) => {
-		createModulesTable();
-		createUsersTable();
-		createOTPtable();
-
 		res.send(await html`
 		<!DOCTYPE html>
 		<html lang="en" color-scheme="dark">
 			<head>
 				${ head() }
 			</head>
-			<body>
+			<body hx-boost="true" hx-ext="multi-swap">
 				${ body() }
 			</body>
 		</html>
@@ -40,6 +36,7 @@ const head = () => {
 	<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 
 	<script src="https://unpkg.com/htmx.org@1.9.11"></script>
+	<script src="https://unpkg.com/htmx.org@1.9.11/dist/ext/multi-swap.js"></script>
 
 	<style>
 		:root { font-family: Inter, sans-serif; }
