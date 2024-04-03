@@ -45,6 +45,33 @@ export class MonacoEditorCmp extends MimicElement {
 					],
 				],
 			},
+		}).then(() => {
+			monaco.editor.defineTheme('Plastic', {
+				base:    'vs-dark',
+				inherit: true,
+				colors:  {
+					'editor.background':                   '#1E1E1E',
+					'editor.foreground':                   '#D4D4D4',
+					'editor.inactiveSelectionBackground':  '#3A3D41',
+					'editorIndentGuide.background':        '#404040',
+					'editor.selectionHighlightBackground': '#ADD6FF26',
+					'editorBracketHighlight.foreground1':  '#A9B2C3',
+					'editorBracketHighlight.foreground2':  '#61AFEF',
+					'editorBracketHighlight.foreground3':  '#E5C07B',
+					'editorBracketHighlight.foreground4':  '#E06C75',
+					'editorBracketHighlight.foreground5':  '#98C379',
+					'editorBracketHighlight.foreground6':  '#B57EDC',
+				},
+				rules: [
+					{ token: 'identifier', foreground: 'C6CCD7' },
+					{ token: 'string', foreground: '98C379' },
+					{ token: 'function', foreground: 'B57EDC' },
+					{ token: 'type', foreground: 'E5C07B' },
+					{ token: 'keyword.type', foreground: 'E5C07B' },
+					{ token: 'keyword.special', foreground: 'E06C75' },
+					{ token: 'meta.decorator', foreground: 'A9B2C3' },
+				],
+			});
 		});
 	}
 
@@ -94,6 +121,10 @@ export class MonacoEditorCmp extends MimicElement {
 		this.editor?.layout({ height: rect.height, width: rect.width });
 	});
 
+	protected mutObs = new MutationObserver(() => {
+		this.value = this.textContent ?? '';
+	});
+
 	constructor() {
 		super();
 		this.internals = this.attachInternals();
@@ -101,6 +132,13 @@ export class MonacoEditorCmp extends MimicElement {
 
 	public override connectedCallback(): void {
 		super.connectedCallback();
+
+		if (this.textContent)
+			this.value = this.textContent;
+
+		this.mutObs.observe(this, { characterData: true, subtree: true });
+		this.resizeObs.observe(this);
+
 		this.updateComplete.then(() => this.afterConnected());
 	}
 
@@ -109,39 +147,12 @@ export class MonacoEditorCmp extends MimicElement {
 		this.disposables.forEach(d => d.dispose());
 		this.disposableModels.forEach(d => d.dispose());
 		this._editor?.dispose();
-		this.resizeObs.unobserve(this);
+		this.mutObs.disconnect();
+		this.resizeObs.disconnect();
 	}
 
 	protected async afterConnected() {
-		this.resizeObs.observe(this);
-
 		await MonacoEditorCmp.modifyLangConfig;
-		monaco.editor.defineTheme('Plastic', {
-			base:    'vs-dark',
-			inherit: true,
-			colors:  {
-				'editor.background':                   '#1E1E1E',
-				'editor.foreground':                   '#D4D4D4',
-				'editor.inactiveSelectionBackground':  '#3A3D41',
-				'editorIndentGuide.background':        '#404040',
-				'editor.selectionHighlightBackground': '#ADD6FF26',
-				'editorBracketHighlight.foreground1':  '#A9B2C3',
-				'editorBracketHighlight.foreground2':  '#61AFEF',
-				'editorBracketHighlight.foreground3':  '#E5C07B',
-				'editorBracketHighlight.foreground4':  '#E06C75',
-				'editorBracketHighlight.foreground5':  '#98C379',
-				'editorBracketHighlight.foreground6':  '#B57EDC',
-			},
-			rules: [
-				{ token: 'identifier', foreground: 'C6CCD7' },
-				{ token: 'string', foreground: '98C379' },
-				{ token: 'function', foreground: 'B57EDC' },
-				{ token: 'type', foreground: 'E5C07B' },
-				{ token: 'keyword.type', foreground: 'E5C07B' },
-				{ token: 'keyword.special', foreground: 'E06C75' },
-				{ token: 'meta.decorator', foreground: 'A9B2C3' },
-			],
-		});
 
 		this._editor = monaco.editor.create(this.monacoRef.value!, {
 			model:                null,
@@ -214,6 +225,10 @@ export class MonacoEditorCmp extends MimicElement {
 		this.editor?.focus();
 	}
 
+	protected handleSlotChange() {
+		this.value = this.textContent ?? '';
+	}
+
 	protected override render(): unknown {
 		return html`
 		<div
@@ -225,6 +240,7 @@ export class MonacoEditorCmp extends MimicElement {
 			${ this.placeholder }
 		</s-editor-placeholder>
 		`) }
+		<slot style="display:none;"></slot>
 		`;
 	}
 

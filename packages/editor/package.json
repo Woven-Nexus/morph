@@ -8,10 +8,11 @@
 		"dist"
 	],
 	"license": "MIT",
-	"version": "1.0.4",
+	"version": "1.0.5",
 	"type": "module",
 	"main": "./dist/monaco-editor-wc.js",
 	"scripts": {
+		"dev": "vite --config ./demo/vite.config.ts",
 		"build": "pnpm run \"/^build::.+/\"",
 		"build::indexes": "pkg-toolbox build-indexes",
 		"build::js": "vite build"
