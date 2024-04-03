@@ -6,7 +6,7 @@ const parseTag = async (strings: TemplateStringsArray, ...values: unknown[]) => 
 		aggregator += string;
 
 		const expr = values[i];
-		if (expr === undefined)
+		if (expr === undefined || expr === false)
 			continue;
 
 		let value: unknown = expr;

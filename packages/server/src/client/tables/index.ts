@@ -38,6 +38,9 @@ const head = () => {
 	<script src="https://unpkg.com/htmx.org@1.9.11"></script>
 	<script src="https://unpkg.com/htmx.org@1.9.11/dist/ext/multi-swap.js"></script>
 
+	<link rel="stylesheet" href="https://unpkg.com/@roenlie/monaco-editor-wc@1.0.5/dist/style.css">
+	<script defer src="https://unpkg.com/@roenlie/monaco-editor-wc@1.0.5/dist/monaco-editor-wc.js"></script>
+
 	<style>
 		:root { font-family: Inter, sans-serif; }
 		@supports (font-variation-settings: normal) {

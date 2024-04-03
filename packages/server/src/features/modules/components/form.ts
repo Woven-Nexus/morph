@@ -68,9 +68,8 @@ export const form = async (module?: IModule) => {
 			<monaco-editor
 				id="code"
 				name="code"
-				value="${ module.code }"
 				language="typescript"
-			></monaco-editor>
+			>${ module.code }</monaco-editor>
 		</form>
 		` : html`
 		<span style="place-self:center;">Select file to start editing.</span>

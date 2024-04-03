@@ -12,8 +12,8 @@ export const head = () => html`
 
 	<script src="https://unpkg.com/htmx.org@1.9.11"></script>
 
-	<link rel="stylesheet" href="https://unpkg.com/@roenlie/monaco-editor-wc@1.0.4/dist/style.css">
-	<script defer src="https://unpkg.com/@roenlie/monaco-editor-wc@1.0.4/dist/monaco-editor-wc.js"></script>
+	<link rel="stylesheet" href="https://unpkg.com/@roenlie/monaco-editor-wc@1.0.5/dist/style.css">
+	<script defer src="https://unpkg.com/@roenlie/monaco-editor-wc@1.0.5/dist/monaco-editor-wc.js"></script>
 
 	<script type="module" src="/assets/modules/htmx-ext.js"></script>
 	<script type="module" src="/assets/modules/module.js"></script>
