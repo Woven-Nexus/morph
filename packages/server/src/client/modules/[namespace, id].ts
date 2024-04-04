@@ -14,7 +14,7 @@ export const get: RequestHandler = async (req, res) => {
 	const modules = query
 		.from<IModule>('modules')
 		.where(filter => filter.and(
-			filter.eq('module_id', params.id),
+			filter.eq('module_id', Number(params.id)),
 		))
 		.limit(1)
 		.orderBy('active', 'asc')

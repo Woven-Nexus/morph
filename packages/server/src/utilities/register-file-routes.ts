@@ -59,10 +59,13 @@ export const registerFileRoutes = async (dir: string, prefix = '') => {
 
 	const assetDirs = dirPaths.filter(path => path.includes('assets'));
 	for (const path of assetDirs) {
-		const route = '/assets/' + path
+		let route = '/' + path
 			.replace(dir, '')
 			.replace(/^\/+/, '')
 			.replace(/\/assets$/, '');
+
+		if (!route.startsWith('/assets'))
+			route = '/assets' + route;
 
 		app.use(route, express.static(join(resolve(), path)));
 	}

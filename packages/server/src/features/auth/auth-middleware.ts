@@ -16,10 +16,10 @@ export const auth: RequestHandler = (req, res, next) => {
 		//extract JWT token
 		const token = req.body?.token || req.cookies?.token;
 		if (!token) {
-			return res.status(401).json({
-				success: false,
-				message: 'Token Missing',
-			});
+			if (req.url !== '/login')
+				return res.redirect('/login');
+			else
+				return next();
 		}
 
 		//verify the token

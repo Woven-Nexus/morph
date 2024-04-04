@@ -1,15 +1,14 @@
 import type { RequestHandler } from 'express';
 
-import { createModulesTable } from '../../features/modules/database/modules-table.js';
-import { createOTPtable } from '../../features/otp/database/otp-table.js';
+import { auth } from '../../features/auth/auth-middleware.js';
 import { tableContents } from '../../features/tables/components/table-contents.js';
 import { tableList } from '../../features/tables/components/table-list.js';
-import { createUsersTable } from '../../features/user/database/user-table.js';
 import { template } from '../../utilities/template.js';
 import { css, html } from '../../utilities/template-tag.js';
 
 
 export const get: RequestHandler[] = [
+	auth,
 	async (req, res) => {
 		res.send(await html`
 		<!DOCTYPE html>

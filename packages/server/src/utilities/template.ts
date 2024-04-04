@@ -25,9 +25,9 @@ export const template = async (options: {
 	const scriptId = crypto.randomUUID();
 	const scriptContent: string[] = [
 		`const __styleEl = document.body.querySelector('#${ styleId }')`,
-		`if (!document.head.querySelector('#${ styleId }'))`,
-		`document.head.appendChild(__styleEl);`,
-		`else __styleEl.remove();`,
+		`const __existingStyleEl = document.head.querySelector('#${ styleId }');`,
+		`if (__existingStyleEl) __existingStyleEl.replaceWith(__styleEl);`,
+		`else document.head.appendChild(__styleEl);`,
 		`document.getElementById('${ scriptId }').remove();`,
 	];
 
