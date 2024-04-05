@@ -1,4 +1,4 @@
-import type { RequestHandler } from 'express';
+import { type RequestHandler, urlencoded } from 'express';
 
 import { template } from '../../utilities/template.js';
 import { css, html } from '../../utilities/template-tag.js';
@@ -21,6 +21,30 @@ export const get: RequestHandler[] = [
 ];
 
 
+export const post: RequestHandler[] = [
+	urlencoded({ extended: false }),
+	async (req, res) => {
+		const { username, password } = req.body as {
+			username: string;
+			password: string;
+		};
+
+		//validation on email and password
+		if (!username || !password) {
+			return res.send(await body({
+				username,
+				validationErrors: [
+					//
+					'Missing username or password',
+				],
+			}));
+		}
+
+		console.log(username, password);
+	},
+];
+
+
 const head = () => {
 	return html`
 	<meta charset="UTF-8">
@@ -37,28 +61,53 @@ const head = () => {
 };
 
 
-const body = () => {
+const body = (options: {
+	username?: string;
+	validationErrors?: string[];
+} = {}) => {
+	const {
+		username,
+		validationErrors,
+	} = options;
+
 	return template({
 		name:     'main',
 		template: html`
-		<main>
-			<form id="login-form">
-				<label>
-					<span>
-						Username
-					</span>
-					<input value="">
-				</label>
-				<label>
-					<span>
-						Password
-					</span>
-					<input value="">
-				</label>
+		<main id="main">
+			<form
+				id="login-form"
+				hx-push-url="false"
+				hx-target="#main"
+				hx-swap="outerHTML"
+			>
+				<s-field>
+					<label for="username">Username</label>
+					<input
+						id="username"
+						name="username"
+						value="${ username ?? '' }"
+						required
+					>
+				</s-field>
 
-				<button>
+				<s-field>
+					<label for="password">Password</label>
+					<input id="password" name="password" value="" required>
+				</s-field>
+
+				<button hx-post="/login" autofocus>
 					Login
 				</button>
+
+				${ validationErrors && html`
+				<s-error-messages>
+					${ validationErrors.map(err => html`
+						<s-error>
+							${ err }
+						</s-error>
+					`) }
+				</s-error-messages>
+				` }
 			</form>
 		</main>
 		`,
@@ -69,11 +118,18 @@ const body = () => {
 			grid-template-columns: max-content 1fr;
 			row-gap: 12px;
 
-			label {
+			s-field {
+				all: unset;
 				display: grid;
 				grid-column: span 2;
 				grid-template-columns: subgrid;
 				column-gap: 8px;
+			}
+			s-error-messages {
+				grid-column: span 2;
+				display: grid;
+				font-size: 10px;
+				color: red;
 			}
 			button {
 				grid-column: span 2;
