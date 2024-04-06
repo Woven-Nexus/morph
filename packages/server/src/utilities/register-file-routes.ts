@@ -5,6 +5,11 @@ import express from 'express';
 import { globby } from 'globby';
 
 import { app } from '../app/main.js';
+import { tsStatic } from './custom-serve-static.js';
+
+
+// Caches the starting dir -> dir-paths and file-paths.
+const cache = new Map<string, [string[], string[]]>();
 
 
 interface Exports {
@@ -50,24 +55,39 @@ const sortValue = (str: string) => {
 };
 
 
+// Exclude any path that contains a part starting with _
+const pathFilter = (path: string) => !path.split('/')
+	.some(part => part.startsWith('_'));
+
+
 export const registerFileRoutes = async (dir: string, prefix = '') => {
 	if (prefix && !prefix.startsWith('/'))
 		prefix = '/' + prefix;
 
-	const dirPaths = await globby(dir, { onlyDirectories: true });
-	const filePaths = await globby(dir, { onlyFiles: true });
+	let [ dirPaths, filePaths ] = cache.get(dir) ?? [];
+	if (!dirPaths || !filePaths) {
+		[ dirPaths, filePaths ] = (await Promise.all([
+			globby(dir, { onlyDirectories: true }),
+			globby(dir, { onlyFiles: true }),
+		])).map(arr => arr.filter(pathFilter)) as [string[], string[]];
+	}
 
-	const assetDirs = dirPaths.filter(path => path.includes('assets'));
-	for (const path of assetDirs) {
-		let route = '/' + path
-			.replace(dir, '')
-			.replace(/^\/+/, '')
-			.replace(/\/assets$/, '');
+	const assetDirRoots: string[] = [];
+	for (const path of dirPaths) {
+		if (!path.includes('/assets'))
+			continue;
 
-		if (!route.startsWith('/assets'))
-			route = '/assets' + route;
+		const mainPart = (path.split('/assets')[0] ?? '') + '/assets';
 
-		app.use(route, express.static(join(resolve(), path)));
+		if (!assetDirRoots.some(p => mainPart.startsWith(p))) {
+			assetDirRoots.push(path);
+
+			const route = '/' + path
+				.replace(dir, '')
+				.replace(/^\/+/, '');
+
+			app.use(route, tsStatic(join(resolve(), path)));
+		}
 	}
 
 	// Filter out asset files, sort according to dynamic
