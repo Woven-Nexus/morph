@@ -3,7 +3,7 @@
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-#image-section {
+[void-id="image-section"] {
 	overflow: hidden;
 	display: grid;
 	place-items: center;
@@ -14,7 +14,7 @@
 		width: 30vw;
 	}
 }
-#form-section {
+[void-id="form-section"] {
 	overflow: hidden;
 	display: flex;
 	flex-flow: column nowrap;

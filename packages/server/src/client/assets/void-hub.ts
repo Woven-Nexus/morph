@@ -1,4 +1,4 @@
-const voidCache = new Map<string, WeakRef<HTMLElement>[]>();
+const voidCache = new Map<string, WeakRef<HTMLElement>>();
 
 
 globalThis.addEventListener('void-connect', (_ev: Event) => {
@@ -55,28 +55,27 @@ class VoidInitializer extends HTMLElement {
 		return el;
 	}
 
-	protected addToCache(id: string, element: HTMLElement) {
-		const cachedEls = voidCache.get(id) ??
-			(() => voidCache.set(id, []).get(id)!)();
-
-		const exists = cachedEls.some(ref => ref.deref() === element);
-		if (!exists)
-			cachedEls.push(new WeakRef(element));
-	}
-
+	protected invalidElements = [ HTMLScriptElement, HTMLLinkElement, VoidInitializer ];
 	protected syncElements(root: ShadowRoot) {
-		const invalidElements = [ HTMLScriptElement, HTMLLinkElement, VoidInitializer ];
-
 		const elements = [ ...root.querySelectorAll('*') ]
-			.filter((node): node is HTMLElement => node instanceof HTMLElement)
-			.filter(node => !invalidElements.some(el => node instanceof el));
+			.filter((node): node is HTMLElement => node instanceof HTMLElement
+				&& !this.invalidElements.some(el => node instanceof el));
 
 		elements.forEach(el => {
-			if (el.id)
-				this.addToCache(el.id, el);
+			const id = el.getAttribute('void-id');
+			id && this.addToCache(id, el);
 		});
 
 		console.log(elements);
+	}
+
+	protected addToCache(id: string, element: HTMLElement) {
+		const reference = voidCache.get(id);
+		const value = reference?.deref();
+		if (value)
+			throw new Error('Duplicate void-id: ' + id);
+
+		voidCache.set(id, new WeakRef(element));
 	}
 
 }

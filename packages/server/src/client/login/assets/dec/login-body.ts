@@ -9,11 +9,11 @@ export class LoginBody implements DeclarativeElement {
 	public scriptUrl = '';
 	public render(props: unknown): Promise<string> {
 		return html`
-		<section id="image-section">
+		<section void-id="image-section">
 			<img src="/login/assets/images/bird.png">
 		</section>
 
-		<section id="form-section">
+		<section void-id="form-section">
 			<h1>
 				Morph
 			</h1>
