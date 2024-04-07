@@ -10,11 +10,11 @@ export const get: RequestHandler[] = [
 ];
 
 
-export const button = (index: number) => {
+export const button = async (index: number) => {
 	return html`
 	<m-button>
 		<template shadowrootmode="open">
-			<button mx-get="/login/button">
+			<button mx-get="/login/button" mx-trigger="click">
 				${ index }
 			</button>
 

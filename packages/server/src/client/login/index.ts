@@ -1,9 +1,9 @@
 import { type RequestHandler, urlencoded } from 'express';
 
 import { html } from '../../utilities/template-tag.js';
-import { loginBody } from './_parts/body.js';
 import { loginForm } from './_parts/form.js';
 import { head } from './_parts/head.js';
+import { loginBody } from './assets/dec/login-body.js';
 
 
 export const get: RequestHandler[] = [
@@ -15,7 +15,7 @@ export const get: RequestHandler[] = [
 				${ head() }
 			</head>
 			<body>
-				${ loginBody() }
+				${ loginBody({}) }
 			</body>
 		</html>
 		`);

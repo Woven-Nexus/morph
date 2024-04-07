@@ -1,4 +1,5 @@
 import { html } from '../../../utilities/template-tag.js';
+import { CounterElement } from '../assets/parts/server-button.js';
 import { button } from '../button.js';
 import { loginForm } from './form.js';
 
@@ -24,11 +25,7 @@ export const loginBody = (options: BodyOptions = {}) => {
 				<h3>
 					Welcome to Morph
 				</h3>
-				${ button(1) }
-				${ button(2) }
-				${ button(3) }
-				${ button(4) }
-				${ button(5) }
+				${ CounterElement.generate({ count: 5 }) }
 			</section>
 
 			<link rel="stylesheet" href="/login/assets/parts/login-body.css">

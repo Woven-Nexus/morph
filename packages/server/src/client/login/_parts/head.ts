@@ -16,5 +16,7 @@ export const head = () => {
 	<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 
 	<link rel="stylesheet" href="/assets/index.css"></link>
+
+	<script type="module" src="/assets/void-hub.js"></script>
 	`;
 };
