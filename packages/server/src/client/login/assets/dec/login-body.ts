@@ -1,8 +1,9 @@
-import { type DeclarativeElement, declarativeElement } from '../../../../utilities/declarative-element.js';
 import { html } from '../../../../utilities/template-tag.js';
+import { type VoidElement, voidElement } from '../../../../utilities/void-element.js';
+import { voidButton } from '../../button.js';
 
 
-export class LoginBody implements DeclarativeElement {
+export class LoginBody implements VoidElement {
 
 	public tagName = 'm-login-body';
 	public styleUrl = '/login/assets/dec/login-body.css';
@@ -20,6 +21,8 @@ export class LoginBody implements DeclarativeElement {
 			<h3>
 				Welcome to Morph
 			</h3>
+
+			${ voidButton({ index: Math.random() * 100 }) }
 		</section>
 		`;
 	}
@@ -27,4 +30,4 @@ export class LoginBody implements DeclarativeElement {
 }
 
 
-export const loginBody = declarativeElement(LoginBody);
+export const loginBody = voidElement(LoginBody);

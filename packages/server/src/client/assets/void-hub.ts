@@ -1,28 +1,99 @@
+declare global {
+	interface WindowEventMap {
+		'void-load': CustomEvent<{element: HTMLElement; host: HTMLElement;}>;
+		'void-get': CustomEvent<{element: HTMLElement; host: HTMLElement;}>;
+		'void-form-post': CustomEvent<{
+			element: HTMLFormElement;
+			host: HTMLElement;
+			submitter: HTMLElement;
+		}>;
+	}
+}
+
+
+const parser = new DOMParser();
 const voidCache = new Map<string, WeakRef<HTMLElement>>();
 
+const cacheGet = (id: string | null | undefined) => {
+	if (!id)
+		return;
 
-globalThis.addEventListener('void-connect', (_ev: Event) => {
-	const ev = _ev as CustomEvent<string>;
-	const tagName = ev.detail;
+	const ref = voidCache.get(id);
 
-	//if (!customElements.get(tagName)) {
-	//	customElements.define(tagName, class extends VoidElement {});
-	//}
+	return ref?.deref();
+};
+
+globalThis.addEventListener('void-load', async ev => {
+	const source = ev.detail;
+	console.log({ type: 'load', source });
+});
+
+globalThis.addEventListener('void-get', async ev => {
+	const { element, host } = ev.detail;
+	const url = element.getAttribute('void-get')!;
+
+	const response = await (await fetch(url)).text();
+	const parsed = parser.parseFromString(response, 'text/html', {
+		includeShadowRoots: true,
+	});
+
+	const newElement = parsed.body.firstElementChild!;
+
+	let targetEl = element;
+	let targetId = element.getAttribute('void-target');
+	if (targetId) {
+		if (targetId === 'host')
+			targetEl = host;
+
+		if (targetId.startsWith('#')) {
+			targetId = targetId.slice(1);
+
+			const ref = cacheGet(targetId);
+			if (ref) {
+				voidCache.delete(targetId);
+				targetEl = ref;
+			}
+		}
+	}
+
+	targetEl.replaceWith(newElement);
+});
+
+globalThis.addEventListener('void-form-post', async ev => {
+	ev.preventDefault();
+
+	const { element, host, submitter } = ev.detail;
+
+	console.log({ element, host, submitter });
 });
 
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-class VoidElement extends HTMLElement {
+class Listeners {
 
-	constructor() {
-		super();
+	protected cache: [ target: Element, event: string, fn: EventListener ][] = [];
 
-		console.log('a void element has been registered and constructed');
+	public add(target: Element, event: string, fn: EventListener) {
+		target.addEventListener(event, fn);
+		this.cache.push([ target, event, fn ]);
+	}
+
+	public disconnect() {
+		for (const [ t, e, f ] of this.cache)
+			t.removeEventListener(e, f);
+
+		this.cache.length = 0;
 	}
 
 }
 
+
 class VoidInitializer extends HTMLElement {
+
+	protected static invalidElements: typeof HTMLElement[] = [
+		HTMLScriptElement,
+		HTMLLinkElement,
+		VoidInitializer,
+	];
 
 	protected static sheet = (() => {
 		const sheet = new CSSStyleSheet();
@@ -30,6 +101,10 @@ class VoidInitializer extends HTMLElement {
 
 		return sheet;
 	})();
+
+	protected listeners = new Listeners();
+	protected parentHost: HTMLElement;
+	protected parentRoot: ShadowRoot;
 
 	constructor() {
 		super();
@@ -39,44 +114,126 @@ class VoidInitializer extends HTMLElement {
 	}
 
 	public connectedCallback() {
-		const root = this.getHostRoot();
+		let root: Node | undefined = this.shadowRoot?.host;
+		while (!(root instanceof ShadowRoot) && root)
+			root = root?.parentNode ?? undefined;
+
 		if (!root)
-			return;
+			throw new Error('No parent root available');
 
-		this.syncElements(root);
-		console.log(voidCache);
+		this.parentRoot = root;
+		this.parentHost = root.host as HTMLElement;
+
+		this.syncElements(this.parentRoot);
 	}
 
-	protected getHostRoot() {
-		let el: Node | undefined = this.shadowRoot?.host;
-		while (!(el instanceof ShadowRoot) && el)
-			el = el?.parentNode ?? undefined;
-
-		return el;
+	public disconnectedCallback() {
+		this.listeners.disconnect();
 	}
 
-	protected invalidElements = [ HTMLScriptElement, HTMLLinkElement, VoidInitializer ];
+	protected getElementForm(el: HTMLElement) {
+		const host = this.parentHost;
+
+		return ('form' in el ? el.form
+			: 'form' in host ? host.form
+				: undefined) as HTMLFormElement | undefined;
+	}
+
 	protected syncElements(root: ShadowRoot) {
-		const elements = [ ...root.querySelectorAll('*') ]
-			.filter((node): node is HTMLElement => node instanceof HTMLElement
-				&& !this.invalidElements.some(el => node instanceof el));
-
-		elements.forEach(el => {
-			const id = el.getAttribute('void-id');
-			id && this.addToCache(id, el);
-		});
-
-		console.log(elements);
+		for (const element of root.querySelectorAll('*')) {
+			const isHTMLElement = element instanceof HTMLElement;
+			const isValid = !VoidInitializer.invalidElements.some(el => element instanceof el);
+			if (isHTMLElement && isValid)
+				this.parseElement(element);
+		}
 	}
 
 	protected addToCache(id: string, element: HTMLElement) {
-		const reference = voidCache.get(id);
-		const value = reference?.deref();
-		if (value)
-			throw new Error('Duplicate void-id: ' + id);
-
 		voidCache.set(id, new WeakRef(element));
+	}
+
+	protected parseElement(el: HTMLElement) {
+		const id = el.getAttribute('void-id');
+		id && this.addToCache(id, el);
+
+		this.evalClickHandler(el);
+		this.evalLoadHandler(el);
+		this.evalFormHandler(el);
+	}
+
+	protected methods = [ 'get', 'post', 'put', 'patch', 'delete' ] as const;
+	protected getMethod(el: HTMLElement) {
+		return this.methods.find(method => el.hasAttribute('void-' + method));
+	}
+
+	protected evalClickHandler(el: HTMLElement) {
+		const method = this.getMethod(el);
+		if (!method)
+			return;
+
+		const trigger = el.getAttribute('void-trigger') ?? 'click';
+		if (trigger !== 'click')
+			return;
+
+		const form = this.getElementForm(el);
+		if (form)
+			return;
+
+		this.listeners.add(el, 'click', ev => {
+			ev.preventDefault();
+
+			const detail: any = {
+				element: el,
+				host:    this.parentHost,
+			};
+
+			const event = new CustomEvent('void-' + method, { detail });
+			window.dispatchEvent(event);
+		});
+	}
+
+	protected evalLoadHandler(el: HTMLElement) {
+		const method = this.getMethod(el);
+		if (!method)
+			return;
+
+		const trigger = el.getAttribute('void-trigger');
+		if (trigger !== 'load')
+			return;
+
+		const detail: any = {
+			element: el,
+			host:    this.parentHost,
+		};
+
+		const event = new CustomEvent('void-load', { detail });
+		window.dispatchEvent(event);
+	}
+
+	protected evalFormHandler(el: HTMLElement) {
+		if (!(el instanceof HTMLFormElement))
+			return;
+		if (!el.hasAttribute('void-boosted'))
+			return;
+
+		el.addEventListener('submit', (ev) => {
+			ev.preventDefault();
+
+			const submitter = ev.submitter!;
+			const method = this.getMethod(submitter) ?? this.getMethod(el);
+			const detail: any = {
+				element: el,
+				host:    this.parentHost,
+				submitter,
+			};
+
+			const event = new CustomEvent('void-form-' + method, { detail });
+			window.dispatchEvent(event);
+		});
 	}
 
 }
 customElements.define('void-initializer', VoidInitializer);
+
+
+export default '';
