@@ -2,6 +2,11 @@ declare global {
 	interface WindowEventMap {
 		'void-load': CustomEvent<{element: HTMLElement; host: HTMLElement;}>;
 		'void-get': CustomEvent<{element: HTMLElement; host: HTMLElement;}>;
+		'void-form-get': CustomEvent<{
+			element: HTMLFormElement;
+			host: HTMLElement;
+			submitter: HTMLElement;
+		}>;
 		'void-form-post': CustomEvent<{
 			element: HTMLFormElement;
 			host: HTMLElement;
@@ -14,6 +19,7 @@ declare global {
 const parser = new DOMParser();
 const voidCache = new Map<string, WeakRef<HTMLElement>>();
 
+
 const cacheGet = (id: string | null | undefined) => {
 	if (!id)
 		return;
@@ -23,10 +29,33 @@ const cacheGet = (id: string | null | undefined) => {
 	return ref?.deref();
 };
 
+
+const getTarget = (element: HTMLElement, host: HTMLElement) => {
+	let targetEl: HTMLElement | undefined = undefined;
+	const targetId = element.getAttribute('void-target');
+	if (targetId) {
+		if (targetId === 'host') { targetEl = host; }
+		else {
+			const ref = cacheGet(targetId);
+			if (ref) {
+				voidCache.delete(targetId);
+				targetEl = ref;
+			}
+		}
+	}
+	else {
+		targetEl = element;
+	}
+
+	return targetEl;
+};
+
+
 globalThis.addEventListener('void-load', async ev => {
 	const source = ev.detail;
 	console.log({ type: 'load', source });
 });
+
 
 globalThis.addEventListener('void-get', async ev => {
 	const { element, host } = ev.detail;
@@ -38,33 +67,33 @@ globalThis.addEventListener('void-get', async ev => {
 	});
 
 	const newElement = parsed.body.firstElementChild!;
-
-	let targetEl = element;
-	let targetId = element.getAttribute('void-target');
-	if (targetId) {
-		if (targetId === 'host')
-			targetEl = host;
-
-		if (targetId.startsWith('#')) {
-			targetId = targetId.slice(1);
-
-			const ref = cacheGet(targetId);
-			if (ref) {
-				voidCache.delete(targetId);
-				targetEl = ref;
-			}
-		}
-	}
-
-	targetEl.replaceWith(newElement);
+	getTarget(element, host)?.replaceWith(newElement);
 });
+
 
 globalThis.addEventListener('void-form-post', async ev => {
 	ev.preventDefault();
 
 	const { element, host, submitter } = ev.detail;
 
-	console.log({ element, host, submitter });
+	const url = submitter.getAttribute('void-post')
+		|| element.getAttribute('void-post')!;
+
+	const data = new URLSearchParams();
+	for (const [ key, value ] of new FormData(element))
+		data.append(key, value.toString());
+
+	const response = await (await fetch(url, {
+		method: 'post',
+		body:   data,
+	})).text();
+
+	const parsed = parser.parseFromString(response, 'text/html', {
+		includeShadowRoots: true,
+	});
+
+	const newElement = parsed.body.firstElementChild!;
+	getTarget(element, host)?.replaceWith(newElement);
 });
 
 
