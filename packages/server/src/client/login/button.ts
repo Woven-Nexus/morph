@@ -16,6 +16,10 @@ export class VoidButton implements VoidElement {
 	public tagName = 'm-button';
 	public styleUrl = '';
 	public scriptUrl = '';
+	public attributes = {
+		'void-id': 'the-form',
+	};
+
 	public render(props: {index: number}): Promise<string> {
 		return html`
 		<form void-boosted>

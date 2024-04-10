@@ -92,8 +92,12 @@ globalThis.addEventListener('void-form-post', async ev => {
 		includeShadowRoots: true,
 	});
 
+	// TODO, make it so it takes an array and picks the first one it finds that has an id
+	const target = getTarget(submitter, host);
+	console.log(target);
+
 	const newElement = parsed.body.firstElementChild!;
-	getTarget(element, host)?.replaceWith(newElement);
+	target?.replaceWith(newElement);
 });
 
 
