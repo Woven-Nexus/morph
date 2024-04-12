@@ -1,9 +1,9 @@
 import { type RequestHandler, urlencoded } from 'express';
 
 import { html } from '../../utilities/template-tag.js';
-import { loginForm } from './_parts/form.js';
 import { head } from './_parts/head.js';
-import { loginBody } from './assets/dec/login-body.js';
+import { loginBody } from './assets/login-body.js';
+import { loginForm } from './assets/login-form.js';
 
 
 export const get: RequestHandler[] = [
@@ -34,11 +34,13 @@ export const post: RequestHandler[] = [
 		//validation on email and password
 		if (!username || !password) {
 			return res.send(await loginForm({
-				username,
-				validationErrors: [
+				props: {
+					username,
+					validationErrors: [
 					//
-					'Missing username or password',
-				],
+						'Missing username or password',
+					],
+				},
 			}));
 		}
 

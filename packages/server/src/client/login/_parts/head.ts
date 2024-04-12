@@ -17,6 +17,6 @@ export const head = () => {
 
 	<link rel="stylesheet" href="/assets/index.css"></link>
 
-	<script type="module" src="/assets/void-hub.js"></script>
+	<script type="module" src="/assets/void.js"></script>
 	`;
 };

@@ -7,10 +7,11 @@ export interface VoidElement {
 	tagName: string;
 	styleUrl: string;
 	scriptUrl: string;
-	attributes?: Record<string, string | boolean>;
-	render(...props: unknown[]): Promise<string>;
+	render(props: Record<keyof any, any>): Promise<string>;
 
 }
+
+type ParamObject<T extends (...args: any) => any> = Parameters<T>[number];
 
 
 export const voidElement = <T extends VoidElement>(cls: new () => T) => {
@@ -18,34 +19,43 @@ export const voidElement = <T extends VoidElement>(cls: new () => T) => {
 		tagName,
 		styleUrl,
 		scriptUrl,
-		attributes,
 		render,
 	} = new cls();
 
-	let attrs = '';
-	for (const [ key, value ] of Object.entries(attributes ?? {})) {
-		if (!value)
-			continue;
+	const concatAttrs = (
+		attributes: Record<string, string | number | boolean> = {},
+	) => {
+		let attrs = '';
+		const entries = Object.entries(attributes);
+		for (const [ key, value ] of entries) {
+			if (!value)
+				continue;
 
-		if (attrs)
-			attrs += ' ';
+			if (attrs)
+				attrs += ' ';
 
-		if (value === true) {
-			attrs += key;
-			continue;
+			if (value === true) {
+				attrs += key;
+				continue;
+			}
+
+			attrs += `${ key }="${ value }"`;
 		}
+	};
 
-		attrs += `${ key }="${ value }"`;
-	}
-
-	return (...props: Parameters<T['render']>) => html`
-	<${ tagName } ${ attrs }>
-		<template shadowrootmode="open">
-			${ render(...props) }
-			<link rel="stylesheet" href="${ styleUrl }">
-			<script type="module" src="${ scriptUrl }"></script>
-			<void-initializer></void-initializer>
-		</template>
-	</${ tagName }>
-	`;
+	return (config: {
+		attrs?: Record<string, string | number>,
+		props?: ParamObject<T['render']>
+	} = {}) => {
+		return html`
+		<${ tagName } ${ concatAttrs(config.attrs) }>
+			<template shadowrootmode="open">
+				${ render(config.props ?? {}) }
+				<link rel="stylesheet" href="${ styleUrl }">
+				<script type="module" src="${ scriptUrl }"></script>
+				<void-initializer></void-initializer>
+			</template>
+		</${ tagName }>
+		`;
+	};
 };

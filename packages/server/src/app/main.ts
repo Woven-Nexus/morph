@@ -1,5 +1,4 @@
 import './env.js';
-import '../client/assets/server-element.js';
 
 import { createServer } from 'node:http';
 
