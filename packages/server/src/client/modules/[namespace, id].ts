@@ -10,7 +10,7 @@ import { modulesSidebar } from './_parts/modules-sidebar.js';
 export const get: RequestHandler = async (req, res) => {
 	const params = req.params as { namespace: string; id: string; };
 
-	const query = new Query('./database/main.db');
+	using query = new Query('./database/main.db');
 	const module = query
 		.from<IModule>('modules')
 		.where(filter => filter

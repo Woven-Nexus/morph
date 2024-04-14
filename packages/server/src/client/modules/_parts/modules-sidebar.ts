@@ -10,7 +10,7 @@ export class ModulesSidebar implements VoidElement {
 	public styleUrls = [ '/modules/assets/modules-sidebar.css' ];
 	public scriptUrls: string | string[];
 	public render({ module }: { module?: IModule; }): Promise<string> {
-		const query = new Query('./database/main.db');
+		using query = new Query('./database/main.db');
 		const modules = query
 			.from<IModule>('modules')
 			.orderBy('active', 'asc')
