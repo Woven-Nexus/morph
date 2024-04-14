@@ -1,8 +1,9 @@
 import type { RequestHandler } from 'express';
 
 import { SQLite } from '../../../features/sqlite/database.js';
-import { tableContents } from '../../../features/tables/components/table-contents.js';
-import { tableList } from '../../../features/tables/components/table-list.js';
+import { html } from '../../../utilities/template-tag.js';
+import { tablesContents } from '../_parts/tables-contents.js';
+import { tablesList } from '../_parts/tables-list.js';
 
 
 export const get: RequestHandler[] = [
@@ -18,6 +19,13 @@ export const get: RequestHandler[] = [
 			`).run();
 		}
 
-		res.send(await tableList() + await tableContents());
+		res.send(await html`
+		${ tablesList({
+			attrs: { 'void-id': 'tables-list' },
+		}) }
+		${ tablesContents({
+			attrs: { 'void-id': 'tables-contents' },
+		}) }
+		`);
 	},
 ];

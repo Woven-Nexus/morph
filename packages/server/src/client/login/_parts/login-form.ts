@@ -1,12 +1,12 @@
 import { html } from '../../../utilities/template-tag.js';
-import { type VoidElement, voidElement } from '../../../utilities/void-element.js';
+import { type VoidElement, voidElement } from '../../assets/void-element.js';
 
 
 export class VoidButton implements VoidElement {
 
 	public tagName = 'm-login-form';
-	public styleUrl = '/login/assets/login-form.css';
-	public scriptUrl = '';
+	public styleUrls = '/login/assets/login-form.css';
+	public scriptUrls = '';
 
 	public render(props: {
 		username?: string;

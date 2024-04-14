@@ -1,0 +1,16 @@
+:host {
+	overflow: hidden;
+	display: grid;
+	grid-template-rows: max-content 1fr;
+}
+h1 {
+	all: unset;
+	font-size: 1.5em;
+	position: sticky;
+	top: 0px;
+	background-color: rgb(30, 30, 30);
+	padding-top: 24px;
+	padding-bottom: 8px;
+	padding-inline: 24px;
+	border-bottom: 2px solid white;
+}

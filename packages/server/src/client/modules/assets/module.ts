@@ -1,18 +1,19 @@
 let currentName = '';
 
-const definitionMap = new Map();
-const moduleMap = new Map();
-const module = {
-	define: (moduleName, definition) => {
+const definitionMap = new Map<string, Function>();
+const moduleMap = new Map<string, Record<keyof any, any>>();
+
+const imports = {
+	define: (moduleName: string, definition: Function) => {
 		definitionMap.set(moduleName, definition);
 	},
-	export: (exportName, declaration) => {
+	export: (exportName: string, declaration: object) => {
 		const exports = moduleMap.get(currentName) ??
-		moduleMap.set(currentName, {}).get(currentName);
+		moduleMap.set(currentName, {}).get(currentName)!;
 
 		exports[exportName] = declaration;
 	},
-	import: (moduleName, exportName) => {
+	import: (moduleName: string, exportName: string) => {
 		const definition = definitionMap.get(moduleName);
 		if (definition) {
 			const oldName = currentName;
@@ -27,10 +28,10 @@ const module = {
 		if (!exportName)
 			return;
 
-		return moduleMap.get(moduleName)[exportName];
+		return moduleMap.get(moduleName)?.[exportName];
 	},
 };
 
 Object.assign(window, {
-	module,
+	module: imports,
 });

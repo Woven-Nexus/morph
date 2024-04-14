@@ -28,51 +28,41 @@ class VoidInitializer extends HTMLElement {
 		VoidInitializer,
 	];
 
-	protected static sheet = (() => {
-		const sheet = new CSSStyleSheet();
-		sheet.replaceSync(`:host{display:none;}`);
-
-		return sheet;
-	})();
-
-	protected listeners = new Listeners();
-	protected parentHost: HTMLElement;
-	protected parentRoot: ShadowRoot;
-	protected mutObserver = new MutationObserver((entries) => {
-		for (const entry of entries) {
-			entry.removedNodes.forEach(node => {
+	protected static mutHandler = (mutations: MutationRecord[]) => {
+		for (const entry of mutations) {
+			for (const node of entry.removedNodes) {
 				if (!(node instanceof HTMLElement))
-					return;
+					continue;
 
 				const voidId = node.getAttribute('void-id');
 				if (!voidId)
-					return;
+					continue;
 
 				const ref = voidCache.get(voidId);
 				if (ref?.deref() === node)
 					voidCache.delete(voidId);
-			});
-			entry.addedNodes.forEach(node => {
+			}
+			for (const node of entry.addedNodes) {
 				if (!(node instanceof HTMLElement))
-					return;
+					continue;
 
 				const voidId = node.getAttribute('void-id');
-				if (voidId)
-					voidCache.set(voidId, new WeakRef(node));
-			});
+				if (!voidId)
+					continue;
+
+				voidCache.set(voidId, new WeakRef(node));
+			}
 		}
-	});
+	};
 
-	constructor() {
-		super();
-
-		const root = this.attachShadow({ mode: 'open' });
-		root.adoptedStyleSheets = [ VoidInitializer.sheet ];
-	}
+	protected mutObserver = new MutationObserver(VoidInitializer.mutHandler);
+	protected listeners = new Listeners();
+	protected parentHost: HTMLElement;
+	protected parentRoot: ShadowRoot;
 
 	public connectedCallback() {
-		let root: Node | undefined = this.shadowRoot?.host;
-		while (!(root instanceof ShadowRoot) && root)
+		let root: Node | undefined = this.parentNode ?? undefined;
+		while (root && !(root instanceof ShadowRoot))
 			root = root?.parentNode ?? undefined;
 
 		if (!root)
@@ -83,15 +73,15 @@ class VoidInitializer extends HTMLElement {
 
 		this.mutObserver.observe(
 			this.parentRoot,
-			{ subtree: true, childList: true, attributes: true },
+			{ subtree: true, childList: true },
 		);
 
 		this.syncElements(this.parentRoot);
 	}
 
 	public disconnectedCallback() {
-		this.listeners.disconnect();
 		this.mutObserver.disconnect();
+		this.listeners.disconnect();
 	}
 
 	protected getElementForm(el: HTMLElement) {
@@ -103,7 +93,9 @@ class VoidInitializer extends HTMLElement {
 	}
 
 	protected syncElements(root: ShadowRoot) {
-		for (const element of root.querySelectorAll('*')) {
+		const elements = [ this.parentHost, ...root.querySelectorAll('*') ];
+
+		for (const element of elements) {
 			const isHTMLElement = element instanceof HTMLElement;
 			const isValid = !VoidInitializer.invalidElements.some(el => element instanceof el);
 			if (isHTMLElement && isValid)

@@ -1,11 +1,11 @@
 import type { RequestHandler } from 'express';
 import express from 'express';
 
-import { form } from '../../features/modules/components/form.js';
-import { sidebar } from '../../features/modules/components/sidebar.js';
 import { deleteModule } from '../../features/modules/database/modules-behavior.js';
 import type { IModule } from '../../features/modules/database/modules-table.js';
 import { html } from '../../utilities/template-tag.js';
+import { modulesForm } from './_parts/modules-form.js';
+import { modulesSidebar } from './_parts/modules-sidebar.js';
 
 
 export const post: RequestHandler[] = [
@@ -16,8 +16,12 @@ export const post: RequestHandler[] = [
 		deleteModule(module);
 
 		res.send(await html`
-		${ sidebar() }
-		${ form() }
+		${ modulesSidebar({
+			attrs: { 'void-id': 'modules-sidebar' },
+		}) }
+		${ modulesForm({
+			attrs: { 'void-id': 'modules-form' },
+		}) }
 		`);
 	},
 ];

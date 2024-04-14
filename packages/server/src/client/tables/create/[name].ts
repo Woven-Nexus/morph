@@ -2,8 +2,9 @@ import type { RequestHandler } from 'express';
 
 import { createModulesTable } from '../../../features/modules/database/modules-table.js';
 import { createOTPtable } from '../../../features/otp/database/otp-table.js';
-import { tableList } from '../../../features/tables/components/table-list.js';
 import { createUsersTable } from '../../../features/user/database/user-table.js';
+import { html } from '../../../utilities/template-tag.js';
+import { tablesList } from '../_parts/tables-list.js';
 
 
 export const get: RequestHandler[] = [
@@ -18,6 +19,10 @@ export const get: RequestHandler[] = [
 		if (name === 'modules')
 			createModulesTable();
 
-		res.send(await tableList());
+		res.send(await html`
+		${ tablesList({
+			attrs: { 'void-id': 'tables-list' },
+		}) }
+		`);
 	},
 ];

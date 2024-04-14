@@ -1,11 +1,11 @@
 import type { RequestHandler } from 'express';
 import express from 'express';
 
-import { form } from '../../features/modules/components/form.js';
-import { sidebar } from '../../features/modules/components/sidebar.js';
 import { getByNamespaceAndID, updateModule } from '../../features/modules/database/modules-behavior.js';
 import type { IModule } from '../../features/modules/database/modules-table.js';
 import { html } from '../../utilities/template-tag.js';
+import { modulesForm } from './_parts/modules-form.js';
+import { modulesSidebar } from './_parts/modules-sidebar.js';
 
 
 export const post: RequestHandler[] = [
@@ -14,13 +14,19 @@ export const post: RequestHandler[] = [
 		const module = req.body as IModule;
 
 		updateModule(module);
-		const modules = getByNamespaceAndID(
+		const actualModule = getByNamespaceAndID(
 			module.namespace, module.module_id,
 		);
 
 		res.send(await html`
-		${ sidebar(modules) }
-		${ form(modules) }
+		${ modulesSidebar({
+			attrs: { 'void-id': 'modules-sidebar' },
+			props: { module: actualModule },
+		}) }
+		${ modulesForm({
+			attrs: { 'void-id': 'modules-form' },
+			props: { module: actualModule },
+		}) }
 		`);
 	},
 ];

@@ -1,0 +1,20 @@
+:host {
+	display: block;
+	overflow: hidden;
+	overflow-y: auto;
+}
+ol {
+	all: unset;
+	display: block;
+	padding-inline-start: 24px;
+	padding-block: 24px;
+}
+li {
+	all: unset;
+	display: block;
+}
+li.active {
+	background-color: hotpink;
+	outline: 2px dotted red;
+	outline-offset: -2px;
+}

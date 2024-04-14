@@ -1,26 +1,21 @@
 /* eslint-disable lit/binding-positions */
-import { html } from './template-tag.js';
+import { html } from '../../utilities/template-tag.js';
 
 
 export interface VoidElement {
-
 	tagName: string;
-	styleUrl: string;
-	scriptUrl: string;
+	styleUrls: string | string[];
+	scriptUrls: string | string[];
 	render(props: Record<keyof any, any>): Promise<string>;
-
 }
 
 type ParamObject<T extends (...args: any) => any> = Parameters<T>[number];
 
 
 export const voidElement = <T extends VoidElement>(cls: new () => T) => {
-	const {
-		tagName,
-		styleUrl,
-		scriptUrl,
-		render,
-	} = new cls();
+	const instance = new cls();
+	const { tagName, render } = instance;
+	let { styleUrls, scriptUrls } = instance;
 
 	const concatAttrs = (
 		attributes: Record<string, string | number | boolean> = {},
@@ -41,7 +36,12 @@ export const voidElement = <T extends VoidElement>(cls: new () => T) => {
 
 			attrs += `${ key }="${ value }"`;
 		}
+
+		return attrs;
 	};
+
+	styleUrls = Array.isArray(styleUrls) ? styleUrls : [ styleUrls ];
+	scriptUrls = Array.isArray(scriptUrls) ? scriptUrls : [ scriptUrls ];
 
 	return (config: {
 		attrs?: Record<string, string | number>,
@@ -50,10 +50,10 @@ export const voidElement = <T extends VoidElement>(cls: new () => T) => {
 		return html`
 		<${ tagName } ${ concatAttrs(config.attrs) }>
 			<template shadowrootmode="open">
+				<void-initializer style="display:none;"></void-initializer>
+				${ styleUrls.map(url => html`<link rel="stylesheet" href="${ url }">`) }
+				${ scriptUrls.map(url => html`<script type="module" src="${ url }"></script>`) }
 				${ render(config.props ?? {}) }
-				<link rel="stylesheet" href="${ styleUrl }">
-				<script type="module" src="${ scriptUrl }"></script>
-				<void-initializer></void-initializer>
 			</template>
 		</${ tagName }>
 		`;

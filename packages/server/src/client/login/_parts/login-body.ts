@@ -1,13 +1,13 @@
 import { html } from '../../../utilities/template-tag.js';
-import { type VoidElement, voidElement } from '../../../utilities/void-element.js';
+import { type VoidElement, voidElement } from '../../assets/void-element.js';
 import { loginForm } from './login-form.js';
 
 
 export class LoginBody implements VoidElement {
 
 	public tagName = 'm-login-body';
-	public styleUrl = '/login/assets/login-body.css';
-	public scriptUrl = '';
+	public styleUrls = '/login/assets/login-body.css';
+	public scriptUrls = '';
 	public render(): Promise<string> {
 		return html`
 		<section void-id="image-section">
@@ -22,10 +22,7 @@ export class LoginBody implements VoidElement {
 				Welcome to Morph
 			</h3>
 
-			${ loginForm({
-				props: {
-				},
-			}) }
+			${ loginForm() }
 		</section>
 		`;
 	}

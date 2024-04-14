@@ -14,7 +14,8 @@ const tsCache = new Map<string, string>();
 
 const mimeCharsets = (mimeType: string, fallback?: string) => {
 	// Assume text types are utf8
-	return (/^text\/|^application\/(javascript|json)/).test(mimeType) ? 'UTF-8' : fallback ?? '';
+	return (/^text\/|^application\/(javascript|json)/)
+		.test(mimeType) ? 'UTF-8' : fallback ?? '';
 };
 
 
@@ -40,29 +41,12 @@ export const tsStatic = (root: string): RequestHandler => {
 		if (path?.startsWith('..'))
 			return res.sendStatus(404);
 
-		let file: Buffer | string;
+		let file: Buffer | string | undefined;
 
-		// If the path request is a .js file, we want to first check if we have a .ts version of it.
-		// If one does not exist, then defer back to the .js and skip the typescript transpiling.
-		if (path.endsWith('.js')) {
-			const filePath = join(root, path.replace('.js', '.ts'));
-			if (existsSync(filePath))
-				path = path.replace('.js', '.ts');
-		}
-
-		if (path?.endsWith('.ts')) {
-			const filePath = join(root, path);
-			if (!existsSync(filePath))
-				return res.sendStatus(404);
-
-			if (!tsCache.has(path)) {
-				const content = await readFile(filePath, 'utf-8');
-				const code = (await esbuild.transform(content, { loader: 'ts' })).code;
-				tsCache.set(path, code);
-			}
-
-			file = tsCache.get(path)!;
-			path = path.replace('.ts', '.js');
+		const ecmaScript = await handleTypescript(root, path);
+		if (ecmaScript) {
+			file = ecmaScript.file;
+			path = ecmaScript.path;
 		}
 
 		const filePath = join(root, path);
@@ -74,9 +58,48 @@ export const tsStatic = (root: string): RequestHandler => {
 		const charset = mimeCharsets(type);
 		res.setHeader('Content-Type', type + (charset ? '; charset=' + charset : ''));
 
-		file ??= await readFile(filePath);
-		res.send(file);
+		try {
+			file ??= await readFile(filePath);
+			if (!file)
+				return res.sendStatus(404);
+
+			res.send(file);
+		}
+		catch {
+			res.sendStatus(404);
+		}
 	};
 
 	return handler;
+};
+
+
+const handleTypescript = async (root: string, path: string): Promise<{
+	path: string;
+	file: string;
+} | undefined> => {
+	// If the path request is a .js file, we want to first check if we have a .ts version of it.
+	// If one does not exist, then defer back to the .js and skip the typescript transpiling.
+	if (path.endsWith('.js')) {
+		const filePath = join(root, path.replace('.js', '.ts'));
+		if (existsSync(filePath))
+			path = path.replace('.js', '.ts');
+	}
+
+	if (path?.endsWith('.ts')) {
+		const filePath = join(root, path);
+		if (!existsSync(filePath))
+			return;
+
+		if (!tsCache.has(path)) {
+			const content = await readFile(filePath, 'utf-8');
+			const code = (await esbuild.transform(content, { loader: 'ts' })).code;
+			tsCache.set(path, code);
+		}
+
+		return {
+			file: tsCache.get(path)!,
+			path: path.replace('.ts', '.js'),
+		};
+	}
 };

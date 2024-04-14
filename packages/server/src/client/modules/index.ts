@@ -1,33 +1,20 @@
 import type { RequestHandler } from 'express';
 
 import { auth } from '../../features/auth/auth-middleware.js';
-import { form } from '../../features/modules/components/form.js';
-import { head } from '../../features/modules/components/head.js';
-import { sidebar } from '../../features/modules/components/sidebar.js';
 import { html } from '../../utilities/template-tag.js';
+import { modulesBody } from './_parts/modules-body.js';
+import { modulesHead } from './_parts/modules-head.js';
 
 
 export const get: RequestHandler[] = [
-	auth,
+	//auth,
 	async (req, res) => {
 		const template = await html`
 		<!DOCTYPE html>
 		<html lang="en" color-scheme="dark">
-		${ head() }
+		${ modulesHead() }
 		<body>
-			<aside>
-				<button
-					hx-get="/modules/new"
-					hx-target="main"
-					hx-swap="innerHTML"
-				>
-					New
-				</button>
-				${ sidebar() }
-			</aside>
-			<main>
-				${ form() }
-			</main>
+			${ modulesBody() }
 		</body>
 		</html>
 		`;
