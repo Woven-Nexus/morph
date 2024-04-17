@@ -1,7 +1,7 @@
 import type { IModule } from '../../../features/modules/database/modules-table.js';
 import { Query } from '../../../features/sqlite/query.js';
 import { html } from '../../../utilities/template-tag.js';
-import { type VoidElement, voidElement } from '../../assets/void-element.js';
+import { type VoidElement, voidElement } from '../../assets/void/void-element.js';
 
 
 export class ModulesSidebar implements VoidElement {

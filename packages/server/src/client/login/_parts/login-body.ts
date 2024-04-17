@@ -1,5 +1,5 @@
 import { html } from '../../../utilities/template-tag.js';
-import { type VoidElement, voidElement } from '../../assets/void-element.js';
+import { type VoidElement, voidElement } from '../../assets/void/void-element.js';
 import { loginForm } from './login-form.js';
 
 

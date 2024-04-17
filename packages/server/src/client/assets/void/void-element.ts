@@ -1,5 +1,5 @@
 /* eslint-disable lit/binding-positions */
-import { html } from '../../utilities/template-tag.js';
+import { html } from '../../../utilities/template-tag.js';
 
 
 export interface VoidElement {
@@ -51,6 +51,7 @@ export const voidElement = <T extends VoidElement>(cls: new () => T) => {
 		<${ tagName } ${ concatAttrs(config.attrs) }>
 			<template shadowrootmode="open">
 				<void-initializer style="display:none;"></void-initializer>
+				<link rel="stylesheet" href="/assets/reset.css">
 				${ styleUrls.map(url => html`<link rel="stylesheet" href="${ url }">`) }
 				${ scriptUrls.map(url => html`<script type="module" src="${ url }"></script>`) }
 				${ render(config.props ?? {}) }
