@@ -14,6 +14,6 @@ export const tablesHead = () => {
 	<script defer src="https://unpkg.com/@roenlie/monaco-editor-wc@1.0.5/dist/monaco-editor-wc.js"></script>
 
 	<link rel="stylesheet" href="/assets/index.css">
-	<script type="module" src="/assets/void.js"></script>
+	<script type="module" src="/assets/void/void.js"></script>
 	`;
 };

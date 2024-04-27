@@ -196,6 +196,12 @@ importers:
         specifier: ^2.6.2
         version: 2.6.2
 
+  packages/lit-bundle:
+    dependencies:
+      lit:
+        specifier: ^3.1.2
+        version: 3.1.2
+
   packages/posix-path-browser:
     dependencies:
       tslib:
@@ -237,9 +243,15 @@ importers:
       globby:
         specifier: ^14.0.1
         version: 14.0.1
+      import-meta-resolve:
+        specifier: ^4.0.0
+        version: 4.0.0
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
+      lit:
+        specifier: ^3.1.2
+        version: 3.1.2
       mime:
         specifier: ^4.0.1
         version: 4.0.1
@@ -3146,6 +3158,10 @@ packages:
       parent-module: 1.0.1
       resolve-from: 4.0.0
     dev: true
+
+  /import-meta-resolve@4.0.0:
+    resolution: {integrity: sha512-okYUR7ZQPH+efeuMJGlq4f8ubUgO50kByRPyt/Cy1Io4PSRsPjxME+YlVaCOx+NIToW7hCsZNFJyTPFFKepRSA==}
+    dev: false
 
   /imurmurhash@0.1.4:
     resolution: {integrity: sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA==}

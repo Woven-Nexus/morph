@@ -6,12 +6,14 @@ import express from 'express';
 import { allTiles } from '../features/betrayal/all-tiles.js';
 import { type GameState, gameState } from '../features/betrayal/gamestate.js';
 import betrayal from '../features/betrayal/get-tile.js';
+import { tsStatic } from '../utilities/custom-serve-static.js';
 import { registerFileRoutes } from '../utilities/register-file-routes.js';
 import { app, io, server } from './main.js';
 
 
 // Root
-app.use('/', express.static(join(resolve(), 'public')));
+//app.use('/', express.static(join(resolve(), 'public')));
+app.use('/', tsStatic(join(resolve(), 'client')));
 
 await registerFileRoutes('src/api', 'api');
 await registerFileRoutes('src/client');

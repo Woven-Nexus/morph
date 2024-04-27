@@ -1,0 +1,22 @@
+{
+	"extends": "@roenlie/tsconfig",
+	"compilerOptions": {
+		"rootDir": ".",
+		"baseUrl": ".",
+		"types": [],
+		"paths": {
+			"/catalog/assets/vendor/lit/lit.js": [
+				"./vendor/lit/lit.d.ts"
+			]
+		}
+	},
+	"include": [
+		"**/*.ts",
+		"**/*.d.ts",
+		"**/*.js",
+	],
+	"exclude": [
+		"dist",
+		"node_modules"
+	]
+}

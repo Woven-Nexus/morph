@@ -1,5 +1,4 @@
 // Based on https://github.com/expressjs/serve-static
-
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -36,6 +35,9 @@ export const tsStatic = (root: string): RequestHandler => {
 		// make sure redirect occurs at mount
 		if (path === '/' && originalUrl?.pathname?.substring(-1) !== '/')
 			path = '';
+
+		if (path.at(-1) === '/')
+			path += 'index.html';
 
 		// paths trying to go upwards are bad.
 		if (path?.startsWith('..'))
@@ -93,7 +95,15 @@ const handleTypescript = async (root: string, path: string): Promise<{
 
 		if (!tsCache.has(path)) {
 			const content = await readFile(filePath, 'utf-8');
-			const code = (await esbuild.transform(content, { loader: 'ts' })).code;
+			const code = (await esbuild.transform(content, {
+				loader:      'ts',
+				tsconfigRaw: {
+					compilerOptions: {
+						experimentalDecorators:  true,
+						useDefineForClassFields: false,
+					},
+				},
+			})).code;
 			tsCache.set(path, code);
 		}
 

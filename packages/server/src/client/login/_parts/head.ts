@@ -9,7 +9,7 @@ export const head = () => {
 	<title>Tables</title>
 
 	<link rel="preconnect" href="https://fonts.googleapis.com">
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="preconnect" href="https://fonts.gstatic.com">
 	<link href="https://fonts.googleapis.com/css2?family=Tilt+Neon&display=swap" rel="stylesheet">
 
 	<link rel="preconnect" href="https://rsms.me/">
@@ -17,6 +17,6 @@ export const head = () => {
 
 	<link rel="stylesheet" href="/assets/index.css"></link>
 
-	<script type="module" src="/assets/void.js"></script>
+	<script type="module" src="/assets/void/void.js"></script>
 	`;
 };
