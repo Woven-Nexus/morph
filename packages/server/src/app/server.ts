@@ -1,11 +1,11 @@
 import { join, resolve } from 'node:path';
 
-import { tsStatic } from '../utilities/custom-serve-static.js';
+import { tsStatic } from '../features/live-ts-imports/custom-serve-static.js';
 import { registerFileRoutes } from '../utilities/register-file-routes.js';
 import { app, io, server } from './main.js';
-import { createClientSymlinks } from '../utilities/create-client-symlinks.js';
-import { createImportMap as createClientImportMap } from '../utilities/create-import-map.js';
-import { getPkgDepsMap } from '../utilities/resolve-pkg-deps.js';
+import { createClientSymlinks } from '../features/live-ts-imports/create-client-symlinks.js';
+import { createImportMap as createClientImportMap } from '../features/live-ts-imports/create-import-map.js';
+import { getPkgDepsMap } from '../features/live-ts-imports/resolve-pkg-deps.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 
