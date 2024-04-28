@@ -9,7 +9,7 @@ export class RootElement extends LitElement {
 
 	protected override render(): unknown {
 		return html`
-		Hello I am Root
+		Hello I am Root, this is so cool :)
 		<m-item-grid></m-item-grid>
 		`;
 	}

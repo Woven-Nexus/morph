@@ -1,26 +1,37 @@
 import { join, resolve } from 'node:path';
 
-import { randomUUID } from 'crypto';
-import express from 'express';
-
-import { allTiles } from '../features/betrayal/all-tiles.js';
-import { type GameState, gameState } from '../features/betrayal/gamestate.js';
-import betrayal from '../features/betrayal/get-tile.js';
 import { tsStatic } from '../utilities/custom-serve-static.js';
 import { registerFileRoutes } from '../utilities/register-file-routes.js';
 import { app, io, server } from './main.js';
+import { createClientSymlinks } from '../utilities/create-client-symlinks.js';
+import { createImportMap as createClientImportMap } from '../utilities/create-import-map.js';
+import { getPkgDepsMap } from '../utilities/resolve-pkg-deps.js';
+import { readFileSync, writeFileSync } from 'node:fs';
 
+
+// setup symlinks and importmap.
+const libDir = join(resolve(), 'node_modules', '_client_lib');
+const packageNames = [ 'lit' ];
+const pkgDepsMap = getPkgDepsMap(packageNames);
+const importmap = createClientImportMap('/vendor', pkgDepsMap);
+
+createClientSymlinks(libDir, pkgDepsMap);
+
+const htmlIndexPath = join(resolve(), 'client', 'index.html');
+
+const importmapExpr = /(?<=<script type="importmap">).*?(?=<\/script>)/gs;
+let htmlContent = readFileSync(htmlIndexPath, 'utf-8');
+htmlContent = htmlContent.replace(importmapExpr, () =>
+`\n${importmap.split('\n').map(l => '\t\t' + l).join('\n')}\n\t\t`);
+
+writeFileSync(htmlIndexPath, htmlContent);
 
 // Root
-//app.use('/', express.static(join(resolve(), 'public')));
 app.use('/', tsStatic(join(resolve(), 'client')));
+app.use('/vendor', tsStatic(join(resolve(), 'node_modules', '_client_lib')));
 
 await registerFileRoutes('src/api', 'api');
 await registerFileRoutes('src/client');
-
-// Betrayal game
-app.use('/api/betrayal', betrayal);
-app.use('/assets/betrayal/tiles', express.static(join(resolve(), 'src/features/betrayal/assets/tiles')));
 
 io.on('connection', socket => {
 	console.log('a user connected');
@@ -28,32 +39,6 @@ io.on('connection', socket => {
 		console.log('user disconnected');
 	});
 });
-
-io.of('/betrayal').on('connection', socket => {
-	const state: GameState = {
-		id:             randomUUID(),
-		availableTiles: [ ...allTiles ],
-	};
-	gameState.set(state.id, state);
-
-	socket.on('available-tile-amount', (arg, callback) => {
-		callback(5);
-	});
-
-	socket.on('get-tile', (gameId, cb) => {
-		cb(state.availableTiles.shift());
-		console.log(state.availableTiles);
-
-		//const state = gameState.get(gameId);
-		//if (state)
-		//socket.emit('assign-tile', state.availableTiles.shift());
-	});
-
-	socket.on('disconnect', () => {
-		gameState.delete(state.id);
-	});
-});
-
 
 server.listen(Number(process.env.PORT), process.env.HOST, () => {
 	console.log(`⚡️[server]: Server is running at http://localhost:${ Number(process.env.PORT) }`);

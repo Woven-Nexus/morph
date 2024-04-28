@@ -11,12 +11,6 @@ import parseUrl from 'parseurl';
 
 const tsCache = new Map<string, string>();
 
-const mimeCharsets = (mimeType: string, fallback?: string) => {
-	// Assume text types are utf8
-	return (/^text\/|^application\/(javascript|json)/)
-		.test(mimeType) ? 'UTF-8' : fallback ?? '';
-};
-
 
 export const tsStatic = (root: string): RequestHandler => {
 	if (!root)
@@ -25,7 +19,7 @@ export const tsStatic = (root: string): RequestHandler => {
 	if (typeof root !== 'string')
 		throw new TypeError('root path must be a string');
 
-	const handler: RequestHandler = async (req, res, next) => {
+	return (async (req, res, next) => {
 		if (req.method !== 'GET')
 			return next();
 
@@ -44,14 +38,15 @@ export const tsStatic = (root: string): RequestHandler => {
 			return res.sendStatus(404);
 
 		let file: Buffer | string | undefined;
+		let filePath: string | undefined;
 
-		const ecmaScript = await handleTypescript(root, path);
-		if (ecmaScript) {
-			file = ecmaScript.file;
-			path = ecmaScript.path;
-		}
+		const ecmaScript = await handleEcmascript(root, path);
+		if (ecmaScript)
+			[file, filePath] = ecmaScript;
 
-		const filePath = join(root, path);
+		filePath ??= join(root, path);
+		if (!ecmaScript && !existsSync(filePath))
+			return next();
 
 		const type = mime.getType(filePath);
 		if (!type)
@@ -70,31 +65,37 @@ export const tsStatic = (root: string): RequestHandler => {
 		catch {
 			res.sendStatus(404);
 		}
-	};
-
-	return handler;
+	}) satisfies RequestHandler;
 };
 
 
-const handleTypescript = async (root: string, path: string): Promise<{
-	path: string;
-	file: string;
-} | undefined> => {
+const handleEcmascript = async (root: string, path: string): Promise<
+	[file: string, path: string] | undefined
+> => {
+	// Not a js or ts file, just exit.
+	if (!path.endsWith('.js') && !path.endsWith('.ts'))
+		return;
+
+	const jsPath = join(root, path).replace('.ts', '.js');
+	const tsPath = jsPath.replace('.js', '.ts');
+
 	// If the path request is a .js file, we want to first check if we have a .ts version of it.
 	// If one does not exist, then defer back to the .js and skip the typescript transpiling.
 	if (path.endsWith('.js')) {
-		const filePath = join(root, path.replace('.js', '.ts'));
-		if (existsSync(filePath))
+		if (existsSync(tsPath))
 			path = path.replace('.js', '.ts');
+		else if (!existsSync(jsPath))
+			return;
 	}
 
+	let file: string;
+
 	if (path?.endsWith('.ts')) {
-		const filePath = join(root, path);
-		if (!existsSync(filePath))
+		if (!existsSync(tsPath))
 			return;
 
 		if (!tsCache.has(path)) {
-			const content = await readFile(filePath, 'utf-8');
+			const content = await readFile(tsPath, 'utf-8');
 			const code = (await esbuild.transform(content, {
 				loader:      'ts',
 				tsconfigRaw: {
@@ -107,9 +108,17 @@ const handleTypescript = async (root: string, path: string): Promise<{
 			tsCache.set(path, code);
 		}
 
-		return {
-			file: tsCache.get(path)!,
-			path: path.replace('.ts', '.js'),
-		};
+		file = tsCache.get(path) ?? '';
 	}
+
+	file ??= await readFile(jsPath, 'utf-8');
+
+	return [file, jsPath];
+};
+
+
+const mimeCharsets = (mimeType: string, fallback?: string) => {
+	// Assume text types are utf8
+	return (/^text\/|^application\/(javascript|json)/)
+		.test(mimeType) ? 'UTF-8' : fallback ?? '';
 };

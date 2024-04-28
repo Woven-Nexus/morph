@@ -2,10 +2,24 @@ import { readdirSync, readFileSync  } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, sep } from 'node:path';
 
-import { resolve } from 'import-meta-resolve';
+
+interface PkgJson {
+	type?: 'module' | 'commonjs';
+	main?: string;
+	exports?: {
+		'.'?: string | {
+			browser?: string | {
+				import?: string;
+				default?: string;
+			};
+			default?: string;
+		}
+	};
+	dependencies?: Record<string, string>;
+}
 
 
-export const getSymlinkMap = (packageNames: string[]) => {
+export const getPkgDepsMap = (packageNames: string[]) => {
 	const currentFile = import.meta.url.slice(8);
 	const require = createRequire(currentFile);
 
@@ -13,11 +27,7 @@ export const getSymlinkMap = (packageNames: string[]) => {
 		const [ id, options ] = args;
 
 		try {
-			const resolvedPath = import.meta.resolve(id)
-				.slice(8)
-				.replaceAll('/', sep);
-
-			return resolvedPath;
+			return require.resolve(id, options);
 		}
 		catch (error) { /*  */ }
 	};
@@ -28,23 +38,45 @@ export const getSymlinkMap = (packageNames: string[]) => {
 		if (depMap.has(name))
 			return;
 
-		//const mainImportPath = tryResolve(name);
-		const mainImportPath = resolve(name, import.meta.url)
-			.slice(8);
-
-		console.log(name, mainImportPath);
-
+		const mainImportPath = tryResolve(name);
 		if (!mainImportPath)
 			return;
 
 		const pkgPath = getClosestPkgJson(mainImportPath);
+		const pkgRoot = dirname(pkgPath);
 		const pkgFile = readFileSync(pkgPath, 'utf-8');
-		const pkgJson = JSON.parse(pkgFile || '{}');
+		const pkgJson = JSON.parse(pkgFile || '{}') as PkgJson;
 		const pkgDeps = getPkgDeps(pkgJson);
 
+		let main = '';
+		if (pkgJson.type === 'module') {
+			const rootExport = pkgJson.exports?.['.'];
+			if (rootExport) {
+				if (typeof rootExport === 'string') {
+					main = rootExport;
+				}
+				else if (rootExport.browser) {
+					if (typeof rootExport.browser === 'string')
+						main = rootExport.browser;
+					else if (rootExport.browser.import)
+						main = rootExport.browser.import;
+					else if (rootExport.browser.default)
+						main = rootExport.browser.default;
+				}
+				else if (rootExport.default) {
+					main = rootExport.default;
+				}
+			}
+		}
+
+		if (main)
+			main = join(pkgRoot, main);
+
+		main ||= pkgJson.main ?? mainImportPath;
+
 		depMap.set(name, {
-			main: mainImportPath,
-			root: dirname(pkgPath),
+			main: main,
+			root: pkgRoot,
 		});
 
 		pkgDeps.forEach(getDeps);
@@ -52,9 +84,7 @@ export const getSymlinkMap = (packageNames: string[]) => {
 
 	packageNames.forEach(getDeps);
 
-	return new Map();
-
-	//return depMap;
+	return depMap;
 };
 
 
@@ -78,9 +108,7 @@ const getClosestPkgJson = (initialPath: string) => {
 };
 
 
-const getPkgDeps = (pkgJson: {
-	dependencies?: Record<string, string>;
-}) => {
+const getPkgDeps = (pkgJson: PkgJson) => {
 	const deps = pkgJson.dependencies ?? {};
 
 	return Object.keys(deps);
