@@ -3,21 +3,17 @@
 	<head>
 	<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Tables</title>
+		<title>Morph</title>
 
 		<script type="importmap">
 		{
 			"imports": {
-				"lit": "./vendor/lit/index.js",
-				"lit/": "./vendor/lit/",
-				"@lit/reactive-element": "./vendor/@lit-reactive-element/reactive-element.js",
-				"@lit/reactive-element/": "./vendor/@lit-reactive-element/",
-				"@lit-labs/ssr-dom-shim": "./vendor/@lit-labs-ssr-dom-shim/index.js",
-				"@lit-labs/ssr-dom-shim/": "./vendor/@lit-labs-ssr-dom-shim/",
-				"lit-element": "./vendor/lit-element/index.js",
-				"lit-element/": "./vendor/lit-element/",
-				"lit-html": "./vendor/lit-html/lit-html.js",
-				"lit-html/": "./vendor/lit-html/"
+				"@roenlie/mimic-core": "./vendor/@roenlie-mimic-core/dist/lib/index.js",
+				"@roenlie/mimic-core/": "./vendor/@roenlie-mimic-core/",
+				"nanoid": "./vendor/nanoid/index.browser.js",
+				"nanoid/": "./vendor/nanoid/",
+				"ts-toolbelt": "./vendor/ts-toolbeltout/index.js",
+				"ts-toolbelt/": "./vendor/ts-toolbelt/"
 			}
 		}
 		</script>
@@ -31,6 +27,10 @@
 
 		<link rel="stylesheet" href="/index.css"></link>
 		<link rel="stylesheet" href="/reset.css"></link>
+
+		<link rel="stylesheet" href="https://unpkg.com/@roenlie/monaco-editor-wc@1.0.5/dist/style.css">
+		<script defer src="https://unpkg.com/@roenlie/monaco-editor-wc@1.0.5/dist/monaco-editor-wc.js"></script>
+
 		<script type="module" src="/components/root.cmp.ts"></script>
 	</head>
 	<body>

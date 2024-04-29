@@ -38,13 +38,12 @@ export const tsStatic = (root: string): RequestHandler => {
 			return res.sendStatus(404);
 
 		let file: Buffer | string | undefined;
-		let filePath: string | undefined;
+		let filePath: string = join(root, path);
 
 		const ecmaScript = await handleEcmascript(root, path);
 		if (ecmaScript)
 			[file, filePath] = ecmaScript;
 
-		filePath ??= join(root, path);
 		if (!ecmaScript && !existsSync(filePath))
 			return next();
 
@@ -53,67 +52,49 @@ export const tsStatic = (root: string): RequestHandler => {
 			return res.sendStatus(500);
 
 		const charset = mimeCharsets(type);
-		res.setHeader('Content-Type', type + (charset ? '; charset=' + charset : ''));
+		res.setHeader(
+			'Content-Type',
+			type + (charset ? '; charset=' + charset : '')
+		);
 
-		try {
-			file ??= await readFile(filePath);
-			if (!file)
-				return res.sendStatus(404);
+		file ??= await readFile(filePath);
 
-			res.send(file);
-		}
-		catch {
-			res.sendStatus(404);
-		}
+		return res.send(file);
 	}) satisfies RequestHandler;
 };
 
 
-const handleEcmascript = async (root: string, path: string): Promise<
-	[file: string, path: string] | undefined
-> => {
-	// Not a js or ts file, just exit.
-	if (!path.endsWith('.js') && !path.endsWith('.ts'))
+const handleEcmascript = async (
+	root: string,
+	path: string
+): Promise<[file: string, path: string] | undefined> => {
+	if (!path.endsWith('.ts'))
 		return;
 
-	const jsPath = join(root, path).replace('.ts', '.js');
-	const tsPath = jsPath.replace('.js', '.ts');
+	const filePath = join(root, path);
 
-	// If the path request is a .js file, we want to first check if we have a .ts version of it.
-	// If one does not exist, then defer back to the .js and skip the typescript transpiling.
-	if (path.endsWith('.js')) {
-		if (existsSync(tsPath))
-			path = path.replace('.js', '.ts');
-		else if (!existsSync(jsPath))
-			return;
-	}
+	if (!existsSync(filePath))
+		return;
 
-	let file: string;
-
-	if (path?.endsWith('.ts')) {
-		if (!existsSync(tsPath))
-			return;
-
-		if (!tsCache.has(path)) {
-			const content = await readFile(tsPath, 'utf-8');
-			const code = (await esbuild.transform(content, {
-				loader:      'ts',
-				tsconfigRaw: {
-					compilerOptions: {
-						experimentalDecorators:  true,
-						useDefineForClassFields: false,
-					},
+	if (!tsCache.has(path)) {
+		const content = await readFile(filePath, 'utf-8');
+		const code = (await esbuild.transform(content, {
+			loader:      'ts',
+			tsconfigRaw: {
+				compilerOptions: {
+					experimentalDecorators:  true,
+					useDefineForClassFields: false,
 				},
-			})).code;
-			tsCache.set(path, code);
-		}
+			},
+		})).code;
 
-		file = tsCache.get(path) ?? '';
+		tsCache.set(path, code);
 	}
 
-	file ??= await readFile(jsPath, 'utf-8');
-
-	return [file, jsPath];
+	return [
+		tsCache.get(path)!,
+		filePath.replace('.ts', '.js')
+	];
 };
 
 

@@ -11,9 +11,13 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 // setup symlinks and importmap.
 const libDir = join(resolve(), 'node_modules', '_client_lib');
-const packageNames = [ 'lit' ];
+//const packageNames = [ 'lit', '@roenlie/mimic-core' ];
+const packageNames = [ '@roenlie/mimic-core' ];
 const pkgDepsMap = getPkgDepsMap(packageNames);
 const importmap = createClientImportMap('/vendor', pkgDepsMap);
+
+console.log(pkgDepsMap);
+
 
 createClientSymlinks(libDir, pkgDepsMap);
 
