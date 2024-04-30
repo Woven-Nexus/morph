@@ -3,36 +3,42 @@ import { createRequire } from 'node:module';
 import { dirname, join, sep } from 'node:path';
 
 
+type ConditionalExportValue = string | {
+	browser?: string | {
+		import?: string;
+		default?: string;
+	};
+	import?: string;
+	default?: string;
+}
+
+
 interface PkgJson {
 	type?: 'module' | 'commonjs';
 	main?: string;
 	exports?: {
-		'.'?: string | {
-			browser?: string | {
-				import?: string;
-				default?: string;
-			};
-			default?: string;
-		}
-	};
+		'.'?: ConditionalExportValue
+	} & Record<string, ConditionalExportValue>;
 	dependencies?: Record<string, string>;
 }
 
 
 export const getPkgDepsMap = (packageNames: string[]) => {
 	const currentFile = import.meta.url.slice(8);
+
 	const require = createRequire(currentFile);
-
 	const tryResolve = (...args: Parameters<typeof require.resolve>) => {
-		const [ id, options ] = args;
-
 		try {
-			return require.resolve(id, options);
+			return require.resolve(...args);
 		}
 		catch (error) { /*  */ }
 	};
 
-	const depMap = new Map<string, { main: string; root: string; }>();
+	const depMap = new Map<string, {
+		root: string;
+		main: string;
+		exports: PkgJson['exports'];
+	}>();
 
 	const getDeps = (name: string) => {
 		if (depMap.has(name))
@@ -49,6 +55,7 @@ export const getPkgDepsMap = (packageNames: string[]) => {
 		const pkgDeps = getPkgDeps(pkgJson);
 
 		let main = '';
+
 		if (pkgJson.type === 'module') {
 			const rootExport = pkgJson.exports?.['.'];
 			if (rootExport) {
@@ -56,12 +63,14 @@ export const getPkgDepsMap = (packageNames: string[]) => {
 					main = rootExport;
 				}
 				else if (rootExport.browser) {
-					if (typeof rootExport.browser === 'string')
+					if (typeof rootExport.browser === 'string') {
 						main = rootExport.browser;
-					else if (rootExport.browser.import)
-						main = rootExport.browser.import;
-					else if (rootExport.browser.default)
-						main = rootExport.browser.default;
+					}
+					else {
+						main = rootExport.browser.import
+							|| rootExport.browser.default
+							|| '';
+					}
 				}
 				else if (rootExport.default) {
 					main = rootExport.default;
@@ -69,14 +78,17 @@ export const getPkgDepsMap = (packageNames: string[]) => {
 			}
 		}
 
+		main ||= pkgJson.main ?? '';
+
 		if (main)
 			main = join(pkgRoot, main);
 
-		main ||= pkgJson.main ?? mainImportPath;
+		main ??= mainImportPath;
 
 		depMap.set(name, {
-			main: main,
-			root: pkgRoot,
+			root:    pkgRoot,
+			main:    main,
+			exports: pkgJson.exports,
 		});
 
 		pkgDeps.forEach(getDeps);
