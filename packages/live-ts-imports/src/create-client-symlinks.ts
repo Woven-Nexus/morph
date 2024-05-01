@@ -8,6 +8,7 @@ import { getPkgDepsMap } from './resolve-pkg-deps.js';
 export const createClientSymlinks = (
 	vendorDir: string,
 	pkgDepsMap: ReturnType<typeof getPkgDepsMap>,
+	dev: boolean,
 ) => {
 	// Make sure the folder to put symlinks in exists.
 	mkdirSync(vendorDir, { recursive: true });
@@ -19,12 +20,14 @@ export const createClientSymlinks = (
 			symlinkSync(root, dir, 'dir');
 	});
 
-	// Symlink in the client-shims
-	const currentFile = fileURLToPath(import.meta.url);
-	const currentDir = dirname(currentFile);
-	const shimDirFrom = join(currentDir, '../src/client-shims');
-	const shimDirTo = join(vendorDir, 'client-shims');
+	if (dev) {
+		// Symlink in the client-shims
+		const currentFile = fileURLToPath(import.meta.url);
+		const currentDir = dirname(currentFile);
+		const shimDirFrom = join(currentDir, '../src/client-shims');
+		const shimDirTo = join(vendorDir, 'client-shims');
 
-	if (!existsSync(shimDirTo))
-		symlinkSync(shimDirFrom, shimDirTo);
+		if (!existsSync(shimDirTo))
+			symlinkSync(shimDirFrom, shimDirTo);
+	}
 };

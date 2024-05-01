@@ -2,18 +2,18 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import * as esbuild from 'esbuild';
 import type { RequestHandler } from 'express';
 import mime from 'mime';
 import { parse } from 'node-html-parser';
 import parseUrl from 'parseurl';
+import ts from 'typescript';
 
 
-const tsCache = new Map<string, string>();
+export const tsCache = new Map<string, string>();
 
 
 export const tsStatic = (
-	root: string, importmap: string, vendorPath: string,
+	root: string, importmap: string, vendorPath: string, dev: boolean,
 ): RequestHandler => {
 	if (!root)
 		throw new TypeError('root path required');
@@ -50,7 +50,7 @@ export const tsStatic = (
 		// Therefor we handle it here, then changed the path name to .js.
 		// To get the correct mimetype, as the code is now transpiled to .js.
 		if (path.endsWith('.ts')) {
-			file = await handleEcmascript(filePath, path);
+			file = await handleTypescript(filePath, path);
 			filePath = filePath.replace('.ts', '.js');
 		}
 
@@ -68,28 +68,29 @@ export const tsStatic = (
 
 		// Here we inject the importmap and hmr script
 		if (filePath.endsWith('index.html'))
-			file = handleIndexHtml(file, importmap, vendorPath);
+			file = handleIndexHtml(file, importmap, vendorPath, dev);
 
 		return res.send(file);
 	}) satisfies RequestHandler;
 };
 
 
-const handleEcmascript = async (
+const handleTypescript = async (
 	filePath: string,
 	path: string,
 ): Promise<string> => {
 	if (!tsCache.has(path)) {
 		const content = await readFile(filePath, 'utf-8');
-		const code = (await esbuild.transform(content, {
-			loader:      'ts',
-			tsconfigRaw: {
-				compilerOptions: {
-					experimentalDecorators:  true,
-					useDefineForClassFields: false,
-				},
-			},
-		})).code;
+
+		const code = ts.transpile(content, {
+			target:                  ts.ScriptTarget.ESNext,
+			module:                  ts.ModuleKind.ESNext,
+			moduleResolution:        ts.ModuleResolutionKind.Bundler,
+			importHelpers:           true,
+			experimentalDecorators:  true,
+			emitDecoratorMetadata:   true,
+			useDefineForClassFields: false,
+		});
 
 		tsCache.set(path, code);
 	}
@@ -98,7 +99,9 @@ const handleEcmascript = async (
 };
 
 
-const handleIndexHtml = (file: string, importmap: string, vendorPath: string) => {
+const handleIndexHtml = (
+	file: string, importmap: string, vendorPath: string, dev: boolean,
+) => {
 	const dom = parse(file);
 	const head = dom.querySelector('head')
 		?? dom.insertAdjacentHTML(
@@ -106,10 +109,12 @@ const handleIndexHtml = (file: string, importmap: string, vendorPath: string) =>
 			'<head></head>',
 		).querySelector('head')!;
 
-	head.insertAdjacentHTML('beforeend',
-		`<script type="module" src="${ vendorPath }/client-shims/hmr.ts"></script>`);
+	if (dev) {
+		head.insertAdjacentHTML('beforeend',
+			`<script type="module" src="${ vendorPath }/client-shims/hmr.ts"></script>`);
+	}
 
-	dom.querySelector('script[type="importmap"]')
+	head.querySelector('script[type="importmap"]')
 		?? head.insertAdjacentHTML('afterbegin',
 			`<script id="importmap" type="importmap">${ importmap }</script>`)
 			.querySelector('#importmap')!;

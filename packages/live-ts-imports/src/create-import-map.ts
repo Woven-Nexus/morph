@@ -1,92 +1,68 @@
 import { sep } from 'node:path';
 
-import { getPkgDepsMap } from './resolve-pkg-deps.js';
+import { extractExports, getPkgDepsMap } from './resolve-pkg-deps.js';
 
 
 export const createImportMap = (
 	prefix: string,
 	pkgDepsMap: ReturnType<typeof getPkgDepsMap>,
+	dev: boolean,
 ) => {
 	if (!prefix.startsWith('.'))
 		prefix = '.' + prefix;
 
 	const imports = new Map<string, string>;
 
-	// Add the client shims
-	imports.set('client-shims/', prefix + '/' + 'client-shims/');
+	// Add the client shims when in dev mode.
+	if (dev)
+		imports.set('client-shims/', prefix + '/' + 'client-shims/');
 
-	pkgDepsMap.forEach(({ main, root, exports }, key) => {
-		const pathKey = key.replaceAll('/', '-');
+	for (const [ packageName, { root, main, exports } ] of pkgDepsMap) {
+		// Modify the package name for use in the export path.
+		// as / in the package names makes the symlinks require a nested directory
+		// which we can avoid by replacing / with -
+		const pathKey = packageName.replaceAll('/', '-');
+
+		// Remove the part prior to package name of the path,
+		// and make sure all separators are forward slashes
 		const mainPath = main.replace(root, '')
 			.replaceAll(sep, '/');
 
-		imports.set(key, prefix + '/' + pathKey + mainPath);
+		// Add all the exports defined the by packages exports field.
+		const pkgExports = extractExports(packageName, exports ?? {});
+		for (const [ exportKey, exportPath ] of pkgExports) {
+			imports.set(exportKey,
+				`${ prefix }/${ exportPath.replace(packageName, pathKey) }`);
+		}
 
-		Object.entries(exports ?? {}).forEach(([ expName, expValue ]) => {
-			let rawExportPath = '';
-			if (typeof expValue === 'string') {
-				rawExportPath = expValue;
-			}
-			else if (typeof expValue.browser === 'string') {
-				rawExportPath = expValue.browser;
-			}
-			else {
-				rawExportPath = expValue.browser?.import
-					|| expValue.browser?.default
-					|| expValue.import
-					|| expValue.default
-					|| '';
-			}
+		if (!packageName) {
+			// Add the main entrypoint of the package as an import.
+			imports.set(packageName, prefix + '/' + pathKey + mainPath);
+		}
 
-			if (!rawExportPath)
-				return;
+		if (!packageName + '/') {
+			// Add a wildcard import for convenience and as a safety incase
+			// the author of the package did not property configure their exports.
+			imports.set(packageName + '/', prefix + '/' + pathKey + '/');
+		}
+	}
 
-			let exportKey = key + expName
-				.replace(/^./, '')
-				.replace(/\/\*$/, '');
+	// We turn the map into an arr, as we need to use it in multiple places.
+	const importsArr = Array.from(imports);
 
-			let exportPath = (
-				prefix
-				+ '/'
-				+ pathKey
-				+ '/'
-				+ rawExportPath.replace(/^\./, '')
-			).replaceAll(/\/{2,}/g, '/')
-				.replace(/\/\*$/, '');
+	// We get the longest key, so we know what padding to add.
+	const longestKey = importsArr.reduce((acc, [ key ]) =>
+		key.length > acc ? key.length : acc, 0);
 
-			if (exportKey.endsWith('/*'))
-				exportKey = exportKey.slice(0, -1);
+	// Create the import key/value lines.
+	const importLines = Array.from(imports).map(([ k, v ]) =>
+		`"${ k }":${ ' '.repeat(longestKey - k.length) } "${ v }",`);
 
-			if (exportPath.endsWith('/*'))
-				exportPath = exportPath.slice(0, -1);
+	// For correct JSON, the last item cannot have a trailing comma.
+	importLines[importLines.length - 1 ] = importLines.at(-1)!.slice(0, -1);
 
-			imports.set(key + expName.replace(/^./, ''), exportPath);
-		});
-
-		imports.set(key + '/', prefix + '/' +  pathKey + '/');
-	});
-
-	const importmap = Array.from(imports).reduce((acc, [ key, value ]) => {
-		return acc[key] = value, acc;
-	}, {} as Record<string, string>);
-
-	const obj = JSON.stringify({ imports: importmap }, null, '\t');
-	const lines = obj.split('\n');
-	const importLines = lines.slice(2, -2);
-
-	const longestKey = importLines.reduce((acc, cur) => {
-		const keyLength = cur.split('":').at(0)?.length ?? 0;
-
-		return keyLength > acc ? keyLength : acc;
-	}, 0);
-
-	const newLines = importLines.map(line => {
-		const [ key, value ] = line.split('":') as [string, string];
-
-		return key + '":' + ' '.repeat(longestKey - key.length) + value;
-	});
-
-	lines.splice(2, newLines.length, ...newLines);
-
-	return lines.join('\n');
+	// Turn the return value into valid importmap syntax.
+	return '{\n"imports": {\n'
+		+ importLines.join('\n') +
+	'\n}\n}';
 };

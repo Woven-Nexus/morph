@@ -1,21 +1,24 @@
 import { readdirSync, readFileSync  } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { fileURLToPath } from 'url';
 
-
-type ConditionalExportValue = string | {
+export type ConditionalExportValue = string | {
 	browser?: string | {
-		import?: string;
-		default?: string;
+		import?: ConditionalExportValue;
+		default?: ConditionalExportValue;
 	};
-	import?: string;
-	default?: string;
+	module?: string | {
+		import?: ConditionalExportValue;
+		default?: ConditionalExportValue;
+	},
+	import?: ConditionalExportValue;
+	default?: ConditionalExportValue;
 }
 
 
-interface PkgJson {
+export interface PkgJson {
 	type?: 'module' | 'commonjs';
 	main?: string;
 	exports?: {
@@ -62,24 +65,8 @@ export const getPkgDepsMap = (importMeta: ImportMeta, packageNames: string[]) =>
 
 		if (pkgJson.type === 'module') {
 			const rootExport = pkgJson.exports?.['.'];
-			if (rootExport) {
-				if (typeof rootExport === 'string') {
-					main = rootExport;
-				}
-				else if (rootExport.browser) {
-					if (typeof rootExport.browser === 'string') {
-						main = rootExport.browser;
-					}
-					else {
-						main = rootExport.browser.import
-							|| rootExport.browser.default
-							|| '';
-					}
-				}
-				else if (rootExport.default) {
-					main = rootExport.default;
-				}
-			}
+			if (rootExport)
+				main = getRawExportPath(rootExport);
 		}
 
 		main ||= pkgJson.main ?? '';
@@ -104,7 +91,7 @@ export const getPkgDepsMap = (importMeta: ImportMeta, packageNames: string[]) =>
 };
 
 
-const getClosestPkgJson = (initialPath: string) => {
+export const getClosestPkgJson = (initialPath: string) => {
 	let count = 0;
 	let pkgPath = '';
 	let dir = dirname(initialPath);
@@ -124,8 +111,68 @@ const getClosestPkgJson = (initialPath: string) => {
 };
 
 
-const getPkgDeps = (pkgJson: PkgJson) => {
+export const getPkgDeps = (pkgJson: PkgJson) => {
 	const deps = pkgJson.dependencies ?? {};
 
 	return Object.keys(deps);
+};
+
+
+export const extractExports = (
+	packageName: string,
+	exports: Record<string, ConditionalExportValue>,
+) => {
+	const map = new Map<string, string>();
+
+	const startingDotExp = /^./;
+	const trailingStarExp = /(?<=\/)\*$/;
+
+	for (const [ name, value ] of Object.entries(exports ?? {})) {
+		const rawExportPath = getRawExportPath(value)
+			.replace(startingDotExp, '')
+			.replace(trailingStarExp, '');
+
+		if (!rawExportPath)
+			continue;
+
+		const exportKey = packageName + name
+			.replace(startingDotExp, '')
+			.replace(trailingStarExp, '');
+
+		const exportPath = (packageName + '/' + rawExportPath)
+			.replaceAll(/\/{2,}/g, '/');
+
+		if (!map.has(exportKey))
+			map.set(exportKey, exportPath);
+	}
+
+	return map;
+};
+
+export const getRawExportPath = (expValue: ConditionalExportValue): string => {
+	let value: string | ConditionalExportValue | undefined;
+
+	if (typeof expValue === 'string') {
+		value = expValue;
+	}
+	else if (typeof expValue.browser === 'string') {
+		value = expValue.browser;
+	}
+	else if (typeof expValue.module === 'string') {
+		value = expValue.module;
+	}
+	else {
+		value = expValue.browser?.import
+			|| expValue.browser?.default
+			|| expValue.module?.import
+			|| expValue.module?.default
+			|| expValue.import
+			|| expValue.default
+			|| '';
+	}
+
+	if (typeof value !== 'string')
+		return getRawExportPath(value);
+
+	return value;
 };

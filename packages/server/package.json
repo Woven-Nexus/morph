@@ -10,7 +10,7 @@
 	"main": "index.js",
 	"type": "module",
 	"scripts": {
-		"dev": "nodemon --exec tsx --experimental-vm-modules ./src/index.ts"
+		"dev": "nodemon --watch src --exec tsx --experimental-vm-modules ./src/index.ts"
 	},
 	"dependencies": {
 		"@faker-js/faker": "^8.4.1",
