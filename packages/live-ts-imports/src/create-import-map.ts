@@ -7,15 +7,18 @@ export const createImportMap = (
 	prefix: string,
 	pkgDepsMap: ReturnType<typeof getPkgDepsMap>,
 ) => {
+	if (!prefix.startsWith('.'))
+		prefix = '.' + prefix;
+
 	const imports = new Map<string, string>;
+
+	// Add the client shims
+	imports.set('client-shims/', prefix + '/' + 'client-shims/');
 
 	pkgDepsMap.forEach(({ main, root, exports }, key) => {
 		const pathKey = key.replaceAll('/', '-');
 		const mainPath = main.replace(root, '')
 			.replaceAll(sep, '/');
-
-		if (!prefix.startsWith('.'))
-			prefix = '.' + prefix;
 
 		imports.set(key, prefix + '/' + pathKey + mainPath);
 
@@ -63,16 +66,11 @@ export const createImportMap = (
 		imports.set(key + '/', prefix + '/' +  pathKey + '/');
 	});
 
-	const importmap: Record<string, string> = {};
+	const importmap = Array.from(imports).reduce((acc, [ key, value ]) => {
+		return acc[key] = value, acc;
+	}, {} as Record<string, string>);
 
-	imports.forEach((value, key) => {
-		importmap[key] = value;
-	});
-
-	const obj = JSON.stringify({
-		imports: importmap,
-	}, null, '\t');
-
+	const obj = JSON.stringify({ imports: importmap }, null, '\t');
 	const lines = obj.split('\n');
 	const importLines = lines.slice(2, -2);
 

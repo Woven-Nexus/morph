@@ -5,7 +5,6 @@ import { createServer } from 'node:http';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { type Express } from 'express';
-import { WebSocketServer } from 'ws';
 
 
 dotenv.config();
@@ -17,6 +16,3 @@ export const app: Express = express()
 
 
 export const server = createServer(app);
-
-
-export const wss = new WebSocketServer({ server });

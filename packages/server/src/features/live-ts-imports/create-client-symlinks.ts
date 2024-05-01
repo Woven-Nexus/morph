@@ -1,11 +1,12 @@
 import { existsSync, mkdirSync, symlinkSync } from 'node:fs';
-import { getPkgDepsMap } from './resolve-pkg-deps.js';
 import { join } from 'node:path';
+
+import { getPkgDepsMap } from '../../../../live-ts-imports/src/resolve-pkg-deps.js';
 
 
 export const createClientSymlinks = (
 	libDir: string,
-	pkgDepsMap: ReturnType<typeof getPkgDepsMap>
+	pkgDepsMap: ReturnType<typeof getPkgDepsMap>,
 ) => {
 	mkdirSync(libDir, { recursive: true });
 
@@ -14,4 +15,4 @@ export const createClientSymlinks = (
 		if (!existsSync(dir))
 			symlinkSync(root, dir, 'dir');
 	});
-}
+};

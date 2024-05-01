@@ -4,8 +4,8 @@ import type { RequestHandler } from 'express';
 import express from 'express';
 import { globby } from 'globby';
 
+import { tsStatic } from '../../../live-ts-imports/src/custom-serve-static.js';
 import { app } from '../app/main.js';
-import { tsStatic } from '../features/live-ts-imports/custom-serve-static.js';
 
 
 // Caches the starting dir -> dir-paths and file-paths.

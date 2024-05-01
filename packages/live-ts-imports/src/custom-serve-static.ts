@@ -1,4 +1,3 @@
-// Based on https://github.com/expressjs/serve-static
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -6,13 +5,16 @@ import { join } from 'node:path';
 import * as esbuild from 'esbuild';
 import type { RequestHandler } from 'express';
 import mime from 'mime';
+import { parse } from 'node-html-parser';
 import parseUrl from 'parseurl';
 
 
 const tsCache = new Map<string, string>();
 
 
-export const tsStatic = (root: string): RequestHandler => {
+export const tsStatic = (
+	root: string, importmap: string, vendorPath: string,
+): RequestHandler => {
 	if (!root)
 		throw new TypeError('root path required');
 
@@ -37,15 +39,20 @@ export const tsStatic = (root: string): RequestHandler => {
 		if (path?.startsWith('..'))
 			return res.sendStatus(404);
 
-		let file: Buffer | string | undefined;
+		let file: string | undefined;
 		let filePath: string = join(root, path);
 
-		const ecmaScript = await handleEcmascript(root, path);
-		if (ecmaScript)
-			[file, filePath] = ecmaScript;
-
-		if (!ecmaScript && !existsSync(filePath))
+		// Checking if the file exists simplifies later logic.
+		if (!existsSync(filePath))
 			return next();
+
+		// We handle ts files up here, as the .ts mimetype does not exists.
+		// Therefor we handle it here, then changed the path name to .js.
+		// To get the correct mimetype, as the code is now transpiled to .js.
+		if (path.endsWith('.ts')) {
+			file = await handleEcmascript(filePath, path);
+			filePath = filePath.replace('.ts', '.js');
+		}
 
 		const type = mime.getType(filePath);
 		if (!type)
@@ -54,10 +61,14 @@ export const tsStatic = (root: string): RequestHandler => {
 		const charset = mimeCharsets(type);
 		res.setHeader(
 			'Content-Type',
-			type + (charset ? '; charset=' + charset : '')
+			type + (charset ? '; charset=' + charset : ''),
 		);
 
-		file ??= await readFile(filePath);
+		file ??= await readFile(filePath, 'utf-8');
+
+		// Here we inject the importmap and hmr script
+		if (filePath.endsWith('index.html'))
+			file = handleIndexHtml(file, importmap, vendorPath);
 
 		return res.send(file);
 	}) satisfies RequestHandler;
@@ -65,17 +76,9 @@ export const tsStatic = (root: string): RequestHandler => {
 
 
 const handleEcmascript = async (
-	root: string,
-	path: string
-): Promise<[file: string, path: string] | undefined> => {
-	if (!path.endsWith('.ts'))
-		return;
-
-	const filePath = join(root, path);
-
-	if (!existsSync(filePath))
-		return;
-
+	filePath: string,
+	path: string,
+): Promise<string> => {
 	if (!tsCache.has(path)) {
 		const content = await readFile(filePath, 'utf-8');
 		const code = (await esbuild.transform(content, {
@@ -91,10 +94,27 @@ const handleEcmascript = async (
 		tsCache.set(path, code);
 	}
 
-	return [
-		tsCache.get(path)!,
-		filePath.replace('.ts', '.js')
-	];
+	return tsCache.get(path)!;
+};
+
+
+const handleIndexHtml = (file: string, importmap: string, vendorPath: string) => {
+	const dom = parse(file);
+	const head = dom.querySelector('head')
+		?? dom.insertAdjacentHTML(
+			'afterbegin',
+			'<head></head>',
+		).querySelector('head')!;
+
+	head.insertAdjacentHTML('beforeend',
+		`<script type="module" src="${ vendorPath }/client-shims/hmr.ts"></script>`);
+
+	dom.querySelector('script[type="importmap"]')
+		?? head.insertAdjacentHTML('afterbegin',
+			`<script id="importmap" type="importmap">${ importmap }</script>`)
+			.querySelector('#importmap')!;
+
+	return dom.toString();
 };
 
 

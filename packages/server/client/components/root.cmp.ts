@@ -9,7 +9,7 @@ export class RootElement extends LitElement {
 
 	protected override render(): unknown {
 		return html`
-		Hello I am Root, I am hot reloaded on server restart :)
+		Hello I am Root, I am hot reloaded on server restart :)000000
 		<m-item-grid></m-item-grid>
 		`;
 	}

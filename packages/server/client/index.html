@@ -1,141 +1,9 @@
 <!DOCTYPE html>
 <html lang="en" color-scheme="dark">
 	<head>
-	<meta charset="UTF-8">
+		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Morph</title>
-
-		<script type="importmap">
-		{
-			"imports": {
-				"lit":                                                         "./vendor/lit/index.js",
-				"lit/async-directive.js":                                      "./vendor/lit/async-directive.js",
-				"lit/decorators.js":                                           "./vendor/lit/decorators.js",
-				"lit/decorators/custom-element.js":                            "./vendor/lit/decorators/custom-element.js",
-				"lit/decorators/event-options.js":                             "./vendor/lit/decorators/event-options.js",
-				"lit/decorators/property.js":                                  "./vendor/lit/decorators/property.js",
-				"lit/decorators/query-all.js":                                 "./vendor/lit/decorators/query-all.js",
-				"lit/decorators/query-assigned-elements.js":                   "./vendor/lit/decorators/query-assigned-elements.js",
-				"lit/decorators/query-assigned-nodes.js":                      "./vendor/lit/decorators/query-assigned-nodes.js",
-				"lit/decorators/query-async.js":                               "./vendor/lit/decorators/query-async.js",
-				"lit/decorators/query.js":                                     "./vendor/lit/decorators/query.js",
-				"lit/decorators/state.js":                                     "./vendor/lit/decorators/state.js",
-				"lit/directive-helpers.js":                                    "./vendor/lit/directive-helpers.js",
-				"lit/directive.js":                                            "./vendor/lit/directive.js",
-				"lit/directives/async-append.js":                              "./vendor/lit/directives/async-append.js",
-				"lit/directives/async-replace.js":                             "./vendor/lit/directives/async-replace.js",
-				"lit/directives/cache.js":                                     "./vendor/lit/directives/cache.js",
-				"lit/directives/choose.js":                                    "./vendor/lit/directives/choose.js",
-				"lit/directives/class-map.js":                                 "./vendor/lit/directives/class-map.js",
-				"lit/directives/guard.js":                                     "./vendor/lit/directives/guard.js",
-				"lit/directives/if-defined.js":                                "./vendor/lit/directives/if-defined.js",
-				"lit/directives/join.js":                                      "./vendor/lit/directives/join.js",
-				"lit/directives/keyed.js":                                     "./vendor/lit/directives/keyed.js",
-				"lit/directives/live.js":                                      "./vendor/lit/directives/live.js",
-				"lit/directives/map.js":                                       "./vendor/lit/directives/map.js",
-				"lit/directives/range.js":                                     "./vendor/lit/directives/range.js",
-				"lit/directives/ref.js":                                       "./vendor/lit/directives/ref.js",
-				"lit/directives/repeat.js":                                    "./vendor/lit/directives/repeat.js",
-				"lit/directives/style-map.js":                                 "./vendor/lit/directives/style-map.js",
-				"lit/directives/template-content.js":                          "./vendor/lit/directives/template-content.js",
-				"lit/directives/unsafe-html.js":                               "./vendor/lit/directives/unsafe-html.js",
-				"lit/directives/unsafe-svg.js":                                "./vendor/lit/directives/unsafe-svg.js",
-				"lit/directives/until.js":                                     "./vendor/lit/directives/until.js",
-				"lit/directives/when.js":                                      "./vendor/lit/directives/when.js",
-				"lit/html.js":                                                 "./vendor/lit/html.js",
-				"lit/polyfill-support.js":                                     "./vendor/lit/polyfill-support.js",
-				"lit/static-html.js":                                          "./vendor/lit/static-html.js",
-				"lit/":                                                        "./vendor/lit/",
-				"@lit/reactive-element":                                       "./vendor/@lit-reactive-element/reactive-element.js",
-				"@lit/reactive-element/css-tag.js":                            "./vendor/@lit-reactive-element/css-tag.js",
-				"@lit/reactive-element/decorators.js":                         "./vendor/@lit-reactive-element/decorators.js",
-				"@lit/reactive-element/decorators/base.js":                    "./vendor/@lit-reactive-element/decorators/base.js",
-				"@lit/reactive-element/decorators/custom-element.js":          "./vendor/@lit-reactive-element/decorators/custom-element.js",
-				"@lit/reactive-element/decorators/event-options.js":           "./vendor/@lit-reactive-element/decorators/event-options.js",
-				"@lit/reactive-element/decorators/property.js":                "./vendor/@lit-reactive-element/decorators/property.js",
-				"@lit/reactive-element/decorators/query-all.js":               "./vendor/@lit-reactive-element/decorators/query-all.js",
-				"@lit/reactive-element/decorators/query-assigned-elements.js": "./vendor/@lit-reactive-element/decorators/query-assigned-elements.js",
-				"@lit/reactive-element/decorators/query-assigned-nodes.js":    "./vendor/@lit-reactive-element/decorators/query-assigned-nodes.js",
-				"@lit/reactive-element/decorators/query-async.js":             "./vendor/@lit-reactive-element/decorators/query-async.js",
-				"@lit/reactive-element/decorators/query.js":                   "./vendor/@lit-reactive-element/decorators/query.js",
-				"@lit/reactive-element/decorators/state.js":                   "./vendor/@lit-reactive-element/decorators/state.js",
-				"@lit/reactive-element/polyfill-support.js":                   "./vendor/@lit-reactive-element/polyfill-support.js",
-				"@lit/reactive-element/reactive-controller.js":                "./vendor/@lit-reactive-element/reactive-controller.js",
-				"@lit/reactive-element/":                                      "./vendor/@lit-reactive-element/",
-				"@lit-labs/ssr-dom-shim":                                      "./vendor/@lit-labs-ssr-dom-shim/index.js",
-				"@lit-labs/ssr-dom-shim/":                                     "./vendor/@lit-labs-ssr-dom-shim/",
-				"lit-element":                                                 "./vendor/lit-element/index.js",
-				"lit-element/decorators.js":                                   "./vendor/lit-element/decorators.js",
-				"lit-element/decorators/custom-element.js":                    "./vendor/lit-element/decorators/custom-element.js",
-				"lit-element/decorators/event-options.js":                     "./vendor/lit-element/decorators/event-options.js",
-				"lit-element/decorators/property.js":                          "./vendor/lit-element/decorators/property.js",
-				"lit-element/decorators/query-all.js":                         "./vendor/lit-element/decorators/query-all.js",
-				"lit-element/decorators/query-assigned-elements.js":           "./vendor/lit-element/decorators/query-assigned-elements.js",
-				"lit-element/decorators/query-assigned-nodes.js":              "./vendor/lit-element/decorators/query-assigned-nodes.js",
-				"lit-element/decorators/query-async.js":                       "./vendor/lit-element/decorators/query-async.js",
-				"lit-element/decorators/query.js":                             "./vendor/lit-element/decorators/query.js",
-				"lit-element/decorators/state.js":                             "./vendor/lit-element/decorators/state.js",
-				"lit-element/lit-element.js":                                  "./vendor/lit-element/lit-element.js",
-				"lit-element/polyfill-support.js":                             "./vendor/lit-element/polyfill-support.js",
-				"lit-element/private-ssr-support.js":                          "./vendor/lit-element/private-ssr-support.js",
-				"lit-element/":                                                "./vendor/lit-element/",
-				"lit-html":                                                    "./vendor/lit-html/lit-html.js",
-				"lit-html/async-directive.js":                                 "./vendor/lit-html/async-directive.js",
-				"lit-html/directive-helpers.js":                               "./vendor/lit-html/directive-helpers.js",
-				"lit-html/directive.js":                                       "./vendor/lit-html/directive.js",
-				"lit-html/directives/async-append.js":                         "./vendor/lit-html/directives/async-append.js",
-				"lit-html/directives/async-replace.js":                        "./vendor/lit-html/directives/async-replace.js",
-				"lit-html/directives/cache.js":                                "./vendor/lit-html/directives/cache.js",
-				"lit-html/directives/choose.js":                               "./vendor/lit-html/directives/choose.js",
-				"lit-html/directives/class-map.js":                            "./vendor/lit-html/directives/class-map.js",
-				"lit-html/directives/guard.js":                                "./vendor/lit-html/directives/guard.js",
-				"lit-html/directives/if-defined.js":                           "./vendor/lit-html/directives/if-defined.js",
-				"lit-html/directives/join.js":                                 "./vendor/lit-html/directives/join.js",
-				"lit-html/directives/keyed.js":                                "./vendor/lit-html/directives/keyed.js",
-				"lit-html/directives/live.js":                                 "./vendor/lit-html/directives/live.js",
-				"lit-html/directives/map.js":                                  "./vendor/lit-html/directives/map.js",
-				"lit-html/directives/range.js":                                "./vendor/lit-html/directives/range.js",
-				"lit-html/directives/ref.js":                                  "./vendor/lit-html/directives/ref.js",
-				"lit-html/directives/repeat.js":                               "./vendor/lit-html/directives/repeat.js",
-				"lit-html/directives/style-map.js":                            "./vendor/lit-html/directives/style-map.js",
-				"lit-html/directives/template-content.js":                     "./vendor/lit-html/directives/template-content.js",
-				"lit-html/directives/unsafe-html.js":                          "./vendor/lit-html/directives/unsafe-html.js",
-				"lit-html/directives/unsafe-svg.js":                           "./vendor/lit-html/directives/unsafe-svg.js",
-				"lit-html/directives/until.js":                                "./vendor/lit-html/directives/until.js",
-				"lit-html/directives/when.js":                                 "./vendor/lit-html/directives/when.js",
-				"lit-html/polyfill-support.js":                                "./vendor/lit-html/polyfill-support.js",
-				"lit-html/private-ssr-support.js":                             "./vendor/lit-html/private-ssr-support.js",
-				"lit-html/static.js":                                          "./vendor/lit-html/static.js",
-				"lit-html/is-server.js":                                       "./vendor/lit-html/is-server.js",
-				"lit-html/":                                                   "./vendor/lit-html/",
-				"@roenlie/mimic-core":                                         "./vendor/@roenlie-mimic-core/dist/lib/index.js",
-				"@roenlie/mimic-core/animation":                               "./vendor/@roenlie-mimic-core/dist/lib/animation/index.js",
-				"@roenlie/mimic-core/localize":                                "./vendor/@roenlie-mimic-core/dist/lib/localize/index.js",
-				"@roenlie/mimic-core/node-tree":                               "./vendor/@roenlie-mimic-core/dist/lib/node-tree/index.js",
-				"@roenlie/mimic-core/types":                                   "./vendor/@roenlie-mimic-core/dist/lib/types/index.js",
-				"@roenlie/mimic-core/array":                                   "./vendor/@roenlie-mimic-core/dist/lib/utils/array/index.js",
-				"@roenlie/mimic-core/async":                                   "./vendor/@roenlie-mimic-core/dist/lib/utils/async/index.js",
-				"@roenlie/mimic-core/coms":                                    "./vendor/@roenlie-mimic-core/dist/lib/utils/coms/index.js",
-				"@roenlie/mimic-core/dom":                                     "./vendor/@roenlie-mimic-core/dist/lib/utils/dom/index.js",
-				"@roenlie/mimic-core/function":                                "./vendor/@roenlie-mimic-core/dist/lib/utils/function/index.js",
-				"@roenlie/mimic-core/iterators":                               "./vendor/@roenlie-mimic-core/dist/lib/utils/iterators/index.js",
-				"@roenlie/mimic-core/math":                                    "./vendor/@roenlie-mimic-core/dist/lib/utils/math/index.js",
-				"@roenlie/mimic-core/string":                                  "./vendor/@roenlie-mimic-core/dist/lib/utils/string/index.js",
-				"@roenlie/mimic-core/structs":                                 "./vendor/@roenlie-mimic-core/dist/lib/utils/structs/index.js",
-				"@roenlie/mimic-core/timing":                                  "./vendor/@roenlie-mimic-core/dist/lib/utils/timing/index.js",
-				"@roenlie/mimic-core/validation":                              "./vendor/@roenlie-mimic-core/dist/lib/utils/validation/index.js",
-				"@roenlie/mimic-core/enum":                                    "./vendor/@roenlie-mimic-core/dist/lib/enum/index.js",
-				"@roenlie/mimic-core/sudoku":                                  "./vendor/@roenlie-mimic-core/dist/lib/sudoku/index.js",
-				"@roenlie/mimic-core/":                                        "./vendor/@roenlie-mimic-core/",
-				"nanoid":                                                      "./vendor/nanoid/index.browser.js",
-				"nanoid/non-secure":                                           "./vendor/nanoid/non-secure/index.js",
-				"nanoid/package.json":                                         "./vendor/nanoid/package.json",
-				"nanoid/":                                                     "./vendor/nanoid/",
-				"ts-toolbelt":                                                 "./vendor/ts-toolbelt/out/index.js",
-				"ts-toolbelt/":                                                "./vendor/ts-toolbelt/"
-			}
-		}
-		</script>
 
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com">
@@ -144,13 +12,12 @@
 		<link rel="preconnect" href="https://rsms.me/">
 		<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 
-		<link rel="stylesheet" href="/index.css"></link>
-		<link rel="stylesheet" href="/reset.css"></link>
+		<link rel="stylesheet" href="/assets/index.css"></link>
+		<link rel="stylesheet" href="/assets/reset.css"></link>
 
 		<!--<link rel="stylesheet" href="https://unpkg.com/@roenlie/monaco-editor-wc@1.0.5/dist/style.css">
 		<script defer src="https://unpkg.com/@roenlie/monaco-editor-wc@1.0.5/dist/monaco-editor-wc.js"></script>-->
 
-		<script type="module" src="/hmr.ts"></script>
 		<script type="module" src="/components/root.cmp.ts"></script>
 	</head>
 	<body>

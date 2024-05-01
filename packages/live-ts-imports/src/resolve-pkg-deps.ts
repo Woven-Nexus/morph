@@ -2,6 +2,8 @@ import { readdirSync, readFileSync  } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, sep } from 'node:path';
 
+import { fileURLToPath } from 'url';
+
 
 type ConditionalExportValue = string | {
 	browser?: string | {
@@ -23,15 +25,17 @@ interface PkgJson {
 }
 
 
-export const getPkgDepsMap = (packageNames: string[]) => {
-	const currentFile = import.meta.url.slice(8);
+export const getPkgDepsMap = (importMeta: ImportMeta, packageNames: string[]) => {
+	const callingFile = fileURLToPath(importMeta.url);
 
-	const require = createRequire(currentFile);
+	const require = createRequire(callingFile);
 	const tryResolve = (...args: Parameters<typeof require.resolve>) => {
 		try {
 			return require.resolve(...args);
 		}
-		catch (error) { /*  */ }
+		catch (error) {
+			//console.error(error);
+		}
 	};
 
 	const depMap = new Map<string, {

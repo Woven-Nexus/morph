@@ -18,13 +18,13 @@
 		"@roenlie/package-toolbox": "^1.0.7",
 		"@roenlie/tsconfig": "^1.0.4",
 		"@types/node": "^20.12.7",
+		"eslint": "8.57.0",
 		"globby": "^14.0.1",
 		"rimraf": "^5.0.5",
-		"tsx": "^4.7.3",
+		"tsx": "^4.8.2",
 		"typescript": "^5.4.5",
 		"vite": "^5.2.10",
-		"vitest": "^1.5.2",
-		"eslint": "8.57.0"
+		"vitest": "^1.5.3"
 	},
 	"pnpm": {
 		"patchedDependencies": {
