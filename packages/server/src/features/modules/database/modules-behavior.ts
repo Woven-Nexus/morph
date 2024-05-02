@@ -1,5 +1,5 @@
+import { type IModule, Module } from '../../../../models/modules-model.js';
 import { Query } from '../../sqlite/query.js';
-import { type IModule, Module } from './modules-table.js';
 
 
 export const getByNamespaceAndID = (
@@ -62,7 +62,7 @@ export const getAllModules = () => {
 
 export const updateModule = (module: IModule) => {
 	using query = new Query();
-	module = new Module(module);
+	module = Module.parse(module);
 
 	return query
 		.update<IModule>('modules')
@@ -85,7 +85,7 @@ export const insertModule = (module: IModule) => {
 	using query = new Query();
 
 	delete (module as any).module_id;
-	module = new Module(module);
+	module = Module.parse(module);
 
 	return query.insert<IModule>('modules')
 		.values(module)

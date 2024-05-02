@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { extname, join } from 'node:path';
 
 import type { RequestHandler } from 'express';
 import mime from 'mime';
@@ -34,6 +34,9 @@ export const tsStatic = (
 
 		if (path.at(-1) === '/')
 			path += 'index.html';
+
+		if (!extname(path))
+			path += '/index.html';
 
 		// paths trying to go upwards are bad.
 		if (path?.startsWith('..'))

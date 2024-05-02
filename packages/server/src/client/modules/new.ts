@@ -1,6 +1,6 @@
 import type { RequestHandler } from 'express';
 
-import { type IModule, Module } from '../../features/modules/database/modules-table.js';
+import { Module } from '../../../models/modules-model.js';
 import { html } from '../../utilities/template-tag.js';
 import { modulesForm } from './_parts/modules-form.js';
 import { modulesSidebar } from './_parts/modules-sidebar.js';

@@ -1,16 +1,15 @@
 {
 	"extends": "@roenlie/tsconfig",
 	"compilerOptions": {
-		"rootDir": ".",
+		"rootDir": "..",
 		"baseUrl": ".",
 		"allowImportingTsExtensions": true,
 		"types": []
 	},
 	"include": [
-		"**/*.ts",
-		"**/*.d.ts",
-		"**/*.js"
-,
-"imports.jspn"
-]
+		"./src/**/*.ts",
+		"./src/**/*.d.ts",
+		"./src/**/*.js",
+		"../models/**/*.ts"
+	]
 }

@@ -1,10 +1,6 @@
-import { join, resolve } from 'node:path';
-
 import type { RequestHandler } from 'express';
-import express from 'express';
 import { globby } from 'globby';
 
-import { tsStatic } from '../../../live-ts-imports/src/custom-serve-static.js';
 import { app } from '../app/main.js';
 
 
@@ -70,24 +66,6 @@ export const registerFileRoutes = async (dir: string, prefix = '') => {
 			globby(dir, { onlyDirectories: true }),
 			globby(dir, { onlyFiles: true }),
 		])).map(arr => arr.filter(pathFilter)) as [string[], string[]];
-	}
-
-	const assetDirRoots: string[] = [];
-	for (const path of dirPaths) {
-		if (!path.includes('/assets'))
-			continue;
-
-		const mainPart = (path.split('/assets')[0] ?? '') + '/assets';
-
-		if (!assetDirRoots.some(p => mainPart.startsWith(p))) {
-			assetDirRoots.push(path);
-
-			const route = '/' + path
-				.replace(dir, '')
-				.replace(/^\/+/, '');
-
-			app.use(route, tsStatic(join(resolve(), path)));
-		}
 	}
 
 	// Filter out asset files, sort according to dynamic

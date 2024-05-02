@@ -21,11 +21,6 @@
 		"**/*.ts",
 		"**/*.d.ts",
 		"**/*.js",
-		"../live-ts-imports/src/resolve-pkg-deps.ts",
-		"../live-ts-imports/src/custom-serve-static.ts",
-		"../live-ts-imports/src/create-import-map.ts",
-		"../live-ts-imports/src/create-client-symlinks.ts",
-		"client/imports.jspn",
 	],
 	"exclude": [
 		"dist",
