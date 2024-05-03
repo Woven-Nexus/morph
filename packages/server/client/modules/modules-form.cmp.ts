@@ -9,15 +9,27 @@ import type { IModule } from '../../models/modules-model.js';
 export class ModulesForm extends SignalWatcher(LitElement) {
 
 	@property({ type: Object })
-	public accessor selectedModule: Signal<IModule | undefined>;
+	public selectedModule: Signal<IModule | undefined>;
 
-	@state() protected accessor fields: any[] = [];
+	@state() protected fields: any[] = [];
 	public override connectedCallback(): void {
 		super.connectedCallback();
 
-		this.selectedModule.subscribe((value) => {
-			if (value)
-				import('@roenlie/monaco-editor-wc');
+		const unsub = this.selectedModule.subscribe((value) => {
+			if (!value)
+				return;
+
+			unsub();
+
+			if (!document.head.querySelector('#monaco-styles')) {
+				const link = document.createElement('link');
+				link.rel = 'stylesheet';
+				link.href = '/vendor/@roenlie-monaco-editor-wc/dist/style.css';
+
+				document.head.appendChild(link);
+			}
+
+			import('@roenlie/monaco-editor-wc');
 		});
 	}
 
@@ -31,7 +43,8 @@ export class ModulesForm extends SignalWatcher(LitElement) {
 		}
 
 		return html`
-		<form void-boosted void-target="modules-sidebar,modules-form">
+
+		<form>
 			<div class="inputs">
 				${ this.fields.map(field => html`
 				<label style=${ field.hidden ? 'display:none;' : '' }>
