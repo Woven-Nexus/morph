@@ -8,9 +8,14 @@ liveTsImports({
 	app,
 	server,
 	importMeta: import.meta,
-	packages:   [ 'lit', '@roenlie/mimic-core' ],
-	vendorDir:  '_vendor',
-	clientDir:  'client',
+	packages:   [
+		'lit',
+		'@lit-labs/preact-signals',
+		'@roenlie/mimic-core',
+		'@roenlie/monaco-editor-wc',
+	],
+	vendorDir: '_vendor',
+	clientDir: 'client',
 });
 
 await registerFileRoutes('src/api', 'api');

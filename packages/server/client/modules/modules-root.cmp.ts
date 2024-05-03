@@ -1,10 +1,17 @@
 import './modules-sidebar.cmp.ts';
+import './modules-form.cmp.ts';
 
+import { signal, SignalWatcher } from '@lit-labs/preact-signals';
 import { css, html, LitElement } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { customElement, state } from 'lit/decorators.js';
+
+import type { IModule } from '../../models/modules-model.js';
+
 
 @customElement('m-modules-root')
-export class ModulesRoot extends LitElement {
+export class ModulesRoot extends SignalWatcher(LitElement) {
+
+	@state() protected selectedModule = signal<IModule | undefined>(undefined);
 
 	protected override render() {
 		return html`
@@ -13,9 +20,13 @@ export class ModulesRoot extends LitElement {
 				New
 			</button>
 			<m-modules-sidebar
+				.selectedModule=${ this.selectedModule }
 			></m-modules-sidebar>
 		</aside>
 		<main>
+			<m-modules-form
+				.selectedModule=${ this.selectedModule }
+			></m-modules-form>
 		</main>
 		`;
 	}

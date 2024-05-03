@@ -1,10 +1,7 @@
 import './user-worker';
 
-import { createPromiseResolver, sleep } from '@roenlie/mimic-core/async';
-import { emitEvent } from '@roenlie/mimic-core/dom';
-import { customElement, MimicElement } from '@roenlie/mimic-lit/element';
-import { css, html } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { css, html, LitElement } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { when } from 'lit/directives/when.js';
@@ -18,7 +15,7 @@ export type { editor };
 
 
 @customElement('monaco-editor')
-export class MonacoEditorCmp extends MimicElement {
+export class MonacoEditorCmp extends LitElement {
 
 	public static readonly formAssociated = true;
 
@@ -97,7 +94,7 @@ export class MonacoEditorCmp extends MimicElement {
 	@state() protected _editor?: monaco.editor.IStandaloneCodeEditor;
 	@state() protected visible = false;
 	public editorReady = (() => {
-		const [ promise, resolve ] = createPromiseResolver();
+		const { promise, resolve } = Promise.withResolvers<void>();
 
 		const resolveablePromise = promise as Promise<any> & {
 			resolve: (value?: any) => void;
@@ -207,10 +204,10 @@ export class MonacoEditorCmp extends MimicElement {
 			}),
 		);
 
-		await sleep(100);
+		await new Promise(res => setTimeout(res, 100));
 
 		this.editorReady.resolve();
-		emitEvent(this, 'editor-ready', { bubbles: false });
+		this.dispatchEvent(new CustomEvent('editor-ready', { bubbles: false }));
 	}
 
 	public async createModel(code: string, language: string) {
@@ -274,4 +271,3 @@ export class MonacoEditorCmp extends MimicElement {
 	];
 
 }
-MonacoEditorCmp.register();

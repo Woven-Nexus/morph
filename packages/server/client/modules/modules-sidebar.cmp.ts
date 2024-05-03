@@ -1,14 +1,17 @@
+import { type Signal, SignalWatcher } from '@lit-labs/preact-signals';
 import { css, html, LitElement } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 
 import type { IModule } from '../../models/modules-model.js';
 import type { MResponse } from '../../models/response.js';
 
 
 @customElement('m-modules-sidebar')
-export class ModulesSidebar extends LitElement {
+export class ModulesSidebar extends SignalWatcher(LitElement) {
 
-	@state() protected selectedModule?: IModule;
+	@property({ type: Object })
+	public selectedModule: Signal<IModule | undefined>;
+
 	@state() protected modules: IModule[] = [];
 
 	public override async connectedCallback() {
@@ -20,14 +23,18 @@ export class ModulesSidebar extends LitElement {
 		this.modules = response.data ?? [];
 	}
 
+	protected onButtonClick(ev: Event, module: IModule) {
+		this.selectedModule.value = module;
+		console.log('setting value', module);
+	}
+
 	protected override render() {
 		return html`
 		<ol>
 			${ this.modules.map(mod => html`
-			<li class="${ mod.module_id === this.selectedModule?.module_id ? 'active' : '' }">
+			<li class="${ mod.module_id === this.selectedModule.value?.module_id ? 'active' : '' }">
 				<button
-					void-get="/modules/${ mod.namespace }/${ mod.module_id }"
-					void-target="modules-sidebar, modules-form"
+					@click=${ (ev: Event) => this.onButtonClick(ev, mod) }
 				>
 					${ mod.name }
 				</button>

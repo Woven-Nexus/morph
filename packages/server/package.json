@@ -14,8 +14,10 @@
 	},
 	"dependencies": {
 		"@faker-js/faker": "^8.4.1",
+		"@lit-labs/preact-signals": "^1.0.2",
 		"@roenlie/live-ts-imports": "workspace:^",
 		"@roenlie/mimic-core": "^0.0.87",
+		"@roenlie/monaco-editor-wc": "workspace:^",
 		"@types/cors": "^2.8.17",
 		"@types/express": "^4.17.21",
 		"bcrypt": "^5.1.1",
