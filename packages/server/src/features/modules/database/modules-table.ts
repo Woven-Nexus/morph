@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 import { range } from '@roenlie/mimic-core/array';
 
-import { type IModule, Module } from '../../../../models/modules-model.js';
+import { type IModule, Module } from '../../../../client/models/modules-model.js';
 import { SQLite } from '../../sqlite/database.js';
 import { escapeString } from '../../sqlite/escape-string.js';
 import { Query } from '../../sqlite/query.js';

@@ -1,15 +1,25 @@
 import type { RequestHandler } from 'express';
 
-import { insertModule } from '../../features/modules/database/modules-behavior.js';
-import type { IModule } from '../../features/modules/database/modules-table.js';
+import type { IModule } from '../../../client/models/modules-model.js';
+import { getByID, insertModule } from '../../features/modules/database/modules-behavior.js';
+import { createResponse } from '../../utilities/create-response.js';
 
 
 export const post: RequestHandler[] = [
-	async (req, res) => {
+	(req, res) => {
+		const { returnModule } = req.query as { returnModule: string; };
 		const module = req.body as IModule;
 
-		insertModule(module);
+		const result = insertModule(module);
+		if (!result)
+			return res.sendStatus(500);
 
-		res.sendStatus(200);
+		if (returnModule) {
+			res.status(200);
+
+			return res.send(getByID(result.lastInsertRowid));
+		}
+
+		return res.sendStatus(200);
 	},
 ];

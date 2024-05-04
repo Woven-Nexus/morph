@@ -1,16 +1,13 @@
-import { type IModule, Module } from '../../../../models/modules-model.js';
+import { type IModule, Module } from '../../../../client/models/modules-model.js';
 import { Query } from '../../sqlite/query.js';
 
 
-export const getByNamespaceAndID = (
-	namespace: string, id: number,
-) => {
+export const getByID = (id: number | bigint) => {
 	using query = new Query();
 	const results = query
 		.from<IModule>('modules')
 		.where(filter => filter.and(
-			filter.eq('namespace', namespace),
-			filter.eq('module_id', id),
+			filter.eq('module_id', id as number),
 		))
 		.limit(1)
 		.orderBy('active', 'asc')
@@ -90,4 +87,14 @@ export const insertModule = (module: IModule) => {
 	return query.insert<IModule>('modules')
 		.values(module)
 		.query();
+};
+
+export const moduleExists = (module: Pick<IModule, 'module_id'>) => {
+	using query = new Query();
+
+	return query.from<IModule>('modules')
+		.select('module_id')
+		.where((filter) => filter.eq('module_id', module.module_id))
+		.limit(1)
+		.query().length === 1;
 };

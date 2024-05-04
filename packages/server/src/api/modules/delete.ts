@@ -1,15 +1,21 @@
 import type { RequestHandler } from 'express';
 
-import { deleteModule } from '../../features/modules/database/modules-behavior.js';
-import type { IModule } from '../../features/modules/database/modules-table.js';
+import type { IModule } from '../../../client/models/modules-model.js';
+import { deleteModule, moduleExists } from '../../features/modules/database/modules-behavior.js';
 
 
 export const post: RequestHandler[] = [
-	async (req, res) => {
+	(req, res) => {
 		const module = req.body as IModule;
+
+		if (!moduleExists(module))
+			return res.sendStatus(404);
 
 		deleteModule(module);
 
-		res.sendStatus(200);
+		if (moduleExists(module))
+			return res.sendStatus(500);
+
+		return res.sendStatus(200);
 	},
 ];

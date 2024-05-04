@@ -16,7 +16,6 @@
 	},
 	"typescript.updateImportsOnFileMove.enabled": "always",
 	"typescript.preferences.importModuleSpecifier": "relative",
-	"typescript.preferences.importModuleSpecifierEnding": "js",
 	"typescript.tsdk": "node_modules\\typescript\\lib",
 	"peacock.color": "rgb(30,30,30)",
 	"workbench.colorCustomizations": {
@@ -56,6 +55,16 @@
 					"name": "client",
 					"commands": [
 						"cd packages/client"
+					]
+				}
+			]
+		},
+		{
+			"splitTerminals": [
+				{
+					"name": "live-ts-imports",
+					"commands": [
+						"cd packages/live-ts-imports"
 					]
 				}
 			]

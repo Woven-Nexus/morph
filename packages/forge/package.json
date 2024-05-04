@@ -17,7 +17,7 @@
 		"@roenlie/morph-components": "workspace:^",
 		"@vaadin/router": "^1.7.5",
 		"keystone-core": "file:../../../../keystone/packages/keystone-core",
-		"lit": "^3.1.3",
+		"lit": "3.1.2",
 		"posix-path-browser": "workspace:^",
 		"quill": "2.0.1",
 		"tslib": "^2.6.2",

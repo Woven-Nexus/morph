@@ -19,7 +19,6 @@ liveTsImports({
 });
 
 await registerFileRoutes('src/api', 'api');
-await registerFileRoutes('src/client');
 
 server.listen(Number(process.env.PORT), process.env.HOST, () => {
 	console.log(`⚡️[server]: Server is running at http://localhost:${ Number(process.env.PORT) }`);
