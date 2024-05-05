@@ -14,12 +14,16 @@ liveTsImports({
 		'@roenlie/mimic-core',
 		'@roenlie/monaco-editor-wc',
 	],
-	vendorDir: '_vendor',
-	clientDir: 'client',
+	client: [
+		{ path: '/', dir: 'client' },
+		{ path: '/models', dir: 'models' },
+	],
 });
 
-await registerFileRoutes('src/api', 'api');
+await registerFileRoutes('api', 'api');
 
 server.listen(Number(process.env.PORT), process.env.HOST, () => {
-	console.log(`⚡️[server]: Server is running at http://localhost:${ Number(process.env.PORT) }`);
+	console.log(`⚡️[server]: Server is running at http://localhost:${
+		Number(process.env.PORT)
+	}`);
 });

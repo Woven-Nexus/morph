@@ -50,10 +50,10 @@ export const auth: RequestHandler = (req, res, next) => {
 export const isUser: RequestHandler = (req, res, next)=>{
 	try {
 		console.log(req.user);
-		if (req.user.role !== 'Student') {
+		if ((req.user as any).role !== 'Student') {
 			return res.status(401).json({
 				success: false,
-				message: 'You are not authorized Student⚠️',
+				message: 'You are not authorized Student ⚠️',
 			});
 		}
 
@@ -62,17 +62,17 @@ export const isUser: RequestHandler = (req, res, next)=>{
 	catch (error) {
 		return res.status(500).json({
 			success: false,
-			message: 'Something error occured⚠️: ' + error,
+			message: 'Something error occured ⚠️: ' + error,
 		});
 	}
 };
 
 export const isAdmin: RequestHandler = (req, res, next)=>{
 	try {
-		if (req.user.role !== 'Admin') {
+		if ((req.user as any).role !== 'Admin') {
 			return res.status(401).json({
 				success: false,
-				message: 'You are not authorized Admin⚠️',
+				message: 'You are not authorized Admin ⚠️',
 			});
 		}
 
@@ -81,7 +81,7 @@ export const isAdmin: RequestHandler = (req, res, next)=>{
 	catch (error) {
 		return res.status(500).json({
 			success: false,
-			message: 'Something error occured⚠️: ' + error,
+			message: 'Something error occured ⚠️: ' + error,
 		});
 	}
 };

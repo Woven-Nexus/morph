@@ -42,7 +42,7 @@ export const tsStatic = (
 		if (path?.startsWith('..'))
 			return res.sendStatus(404);
 
-		let file: string | undefined;
+		let file: string | Buffer | undefined;
 		let filePath: string = join(root, path);
 
 		// Checking if the file exists simplifies later logic.
@@ -67,11 +67,13 @@ export const tsStatic = (
 			type + (charset ? '; charset=' + charset : ''),
 		);
 
-		file ??= await readFile(filePath, 'utf-8');
+		file ??= await (/\.(?:(?:ts)|(?:js)|(?:html))$/.test(filePath)
+			? readFile(filePath, 'utf-8')
+			: readFile(filePath));
 
 		// Here we inject the importmap and hmr script
-		if (filePath.endsWith('index.html'))
-			file = handleIndexHtml(file, importmap, vendorPath, dev);
+		if (typeof file === 'string' && filePath.endsWith('index.html'))
+			file = handleIndexHtml(file as string, importmap, vendorPath, dev);
 
 		return res.send(file);
 	}) satisfies RequestHandler;

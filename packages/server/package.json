@@ -1,5 +1,5 @@
 {
-	"name": "@roenlie/lit-htmx-server",
+	"name": "@roenlie/morph",
 	"version": "0.0.1",
 	"description": "",
 	"keywords": [],
@@ -12,7 +12,14 @@
 	"scripts": {
 		"dev": "nodemon --watch src --exec tsx --experimental-vm-modules ./src/index.ts"
 	},
+	"exports": {
+		"./api/*": "./api/*",
+		"./server/*": "./src/*",
+		"./models/*": "./models/*",
+		"./client/*": "./client/*"
+	},
 	"dependencies": {
+		"@roenlie/morph": "workspace:^",
 		"@faker-js/faker": "^8.4.1",
 		"@lit-labs/preact-signals": "^1.0.2",
 		"@roenlie/live-ts-imports": "workspace:^",

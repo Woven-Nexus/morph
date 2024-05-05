@@ -1,1 +1,1 @@
-import './app/server.js';
+import '@roenlie/morph/server/app/server.js';

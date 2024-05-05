@@ -1,18 +1,16 @@
 {
 	"extends": "@roenlie/tsconfig",
 	"compilerOptions": {
-		"rootDir": ".",
+		"rootDir": "..",
 		"baseUrl": ".",
 		"types": [
-			"vite/client",
-			"node",
+			"node"
 		],
-		"useDefineForClassFields": true,
+		"useDefineForClassFields": true
 	},
 	"include": [
-		"**/*.ts",
-		"**/*.d.ts",
-		"**/*.js",
+		"./**/*.ts",
+		"./**/*.d.ts"
 	],
 	"exclude": [
 		"dist",

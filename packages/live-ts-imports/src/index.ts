@@ -17,8 +17,8 @@ export interface LiveTsImportsConfig {
 	server: HTTPServer | HTTPSServer;
 	app: express.Express;
 	packages: string[];
+	client?: {path: string, dir: string}[];
 	vendorDir?: string;
-	clientDir?: string;
 	clientPath?: string;
 	vendorPath?: string;
 	dev?: boolean;
@@ -30,20 +30,21 @@ export const liveTsImports = (config: LiveTsImportsConfig) => {
 		app,
 		server,
 		importMeta,
-		clientPath = '/',
 		vendorPath = '/vendor',
 		dev = true,
 	} = config;
 
 	let {
+		client = [ { path: '/', dir: 'client' } ],
 		vendorDir = '_vendor',
-		clientDir = 'client',
 		packages,
 	} = config;
 
 	packages = [ 'tslib', ...packages ];
 	vendorDir = join(resolve(), 'node_modules', vendorDir);
-	clientDir = join(resolve(), clientDir);
+	client = client.map(c => ({ path: c.path, dir: join(resolve(), c.dir) }));
+
+	console.log(client);
 
 	const pkgDepsMap = getPkgDepsMap(importMeta, packages);
 
@@ -51,13 +52,16 @@ export const liveTsImports = (config: LiveTsImportsConfig) => {
 
 	const importmap = createImportMap(vendorPath, pkgDepsMap, dev);
 
-	app.use(clientPath, tsStatic(clientDir, importmap, vendorPath, dev));
+	client.forEach(({ path, dir }) => {
+		app.use(path, tsStatic(dir, importmap, vendorPath, dev));
+	});
+
 	app.use(vendorPath, tsStatic(vendorDir, importmap, vendorPath, dev));
 
 	const wss = new WebSocketServer({ server });
 
 	if (dev) {
-		chokidar.watch(clientDir).on('all', () => {
+		chokidar.watch(client.map(({ dir }) => dir)).on('all', () => {
 			tsCache.clear();
 			wss.clients.forEach((socket) => socket.send('reload'));
 		});

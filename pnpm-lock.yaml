@@ -259,6 +259,9 @@ importers:
       '@roenlie/monaco-editor-wc':
         specifier: workspace:^
         version: link:../editor
+      '@roenlie/morph':
+        specifier: workspace:^
+        version: 'link:'
       '@types/cors':
         specifier: ^2.8.17
         version: 2.8.17

@@ -3,7 +3,6 @@ import { exists } from '../../utilities/exists.js';
 import { SQLite } from './database.js';
 import { escapeString } from './escape-string.js';
 
-
 // Wrapper around Better SQLite3
 // Purpose is to obscure away the database hooks that I will add into
 // all interactions with the actual DB.
