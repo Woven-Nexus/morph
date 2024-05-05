@@ -44,8 +44,6 @@ export const liveTsImports = (config: LiveTsImportsConfig) => {
 	vendorDir = join(resolve(), 'node_modules', vendorDir);
 	client = client.map(c => ({ path: c.path, dir: join(resolve(), c.dir) }));
 
-	console.log(client);
-
 	const pkgDepsMap = getPkgDepsMap(importMeta, packages);
 
 	createClientSymlinks(vendorDir, pkgDepsMap, dev);

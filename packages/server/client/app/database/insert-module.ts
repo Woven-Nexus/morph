@@ -1,6 +1,6 @@
 import { maybe } from '@roenlie/mimic-core/async';
 
-import { type IModule, Module } from '../../../models/modules-model.js';
+import { type IModule, Module } from '../../../models/modules-model.ts';
 
 
 export async function insertModule(module: Module): Promise<undefined>;

@@ -1,5 +1,4 @@
-import { type IModule, Module } from '../../../models/modules-model.js';
-import type { MResponse } from '../../../models/response.js';
+import { type IModule, Module } from '../../../models/modules-model.ts';
 
 
 export async function updateModule(module: Module): Promise<undefined>;

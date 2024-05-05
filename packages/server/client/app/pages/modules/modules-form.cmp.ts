@@ -6,7 +6,7 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { live } from 'lit/directives/live.js';
 import { when } from 'lit/directives/when.js';
 
-import { type IModule, Module } from '../../../../models/modules-model.js';
+import { type IModule, Module } from '../../../../models/modules-model.ts';
 import { insertModule } from '../../database/insert-module.ts';
 import { updateModule } from '../../database/update-module.ts';
 import { subOnce } from '../../utilities/signals.ts';
