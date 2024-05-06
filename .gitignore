@@ -3,3 +3,4 @@ dist
 vendor
 *.db-shm
 *.db-wal
+.env.*

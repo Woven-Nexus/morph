@@ -28,12 +28,15 @@ export class LoginForm extends LitElement {
 		const data: Record<keyof any, any> = {};
 		for (const [ key, value ] of new FormData(this.formEl))
 			data[key] = value;
+
+		return data;
 	}
 
 	protected onRequestCode(ev: Event) {
 		ev.preventDefault();
 
-		requestOtp();
+		const formData = this.getFormData() as {username: string};
+		requestOtp(formData.username);
 
 		this.formEl?.reset();
 

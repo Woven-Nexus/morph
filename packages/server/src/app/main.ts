@@ -7,7 +7,14 @@ import dotenv from 'dotenv';
 import express, { type Express } from 'express';
 
 
-dotenv.config();
+dotenv.config({
+	path: [
+		'.env.dev',
+		'.env.test',
+		'.env.prod',
+		'.env',
+	],
+});
 
 
 export const app: Express = express()
