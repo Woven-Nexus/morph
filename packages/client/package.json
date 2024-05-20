@@ -21,7 +21,7 @@
 	},
 	"dependencies": {
 		"@faker-js/faker": "^8.4.1",
-		"@floating-ui/dom": "^1.6.4",
+		"@floating-ui/dom": "^1.6.5",
 		"@lit-labs/preact-signals": "^1.0.2",
 		"@roenlie/lit-aegis": "^1.0.46",
 		"@roenlie/lit-context": "^1.0.46",
@@ -30,7 +30,7 @@
 		"@roenlie/mimic-elements": "^0.0.82",
 		"@roenlie/mimic-lit": "^0.0.97",
 		"@vaadin/router": "^1.7.5",
-		"lit": "3.1.2",
+		"lit": "3.1.3",
 		"monaco-editor": "^0.48.0",
 		"socket.io-client": "^4.7.4",
 		"tslib": "^2.6.2"

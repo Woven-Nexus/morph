@@ -12,15 +12,14 @@ export default defineConfig(libConfig({
 		reportCompressedSize: false,
 		lib:                  {
 			entry:    './src/index.ts',
-			name:     'monaco-editor-wc',
-			fileName: () => 'monaco-editor-wc.js',
+			name:     'index',
+			fileName: () => 'index.js',
 		},
 		rollupOptions: {
 			external: [],
 			output:   {
 				manualChunks:    () => 'index',
 				preserveModules: false,
-				sourcemap:       false,
 			},
 		},
 	},

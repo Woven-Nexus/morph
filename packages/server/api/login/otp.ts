@@ -1,9 +1,8 @@
+import { User } from '@roenlie/morph/models/user-model.js';
+import { createUser, getUser } from '@roenlie/morph/server/features/user/users-behavior.js';
 import type { RequestHandler } from 'express';
 import nodemailer from 'nodemailer';
 import otpGenerator from 'otp-generator';
-
-import { User } from '../../models/user-model.js';
-import { createUser, getUser } from '../../src/features/user/users-behavior.js';
 
 
 export const get: RequestHandler[] = [

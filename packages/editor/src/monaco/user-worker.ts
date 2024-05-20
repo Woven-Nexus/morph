@@ -1,4 +1,4 @@
-import * as monaco from 'monaco-editor';
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 
 
 export const setUserWorker = (() => {
@@ -10,7 +10,7 @@ export const setUserWorker = (() => {
 
 		initialized = true;
 		self.MonacoEnvironment = {
-			getWorker(_: unknown, label: string) {
+			async getWorker(_: unknown, label: string) {
 				if (label === 'json')
 					return import('monaco-editor/esm/vs/language/json/json.worker?worker&inline').then(w => new w.default());
 

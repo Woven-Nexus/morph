@@ -1,17 +1,20 @@
 import './user-worker';
 
+import type { CSSResult } from 'lit';
 import { css, html, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { when } from 'lit/directives/when.js';
-import { editor } from 'monaco-editor';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import editorStyle from 'monaco-editor/min/vs/editor/editor.main.css?raw';
 
 import { updateLangConfig } from './lang-config-extender.js';
 
-export type { editor };
+export { monaco };
+
+
+export type editor = typeof monaco.editor;
 
 
 @customElement('monaco-editor')
@@ -88,7 +91,7 @@ export class MonacoEditorCmp extends LitElement {
 	/** Language that will be used when auto creating a model. */
 	@property() public language: string;
 
-	public get monaco() { return editor; }
+	public get monaco() { return monaco.editor; }
 	public get editor() { return this._editor; }
 
 	@state() protected _editor?: monaco.editor.IStandaloneCodeEditor;
@@ -241,7 +244,7 @@ export class MonacoEditorCmp extends LitElement {
 		`;
 	}
 
-	public static override styles = [
+	public static override styles: (CSSResult | CSSStyleSheet)[] = [
 		(() => {
 			const sheet = new CSSStyleSheet();
 			sheet.replaceSync(editorStyle);

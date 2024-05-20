@@ -1,7 +1,7 @@
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 
 
-type MonarchObject = {
+export type MonarchObject = {
 	defaultToken: string;
 	tokenPostfix: string;
 	keywords: string[];
@@ -18,10 +18,10 @@ type MonarchObject = {
 	tokenizer: MonarchTokenizer;
 } & Record<string, any>
 
-type MonarchTokenizer = Record<string, TokenizerEntry[]>;
+export type MonarchTokenizer = Record<string, TokenizerEntry[]>;
 
 
-type TokenizerEntry = [
+export type TokenizerEntry = [
 	regex: string | RegExp,
 	action: string
 ] | [
@@ -47,12 +47,12 @@ type TokenizerEntry = [
 	include: string;
 }
 
-type LanguageExtension = monaco.languages.ILanguageExtensionPoint & {loader: () => Promise<{
+export type LanguageExtension = monaco.languages.ILanguageExtensionPoint & {loader: () => Promise<{
 	language: MonarchObject;
 }>};
 
 
-const isTokenizer = (value: any, key: string): value is MonarchTokenizer => {
+export const isTokenizer = (value: any, key: string): value is MonarchTokenizer => {
 	return key === 'tokenizer';
 };
 
